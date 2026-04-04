@@ -1,0 +1,20 @@
+{
+  "name": "时空机",
+  "short_name": "时空机",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#E0F2E9",
+  "theme_color": "#E0F2E9",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/bottts/svg?seed=Panda",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/bottts/svg?seed=Panda",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
