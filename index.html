@@ -1658,7 +1658,7 @@ function jsStringArg(str) {
 
             const btn = document.querySelector('button[onclick="fetchModels()"]');
             let oldTxt = "测试连接";
-            if(btn) { oldTxt = btn.innerHTML; btn.innerHTML = "⏳ 拉取中..."; btn.disabled = true; }
+            if(btn) { oldTxt = btn.innerHTML; btn.innerHTML = "拉取中..."; btn.disabled = true; }
 
             let iframe = null;
             try {
@@ -2626,6 +2626,16 @@ window.pushMsg = function(msg) {
 
 // ================== pushMsg 核心结束 ==================
 // ================== 群聊聚会游戏核心逻辑 ==================
+window.handleGameResult = function(text) {
+    if(navigator.vibrate) navigator.vibrate([50, 50]);
+    window.pushMsg({side: 'me', type: 'text', content: `[聚会游戏惩罚执行：${text}]`});
+    setTimeout(() => { 
+        if(window.triggerCharReply) {
+            window.triggerCharReply(false, `[系统提示：群聊聚会大冒险环节，玩家做出了决定（${text}）。请结合你的人设和现在的氛围，对这个结果进行起哄、吐槽、害羞或吃醋等真实反应！]`); 
+        }
+    }, 800);
+};
+
 // ✨ 修复：聚会游戏界面（先选择对象，再点按钮）
 window.pgSelectedTarget = 'random'; // 默认随机
 
@@ -2717,30 +2727,22 @@ window.startPartyGame = function(targetName) {
     const gameId = 'pg_game_' + Date.now();
 
     // 绘制高颜值、可直接点击互动的单机 HTML 游戏卡片
-    const gameHTML = `
-    <div id="${gameId}" style="background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(255,154,158,0.3); text-align: center; color: #fff; font-family: sans-serif; min-width: 240px; margin: 0;">
+        const gameHTML = `
+    <div id="${gameId}" class="party-game-wheel" style="background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(255,154,158,0.3); text-align: center; color: #fff; font-family: sans-serif; min-width: 240px; margin: 0;">
         <div style="font-size: 24px; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🎲 命运轮盘</div>
         <div style="font-size: 13px; margin-bottom: 15px; font-weight: bold; opacity: 0.9;">惩罚对象锁定：${targetName}</div>
-        
-        <div style="background: rgba(255,255,255,0.9); color: #D81B60; padding: 15px; border-radius: 12px; font-size: 14px; font-weight: 900; margin-bottom: 20px; line-height: 1.5; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);">
-            🎯 ${randomTask}
-        </div>
-        
-        <!-- 交互按钮区 -->
+        <div style="background: rgba(255,255,255,0.9); color: #D81B60; padding: 15px; border-radius: 12px; font-size: 14px; font-weight: 900; margin-bottom: 20px; line-height: 1.5; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);">🎯 ${randomTask}</div>
         <div id="${gameId}_opts" style="display: flex; flex-direction: column; gap: 10px;">
             <button onclick="document.getElementById('${gameId}_opts').style.display='none'; document.getElementById('${gameId}_res').style.display='block'; document.getElementById('${gameId}_restext').innerText='【顺水推舟】${targetName} 脸红着照做了，周围爆发出一阵起哄声，气氛瞬间升温...'; setTimeout(()=>window.handleGameResult('顺水推舟：${targetName}乖乖接受了惩罚，表现得很害羞/配合'), 1000);" style="background: #fff; color: #D81B60; border: none; padding: 12px; border-radius: 20px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s;">顺水推舟 (看TA害羞配合)</button>
-            
             <button onclick="document.getElementById('${gameId}_opts').style.display='none'; document.getElementById('${gameId}_res').style.display='block'; document.getElementById('${gameId}_restext').innerText='【故意刁难】你决定加码惩罚，${targetName} 咬牙切齿却无可奈何，眼神死死盯着你...'; setTimeout(()=>window.handleGameResult('故意刁难：你加码了极其过分的惩罚，${targetName}被逼急了并且非常吃醋/生气'), 1000);" style="background: #fff; color: #E65100; border: none; padding: 12px; border-radius: 20px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s;">故意刁难 (看TA羞愤发飙)</button>
-            
             <button onclick="document.getElementById('${gameId}_opts').style.display='none'; document.getElementById('${gameId}_res').style.display='block'; document.getElementById('${gameId}_restext').innerText='【宁死不从】${targetName} 涨红了脸拒绝执行，直接仰头自罚了三杯烈酒，现在看起来有点微醺了...'; setTimeout(()=>window.handleGameResult('宁死不从：${targetName}宁愿自罚三杯也不肯做，现在喝醉了，借着酒意对玩家说话'), 1000);" style="background: #fff; color: #4A148C; border: none; padding: 12px; border-radius: 20px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s;">宁死不从 (逼TA自罚三杯)</button>
         </div>
-        
-        <!-- 结局展示区 (默认隐藏) -->
         <div id="${gameId}_res" style="display: none; background: rgba(255,255,255,0.95); color: #333; padding: 15px; border-radius: 12px; font-size: 13px; font-weight: bold; line-height: 1.6; text-align: justify; animation: fadeIn 0.4s;">
             <div id="${gameId}_restext"></div>
             <div style="font-size:10px; color:#999; margin-top:10px; border-top:1px dashed #ccc; padding-top:8px;">( 已触发既定结局，等待 TA 的反应... )</div>
         </div>
-    </div>`;
+    </div>`.replace(/\n\s*/g, ''); 
+    // 👆 就是这里加了 replace，把换行吃掉
 
     // 强行用无外框的样式发送卡片
     pushMsg({side: 'other', type: 'text', content: gameHTML, senderName: "游戏发牌官"});
@@ -3222,7 +3224,9 @@ window.deleteCurrentContact = function() {
     if(!confirm(msg)) return;
 
     // 从列表中彻底删除当前会话
-    sessions = sessions.filter(x => String(x.id) !== String(currentSessionId));
+window.sessions = window.sessions.filter(x => String(x.id) !== String(currentSessionId));
+sessions = window.sessions;
+
     saveSessions();
     
     // 关闭资料弹窗并退回列表页
@@ -3398,7 +3402,7 @@ window.autoGenWorldBook = async function() {
     
     const btn = document.getElementById('aiGenWbBtn');
     const oldText = btn.innerText;
-    btn.innerText = "⏳ AI 疯狂构思中，请稍候...";
+    btn.innerText = "AI 疯狂构思中，请稍候...";
     btn.style.pointerEvents = "none";
     
     const promptText = `你是一个顶级世界观架构师。请根据用户的要求：“${req}”，生成一个详细的设定词条。
@@ -3447,7 +3451,7 @@ window.autoGenPersona = async function() {
     
     const btn = document.getElementById('aiGenPersonaBtn');
     const oldText = btn.innerText;
-    btn.innerText = "⏳ AI 捏脸中，请稍候...";
+    btn.innerText = "AI 捏脸中，请稍候...";
     btn.style.pointerEvents = "none";
     
     const promptText = `你是一个角色设定大师。请根据用户的要求：“${req}”，为用户生成一个专属于他/她的扮演身份（马甲）。
@@ -3616,7 +3620,7 @@ const diaryPrompt = `【系统最高红线】：当前现实时间是【${realDa
                 saveSessions();
                 
                 renderDiaryList(s);
-                alert("✨ 日记写好了，快去偷看吧！");
+                alert("日记写好了，快去偷看吧！");
 
             } catch(e) {
                 alert("日记生成失败: " + e.message);
@@ -3639,26 +3643,6 @@ const diaryPrompt = `【系统最高红线】：当前现实时间是【${realDa
             } 
         }
 
-// ==================== 🎮 游戏引擎补丁 ====================
-function renderGameFrame(iframeId, gameCode) {
-    const iframe = document.getElementById(iframeId);
-    if (!iframe) return;
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;font-family:sans-serif;background:#fff;display:flex;justify-content:center;align-items:center;height:100vh;user-select:none}button{background:linear-gradient(135deg,#FF9A9E,#FECFEF);border:none;padding:8px 15px;border-radius:20px;color:white;font-weight:bold;cursor:pointer;box-shadow:0 3px 10px rgba(255,100,100,0.3)}button:active{transform:scale(0.95)}.game-container{width:100%;height:100%;position:relative}</style></head><body>${gameCode}<script>function sendGameResult(text){window.parent.handleGameResult(text)}<\/script></body></html>`);
-    doc.close();
-}
-window.handleGameResult = function(text) {
-    if(navigator.vibrate) navigator.vibrate([50, 50]);
-    // 玩家屏幕上显示结局
-    window.pushMsg({side: 'me', type: 'text', content: `[游戏结束，达成结局：${text}]`});
-    // 带着剧情记忆触发 AI 回复
-    setTimeout(() => { 
-        if(window.triggerCharReply) {
-            window.triggerCharReply(false, `[系统提示：玩家刚刚玩了你发的单机小游戏，并且打出了“${text}”的结局。请结合你的人设，对玩家的这个游戏结果进行吐槽、嘲笑或夸奖！]`); 
-        }
-    }, 800);
-};
 
 
 // ==================== 🛠️ 场景与文风书系统 (Pro版) ====================
@@ -4005,7 +3989,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         #bs-root .bs-btn-outline { background:transparent; border:1px solid var(--bs-border); color:var(--bs-text-main); }
         #bs-root .bs-input { width:100%; padding:12px; border-radius:8px; border:1px solid var(--bs-border); background:var(--bs-bg-card); color:var(--bs-text-main); outline:none; }
         
-        #bs-root .reader-bar-top { position:absolute; top:0; left:0; right:0; height:50px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); z-index:200; transform:translateY(-100%); transition:0.3s; border-bottom:1px solid rgba(0,0,0,0.05); }
+        #bs-root .reader-bar-top { position:absolute; top:0; left:0; right:0; height:auto; min-height:50px; display:flex; align-items:center; justify-content:space-between; padding: max(env(safe-area-inset-top), 10px) 15px 10px; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); z-index:200; transform:translateY(-100%); transition:0.3s; border-bottom:1px solid rgba(0,0,0,0.05); box-sizing: border-box; }
         body.dark-mode #bs-root .reader-bar-top { background:rgba(30,30,30,0.95); border-color:rgba(255,255,255,0.1); }
         
         #bs-root .reader-bar-bottom { position:absolute; bottom:0; left:0; right:0; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); padding:15px 20px 40px; z-index:200; transform:translateY(100%); transition:0.3s; display:flex; flex-direction:column; gap:12px; border-radius:20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
@@ -4053,14 +4037,15 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         {t:"全家读心", s:"被全家读心后我摆烂了", k:"读心,搞笑,团宠"}, {t:"全球冰封", s:"末世安全屋：囤货百亿", k:"末世,囤货,系统"}, {t:"规则怪谈", s:"我能看到隐藏提示", k:"怪谈,悬疑,直播"}, {t:"反派师尊", s:"穿成反派的病弱师尊", k:"穿书,纯爱,修仙"}, {t:"恐怖复苏", s:"我在地府当公务员", k:"灵异,系统,无敌"}, {t:"娱乐天王", s:"这歌手太老六了", k:"娱乐圈,直播,搞笑"}, {t:"全民转职", s:"只有我转职了死灵法师", k:"游戏,无敌,爽文"}, {t:"大秦皇子", s:"开局向祖龙摊牌", k:"历史,穿越,系统"}, {t:"我在精神病院", s:"我在精神病院学斩神", k:"都市,异能,热血"}, {t:"赛博修仙", s:"道长，时代变了", k:"赛博朋克,修仙"}, {t:"变成幼龙", s:"重生为龙，收养女帝", k:"异兽,养成,女帝"}, {t:"四合院", s:"四合院：从晋升工程师开始", k:"年代,同人,爽文"}
     ];
 
-    window.renderBookstore = function() {
+        window.renderBookstore = function() {
         document.getElementById('appView').innerHTML = `
         <div id="bs-root">
-            <div class="wx-header" style="background:var(--bs-bg-card); border-bottom:1px solid var(--bs-border); flex-shrink:0;">
+            <div class="wx-header" id="bs-main-header" style="background:var(--bs-bg-card); border-bottom:1px solid var(--bs-border); flex-shrink:0;">
                 <div class="wx-btn" onclick="handleGlobalBack()">‹ 退出</div>
-                <span style="font-weight:bold; font-size:16px;">AI 灵感书城</span>
+                <span style="font-weight:bold; font-size:16px;">灵感书城</span>
                 <div style="width:60px"></div>
             </div>
+
 
             <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
                 <!-- 书城首页 -->
@@ -4069,7 +4054,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                         <div class="search-box"><svg class="bs-icon bs-icon-sm"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" id="bs-search-input" class="search-input" placeholder="输入脑洞，AI写书..." onkeypress="if(event.key==='Enter') window.bs_searchGen()"></div>
                         <button class="bs-btn bs-btn-primary" style="width:40px;height:40px;padding:0;border-radius:50%;" onclick="window.bs_searchGen()"><svg class="bs-icon"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
                     </div>
-                    <div class="banner-card"><div style="font-size:24px;font-weight:800;margin-bottom:5px;">AI 灵感书城</div><div style="font-size:14px;opacity:0.9;">Make Your Stories Alive</div></div>
+                    <div class="banner-card" style="align-items: center; text-align: center;"><div style="font-size:28px;font-weight:900;margin-bottom:6px;letter-spacing:2px;text-shadow: 0 2px 10px rgba(0,0,0,0.1);">灵感书城</div><div style="font-size:13px;opacity:0.9;letter-spacing:1px;font-weight:bold;">Make Your Stories Alive</div></div>
+
                     <div class="section-header"><div class="section-title" style="margin:0;">热门推荐</div><div class="refresh-btn" onclick="window.bs_renderRecs()"><svg class="bs-icon bs-icon-sm"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> 换一批</div></div>
                     <div class="book-grid" id="bs-rec-grid"></div>
                 </div>
@@ -4108,7 +4094,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
 
                 <!-- 弹窗 -->
                 <div id="bs-detail-page" style="position:absolute; inset:0; background:var(--bs-bg-body); z-index:150; display:none; flex-direction:column;">
-                    <div style="padding:15px;"><button style="border:none;background:transparent;color:var(--bs-primary);font-size:16px;font-weight:bold;" onclick="document.getElementById('bs-detail-page').style.display='none'">❮ 返回</button></div>
+                    <div style="padding: max(env(safe-area-inset-top), 15px) 15px 15px;"><button style="border:none;background:transparent;color:var(--bs-primary);font-size:16px;font-weight:bold;" onclick="document.getElementById('bs-detail-page').style.display='none'; document.getElementById('bs-main-header').style.display='flex'">❮ 返回</button></div>
                     <div style="flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; align-items:center;">
                         <div id="bs-d-cover" style="width:140px; height:200px; border-radius:12px; margin-bottom:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; font-size:24px;" class="g-1">AI</div>
                         <h2 id="bs-d-title" style="margin:10px 0; text-align:center;"></h2><div id="bs-d-tags" style="color:var(--bs-primary); font-size:13px; background:var(--bs-primary-light); padding:4px 12px; border-radius:15px; margin-bottom:20px;"></div>
@@ -4136,7 +4122,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     
                     <div class="reader-bar-bottom" id="bs-r-footer">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:5px;"><svg class="bs-icon bs-icon-sm" style="color:var(--bs-primary);"><path d="M12 19l7-7 3 3-7 7-3-3z"></path></svg><select id="bs-style-select" style="border:none; background:transparent; font-size:13px; font-weight:600; color:var(--bs-primary); outline:none;"><option value="">默认风格</option><option value="appearance_focus">📸 极致外貌</option><option value="immersion_slow">🔍 沉浸描写</option><option value="爽文">🔥 热血爽文</option><option value="甜宠">❤️ 细腻甜宠</option></select></div>
+                            <div style="display:flex; align-items:center; gap:5px;"><svg class="bs-icon bs-icon-sm" style="color:var(--bs-primary);"><path d="M12 19l7-7 3 3-7 7-3-3z"></path></svg><select id="bs-style-select" style="border:none; background:transparent; font-size:13px; font-weight:600; color:var(--bs-primary); outline:none;"><option value="">默认风格</option><option value="appearance_focus">极致外貌</option><option value="immersion_slow">沉浸描写</option><option value="爽文">热血爽文</option><option value="甜宠">细腻甜宠</option></select>
+</div>
                             <button class="bs-btn bs-btn-outline" style="padding:6px 12px; height:auto; font-size:12px; border-radius:15px;" onclick="window.bs_toggleNoteDrawer()">设定集</button>
                         </div>
                         <div style="display:flex; gap:10px;"><input id="bs-plot-input" class="bs-input" style="margin:0;" placeholder="输入下章剧情指令..."><button class="bs-btn bs-btn-primary" style="padding:0 20px;" onclick="window.bs_genNext()"><svg class="bs-icon bs-icon-sm"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button></div>
@@ -4190,13 +4177,38 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     window.bs_searchGen = async function(retry=false) {
         const q = document.getElementById('bs-search-input').value || (retry?window.bs_temp.tags:"随机");
         document.getElementById('bs-loader').style.display='flex'; document.getElementById('bs-load-txt').innerText="构思大纲中...";
-        try { const res = await window.bs_apiCall([{role:"user", content:`用户想看“${q}”题材小说。请构思设定。返回JSON:{"title":"书名","tags":"标签","intro":"100字简介"}`}]); try { window.bs_temp = JSON.parse(res.match(/\{[\s\S]*\}/)[0]); } catch { window.bs_temp = {title:q, tags:q, intro:res}; } document.getElementById('bs-d-title').innerText = window.bs_temp.title; document.getElementById('bs-d-tags').innerText = window.bs_temp.tags; document.getElementById('bs-d-intro').innerText = window.bs_temp.intro; document.getElementById('bs-d-cover').className = `g-${Math.floor(Math.random()*9)+1}`; document.getElementById('bs-detail-page').style.display = 'flex'; } catch(e) { alert(e.message); }
+        try { 
+            const res = await window.bs_apiCall([{role:"user", content:`用户想看“${q}”题材小说。请构思设定。
+！！！绝对生死红线：严禁输出 JSON！必须严格使用以下 XML 标签格式输出：
+<title>四个字到十个字的精彩书名</title>
+<tags>三个核心标签，用逗号隔开</tags>
+<intro>一段100字左右的精彩大纲简介（可以在内部随意换行排版）</intro>`}]); 
+            
+            const extract = (tag) => {
+                const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, 'i');
+                const match = res.match(regex);
+                return match ? match[1].trim() : "";
+            };
+
+            window.bs_temp = {
+                title: extract('title') || q,
+                tags: extract('tags') || q,
+                intro: extract('intro') || res.replace(/<[^>]+>/g, '').trim() // 兜底：如果它不写标签，就把整段话当简介
+            };
+
+            document.getElementById('bs-d-title').innerText = window.bs_temp.title; 
+            document.getElementById('bs-d-tags').innerText = window.bs_temp.tags; 
+            document.getElementById('bs-d-intro').innerText = window.bs_temp.intro; 
+            document.getElementById('bs-d-cover').className = `g-${Math.floor(Math.random()*9)+1}`; 
+            document.getElementById('bs-main-header').style.display = 'none';
+            document.getElementById('bs-detail-page').style.display = 'flex'; 
+        } catch(e) { alert(e.message); }
         document.getElementById('bs-loader').style.display='none';
     };
 
     window.bs_confirmBook = function() { const id = Date.now(); const b = {id, title:window.bs_temp.title, tags:window.bs_temp.tags, intro:window.bs_temp.intro, summary:"", note:"", chapters:[], cover:Math.floor(Math.random()*9)+1}; window.bs_books[id] = b; idb.save(b); document.getElementById('bs-detail-page').style.display = 'none'; window.bs_readBook(id); };
 
-    window.bs_readBook = function(id) { window.bs_curId = id; const b = window.bs_books[id]; document.getElementById('bs-r-title').innerText = b.title; document.getElementById('bs-mem-status').innerText = (b.summary||"").length; document.getElementById('bs-book-note').value = b.note || ""; document.getElementById('bs-reader-page').style.display = 'flex'; window.bs_renderContent(); if(b.chapters.length === 0) window.bs_genNext(); };
+    window.bs_readBook = function(id) { window.bs_curId = id; const b = window.bs_books[id]; document.getElementById('bs-r-title').innerText = b.title; document.getElementById('bs-mem-status').innerText = (b.summary||"").length; document.getElementById('bs-book-note').value = b.note || ""; document.getElementById('bs-main-header').style.display = 'none'; document.getElementById('bs-reader-page').style.display = 'flex'; window.bs_renderContent(); if(b.chapters.length === 0) window.bs_genNext(); };
 
     window.bs_genNext = async function() {
         const b = window.bs_books[window.bs_curId]; const plot = document.getElementById('bs-plot-input').value; document.getElementById('bs-plot-input').value=''; const styleVal = document.getElementById('bs-style-select').value; const notePrompt = b.note ? `\n【核心设定】：\n${b.note}\n` : ""; let stylePrompt = "";
@@ -4204,7 +4216,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         let context = b.chapters.length > 0 ? `${b.summary ? `【旧记忆】：\n${b.summary}\n` : ""}\n【上一章】：\n${b.chapters[b.chapters.length-1].content.slice(-2500)}` : "【新书开始】";
         document.getElementById('bs-loader').style.display='flex'; document.getElementById('bs-load-txt').innerText="AI 码字中...";
         try {
-            const res = await window.bs_apiCall([{role:"user", content:`你正在写《${b.title}》。\n简介：${b.intro}\n${notePrompt}\n${context}\n\n指令：写下一章。${plot?"用户剧情:"+plot:""}\n${stylePrompt}\n要求：第一行输出章节名，第二行开始正文。字数1000+。`}]);
+            const res = await window.bs_apiCall([{role:"user", content:`你正在写《${b.title}》。\n简介：${b.intro}\n${notePrompt}\n${context}\n\n指令：写下一章。${plot?"用户剧情:"+plot:""}\n${stylePrompt}\n要求：第一行输出章节名，第二行开始正文。字数1000+。正文请注意排版，除系统面板外，每段话必须有完整的标点符号结尾。`}]);
             const lines = res.split('\n'); let t = lines[0].replace(/^(第.+章) */,'').replace(/\*\*/g,'').trim(); if(!t || t.length>20) t = "新章节"; const c = lines.slice(1).join('\n').trim() || res;
             b.chapters.push({title:t, content:c}); idb.save(b); window.bs_renderContent(b.chapters.length - 1);
             
@@ -4218,7 +4230,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         const b = window.bs_books[window.bs_curId]; 
         const div = document.getElementById('bs-r-content');
         
-        div.innerHTML = b.chapters.map((c,i) => `<div class="chapter-title" id="bs-chap-${i}">${c.title}</div>` + c.content.split('\n').map(p=>p.trim()?`<div style="text-indent:2em;margin-bottom:0;break-inside:avoid">${p.replace(/\*\*/g,'')}</div>`:'').join('')).join('');
+        div.innerHTML = b.chapters.map((c,i) => `<div class="chapter-title" id="bs-chap-${i}">${c.title}</div>` + c.content.split('\n').map(p=>p.trim()?`<div style="text-indent:2em;margin-bottom:10px;">${p.replace(/\*\*/g,'')}</div>`:'').join('')).join('');
         
         setTimeout(() => { 
             const pageW = document.getElementById('bs-reader-page').clientWidth; 
@@ -4269,7 +4281,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         window.bs_updatePagePos(); 
     };
     window.bs_toggleMenu = function() { window.bs_isMenuOpen = !window.bs_isMenuOpen; document.getElementById('bs-r-header').classList.toggle('show'); document.getElementById('bs-r-footer').classList.toggle('show'); };
-    window.bs_closeReader = function() { document.getElementById('bs-reader-page').style.display='none'; window.bs_renderShelf(); };
+    window.bs_closeReader = function() { document.getElementById('bs-reader-page').style.display='none'; document.getElementById('bs-main-header').style.display='flex'; window.bs_renderShelf(); };
     window.bs_reGen = function() { const b=window.bs_books[window.bs_curId]; if(b.chapters.length && confirm("重写本章？")){ b.chapters.pop(); window.bs_renderContent(); setTimeout(window.bs_genNext,500); } };
     
     window.bs_openMask = function(){ const m=document.getElementById('bs-cat-mask'); m.style.display='block'; setTimeout(()=>m.style.display='block',10); };
@@ -4585,23 +4597,6 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         }
 
         if (isProactive) systemInstruction += `\n【指令】开启新话题，主动发消息。`;
-systemInstruction += `\n\n【🎭 HTML小剧场生成能力】
-你可以直接输出原生HTML+CSS代码，系统会原样渲染。当玩家说"来个小游戏""搞个互动""生成小剧场""测试"或剧情适合时，自主生成纯CSS交互卡片。
-
-【技术原理与强制规则】
-1. 使用 <input type="radio" name="唯一名" id="唯一id" checked hidden> + CSS :checked 选择器切换面板内容，完全不依赖JavaScript
-2. ⚠️ name 和 id 必须加随机数后缀（如 med-7291），防止同一聊天里多个小剧场冲突
-3. 最外层容器宽度固定 280px，高度 500-650px，深色背景(#0f0f13)，白色文字
-4. 所有 CSS 类名用独特前缀（如 .xx7-）开头防止污染系统样式
-5. 所有代码必须压缩成一行输出！不能有换行！
-6. input 标签必须写在最外层 div 的直接子级，CSS 用 #id:checked ~ .容器 .面板 来控制显隐
-7. 自由发挥主题：占卜抽签、战斗回合、好感度面板、性格测试、料理选择、约会投票、状态监测……任何你觉得有趣的都行
-8. 内容要丰富！每个面板的正文至少 100 字以上！不要留空白！
-
-【完整骨架参考（你每次必须改变主题、配色、标题和所有内容）】：
-<div class="[前缀]-box" style="width:280px;min-width:280px;height:600px;margin:0 auto;background:#0f0f13;border-radius:12px;overflow:hidden;font-family:sans-serif;color:#eee;box-shadow:0 10px 40px rgba(0,0,0,0.5);border:1px solid #333;box-sizing:border-box;position:relative"><input type="radio" name="[前缀]" id="[前缀]-1" checked hidden><input type="radio" name="[前缀]" id="[前缀]-2" hidden><input type="radio" name="[前缀]" id="[前缀]-3" hidden><div class="[前缀]-ui" style="height:100%;display:flex;flex-direction:column"><div class="[前缀]-head" style="padding:10px;background:#1a1a1f;border-bottom:1px solid #333;text-align:center;font-weight:bold;font-size:14px;color:#ff4757">⚠️ 顶部标题区域</div><div class="[前缀]-tabs" style="display:flex;gap:5px;padding:10px;background:#141418;border-bottom:1px solid #333"><label for="[前缀]-1" class="[前缀]-t1" style="flex:1;text-align:center;padding:8px 0;background:#25252d;border-radius:4px;cursor:pointer;font-size:12px;color:#888;border:1px solid #333">选项A</label><label for="[前缀]-2" class="[前缀]-t2" style="flex:1;text-align:center;padding:8px 0;background:#25252d;border-radius:4px;cursor:pointer;font-size:12px;color:#888;border:1px solid #333">选项B</label><label for="[前缀]-3" class="[前缀]-t3" style="flex:1;text-align:center;padding:8px 0;background:#25252d;border-radius:4px;cursor:pointer;font-size:12px;color:#888;border:1px solid #333">选项C</label></div><div class="[前缀]-body" style="flex:1;position:relative;overflow:hidden"><div class="[前缀]-p1" style="position:absolute;inset:0;padding:15px;overflow-y:auto;display:none;flex-direction:column"><div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#3498db;border-left:3px solid #3498db;padding-left:8px">面板1标题</div><div style="font-size:12px;line-height:1.8;color:#ccc;text-align:justify">面板1详细正文内容...</div></div><div class="[前缀]-p2" style="position:absolute;inset:0;padding:15px;overflow-y:auto;display:none;flex-direction:column"><div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#f1c40f;border-left:3px solid #f1c40f;padding-left:8px">面板2标题</div><div style="font-size:12px;line-height:1.8;color:#ccc;text-align:justify">面板2详细正文内容...</div></div><div class="[前缀]-p3" style="position:absolute;inset:0;padding:15px;overflow-y:auto;display:none;flex-direction:column"><div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#ff4757;border-left:3px solid #ff4757;padding-left:8px">面板3标题</div><div style="font-size:12px;line-height:1.8;color:#ccc;text-align:justify">面板3详细正文内容...</div></div></div></div></div><style>#[前缀]-1:checked~.[前缀]-ui .[前缀]-p1{display:flex}#[前缀]-1:checked~.[前缀]-ui .[前缀]-t1{background:#3498db;color:#fff}#[前缀]-2:checked~.[前缀]-ui .[前缀]-p2{display:flex}#[前缀]-2:checked~.[前缀]-ui .[前缀]-t2{background:#f1c40f;color:#000}#[前缀]-3:checked~.[前缀]-ui .[前缀]-p3{display:flex}#[前缀]-3:checked~.[前缀]-ui .[前缀]-t3{background:#ff4757;color:#fff}</style>
-
-不是每条都生成！只在玩家明确要求或剧情高潮时用。平时正常聊天。`;
 
 
         const messages = [{role: "system", content: systemInstruction}];
@@ -4777,8 +4772,10 @@ systemInstruction += `\n\n【🎭 HTML小剧场生成能力】
 
             let parts = []; 
             if (s.type === 'group') {
-                let cleanText = replyText.replace(/([。？！.?!~～”」]+)\s*([^:：\n]{1,8})[:：]/g, "$1\n$2:");
-                cleanText = cleanText.replace(/([^:：\n]{1,8})[:：]\s*\1[:：]/g, "$1:");
+                let cleanText = replyText.replace(/([。？！.?!~～”"’'」】\]]+)\s*([^:：\n]{1,8})[:：]/g, "$1\n$2:");
+cleanText = cleanText.replace(/([^\n])\s+([^:：\n]{1,8})[:：]/g, "$1\n$2:"); // <- 这行是新加的，专门切断黏连的名字
+cleanText = cleanText.replace(/([^:：\n]{1,8})[:：]\s*\1[:：]/g, "$1:");
+
                 const lines = cleanText.split('\n');
                 let currentSpeaker = s.name; 
                 for(let line of lines) {
@@ -4789,7 +4786,7 @@ systemInstruction += `\n\n【🎭 HTML小剧场生成能力】
                     line = line.replace(/\|\|SPECIAL_BLOCK_(\d+)\|\|/g, (m, p1) => specialBlocks[p1]);
                     
                     // 如果是特殊卡片，不匹配名字冒号，直接发
-                    if (line.includes('[MINIGAME:') || line.includes('[CARD:')) {
+                    if (line.includes('[CARD:')) {
                         pushMsg({side: 'other', type: 'text', content: line, senderName: currentSpeaker});
                         await new Promise(r => setTimeout(r, 600)); 
                         continue;
@@ -5197,7 +5194,7 @@ window.renderMomentImgPreviews = function() {
                 <hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">
                 <div class="set-row"><label class="set-label" style="color:#1565C0;">全局正面提示词</label><textarea class="set-input" id="imgPosPrompt" style="min-height:60px; font-size:12px;">${window.imgSettings.posPrompt || defaultPos}</textarea></div>
                 <div class="set-row"><label class="set-label" style="color:#D32F2F;">全局负面提示词</label><textarea class="set-input" id="imgNegPrompt" style="min-height:40px; font-size:12px;">${window.imgSettings.negPrompt || defaultNeg}</textarea></div>
-                <button id="btnTestImg" class="set-btn" style="width:100%; margin-top:10px; background:#E3F2FD; color:#1565C0;" onclick="window.testImgGen()">🖼️ 测试画风</button>
+                <button id="btnTestImg" class="set-btn" style="width:100%; margin-top:10px; background:#E3F2FD; color:#1565C0;" onclick="window.testImgGen()">测试画风</button>
                 <div id="testImgResult" style="margin-top:10px; text-align:center; display:none;"><div id="testImgStatus" style="font-size:12px; margin-bottom:5px;"></div><img id="testImgPreview" src="" style="max-width:100%; max-height:200px; border-radius:8px; display:none;" onclick="window.downloadImage(this.src)"></div>
             </div>
 
@@ -5248,7 +5245,7 @@ window.renderMomentImgPreviews = function() {
                     </label>
                     <input type="range" id="ttsTempInput" min="0.1" max="2.0" step="0.1" value="${window.ttsSettings.temp || 1.0}" style="width: 100%; accent-color: #5E35B1;" oninput="document.getElementById('ttsTempLabel').innerText = this.value; window.saveAllEngines();">
                 </div>
-                <button id="btnTestTTS" class="set-btn" style="width:100%; margin-top:10px; background:#EDE7F6; color:#512DA8;" onclick="window.testTTSGen()">🎙️ 试听全局声线</button>
+                <button id="btnTestTTS" class="set-btn" style="width:100%; margin-top:10px; background:#EDE7F6; color:#512DA8;" onclick="window.testTTSGen()">试听全局声线</button>
                 <div id="testTtsStatus" style="margin-top:10px; text-align:center; font-size:12px; color:#666;"></div>
             </div>
 
@@ -5317,7 +5314,7 @@ window.renderMomentImgPreviews = function() {
         key = (key || '').trim();
 
         // === 💎 MiniMax 专属通道 ===
-        if (url.includes('minimax') || model.includes('speech-01')) {
+        if (url.includes('minimax') || (model && model.includes('speech-01'))) {
             if (!key) throw new Error("MiniMax 必须填写密钥！");
             let mmUrl = 'https://api.minimax.chat/v1/t2a_v2';
             const mmPayload = { 
@@ -5363,10 +5360,10 @@ window.renderMomentImgPreviews = function() {
         const url = document.getElementById('imgUrl').value.trim(); const key = document.getElementById('imgKey').value.trim(); const model = document.getElementById('imgModelInput').value.trim(); const size = document.getElementById('imgSizeSel').value; const posPrompt = document.getElementById('imgPosPrompt').value.trim(); const negPrompt = document.getElementById('imgNegPrompt').value.trim();
         if(!key) return alert("没填密钥！");
         const btn = document.getElementById('btnTestImg'); const resBox = document.getElementById('testImgResult'); const status = document.getElementById('testImgStatus'); const preview = document.getElementById('testImgPreview');
-        if (btn) { btn.innerHTML = '⏳ 画图中...'; btn.disabled = true; }
-        resBox.style.display = 'block'; preview.style.display = 'none'; status.innerHTML = `📡 正在请求...`;
+        if (btn) { btn.innerHTML = '画图中...'; btn.disabled = true; }
+        resBox.style.display = 'block'; preview.style.display = 'none'; status.innerHTML = `正在请求...`;
         try { const imgData = await window.coreFetchImage(url, key, model, size, posPrompt, negPrompt, status); status.innerHTML = '<span style="color:#2E7D32;font-weight:bold;">✅ 出图啦！点击可下载！</span>'; preview.src = imgData; preview.style.display = 'block'; window.saveAllEngines(); } 
-        catch (e) { status.innerHTML = `<span style="color:#D32F2F;">❌ 失败：${e.message}</span>`; } finally { if (btn) { btn.innerHTML = '🖼️ 测试画风'; btn.disabled = false; } }
+        catch (e) { status.innerHTML = `<span style="color:#D32F2F;">❌ 失败：${e.message}</span>`; } finally { if (btn) { btn.innerHTML = '测试画风'; btn.disabled = false; } }
     };
     // === 自动获取音色列表 ===
     window.fetchTTSVoices = async function() {
@@ -5502,8 +5499,8 @@ window.renderMomentImgPreviews = function() {
         
         const btn = document.getElementById('btnTestTTS'); 
         const status = document.getElementById('testTtsStatus');
-        if (btn) { btn.innerHTML = '⏳ 合成中...'; btn.disabled = true; } 
-        status.innerHTML = '⏳ 正在向服务器请求语音...';
+        if (btn) { btn.innerHTML = '合成中...'; btn.disabled = true; } 
+        status.innerHTML = '正在向服务器请求语音...';
         
         try {
             const testText = "呵，终于想起我了？乖乖等着，我马上过去找你。";
@@ -5524,7 +5521,7 @@ window.renderMomentImgPreviews = function() {
         } catch (e) { 
             status.innerHTML = `<span style="color:#D32F2F;">❌ 失败：${e.message}</span>`; 
         } finally { 
-            if (btn) { btn.innerHTML = '🎙️ 试听全局声线'; btn.disabled = false; } 
+            if (btn) { btn.innerHTML = '试听全局声线'; btn.disabled = false; } 
         }
     };
 
@@ -7717,7 +7714,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const commentsContext = p.comments.slice(-10).map((c, i) => `[${p.comments.length - 10 + i + 1}楼] ${c.author} ${c.replyTo ? `(回复 @${c.replyTo})` : ''} : ${c.content}`).join('\n');
 
         const btn = document.querySelector('.f-comments-title .forum-btn-ai');
-        btn.innerText = '⏳ 水军疯狂输出中...';
+        btn.innerText = '水军疯狂输出中...';
         btn.style.pointerEvents = 'none';
 
         const aiPrompt = `你现在是论坛神仙打架模拟器。请生成 3 到 5 条新的评论！
@@ -7838,12 +7835,12 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 <div class="f-cell"><div class="f-label">主角A</div><div class="f-cell-wrap"><select class="f-select" id="f-charA">${charOptions}</select></div></div>
                 <div class="f-cell"><div class="f-label">主角B</div><div class="f-cell-wrap"><select class="f-select" id="f-charB">${charOptions}</select></div></div>
                 <div class="f-cell"><div class="f-label">我的马甲</div><div class="f-cell-wrap"><select class="f-select" id="f-persona">${personaOptions}</select></div></div>
-                <div class="f-cell"><div class="f-label">文风/心情</div><div class="f-cell-wrap"><select class="f-select" id="f-style"><option value="正常/原著风">正常/原著风</option><option value="甜宠/开心">🍬 甜宠/开心</option><option value="虐心/抑郁">🔪 虐心/抑郁</option><option value="沙雕/吐槽">🤣 沙雕/吐槽</option><option value="疯批/发泄">🔥 疯批/发泄</option></select></div></div>
+                <div class="f-cell"><div class="f-label">文风/心情</div><div class="f-cell-wrap"><select class="f-select" id="f-style"><option value="正常/原著风">正常/原著风</option><option value="甜宠/开心">甜宠/开心</option><option value="虐心/抑郁">🔪 虐心/抑郁</option><option value="沙雕/吐槽">沙雕/吐槽</option><option value="疯批/发泄">疯批/发泄</option></select></div></div>
             </div>
             <div class="f-cell-group" id="ai-wb-group"><div class="f-cell"><div class="f-label">引入世界书 (可选)</div><div class="f-cell-wrap"><select class="f-select" id="f-wb">${wbOptions}</select></div></div></div>
             <div class="f-cell-group">
-                <div class="f-cell"><div class="f-label" style="color:#007AFF;font-weight:bold;">🎨 自动生成配图</div><div class="f-cell-wrap"><input type="checkbox" id="f-need-img" style="width:20px;height:20px;accent-color:#007AFF;"></div></div>
-                <div class="f-cell"><div class="f-label" style="color:#FF9800;font-weight:bold;">🎭 匿名发布</div><div class="f-cell-wrap"><input type="checkbox" id="f-is-anonymous" style="width:20px;height:20px;accent-color:#FF9800;"></div></div>
+                <div class="f-cell"><div class="f-label" style="color:#007AFF;font-weight:bold;">自动生成配图</div><div class="f-cell-wrap"><input type="checkbox" id="f-need-img" style="width:20px;height:20px;accent-color:#007AFF;"></div></div>
+                <div class="f-cell"><div class="f-label" style="color:#FF9800;font-weight:bold;">匿名发布</div><div class="f-cell-wrap"><input type="checkbox" id="f-is-anonymous" style="width:20px;height:20px;accent-color:#FF9800;"></div></div>
             </div>
             <div class="f-textarea-wrap"><textarea class="f-textarea" id="f-prompt" placeholder="输入你想发的内容、梗或者标题..."></textarea></div>
         `;
@@ -7996,7 +7993,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         let targetTag = window.forumCurrentTab;
         // 修复Bug：只在“全部”板块时随机盲抽，如果在其他指定板块，就严格发在当前板块！
         if(targetTag === '全部') {
-            const randomTags = ['同人粮仓', '美图大赏', '闲聊灌水', '吃瓜专区', '🌈二次元'];
+            const randomTags = ['同人粮仓', '美图大赏', '闲聊灌水', '吃瓜专区', '二次元'];
             targetTag = randomTags[Math.floor(Math.random() * randomTags.length)];
         }
 
@@ -8251,7 +8248,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         let tempMsgId = Date.now().toString();
         // pushMsg 会自动赋予当前正确的 mode (线上 chat 还是线下 novel)
-        window.pushMsg({targetSessionId: session.id, id: tempMsgId, side: 'other', type: 'text', content: '( 📸 正在为你生成绝美CG画面... )', senderName: sName});
+        window.pushMsg({targetSessionId: session.id, id: tempMsgId, side: 'other', type: 'text', content: '(正在为你生成绝美CG画面... )', senderName: sName});
 
         try {
             const imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, finalPrompt, baseNeg, null);
@@ -8279,7 +8276,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             let targetMode = typeof currentMode !== 'undefined' ? currentMode : 'chat';
             if (idx !== -1 && session.history[idx].mode) targetMode = session.history[idx].mode;
             
-            if (idx !== -1) session.history[idx] = {id: tempMsgId, side: 'other', type: 'text', content: `( 💔 画面生成失败: ${errorHint} )`, senderName: sName, mode: targetMode};
+            if (idx !== -1) session.history[idx] = {id: tempMsgId, side: 'other', type: 'text', content: `(画面生成失败: ${errorHint} )`, senderName: sName, mode: targetMode};
             
             if (typeof window.saveSessions === 'function') window.saveSessions();
             if (currentSessionId === session.id) {
@@ -8956,7 +8953,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             let specialBlocks = [];
             // 注意：这里的正则去掉了 VOICE，因为上面已经提前把它抽走了！
             // 🛡️ 修复：把“译”加入无敌护盾，绝不让它被换行或句号切碎！
-            replyText = replyText.replace(/\[(MINIGAME|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
+            replyText = replyText.replace(/\[(CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
                 if (!match.endsWith(']')) match += ']';
                 specialBlocks.push(match); return "\n||SPECIAL_BLOCK_" + (specialBlocks.length - 1) + "||\n";
             });
@@ -8965,8 +8962,34 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
                 rawLines = [replyText]; 
             } else if (s.type === 'group') {
-                let cleanText = replyText.replace(/([。？！.?!~～”"’'」】\]]+)\s*([^:：\n]{1,8})[:：]/g, "$1\n$2:");
+                let cleanText = replyText;
+                
+                // 🗡️ 收集当前群里所有角色的真名
+                let groupNames = (s.members || []).map(mid => {
+                    let member = (window.sessions || []).find(x => x.id === mid);
+                    return member ? member.name : null;
+                }).filter(Boolean);
+                
+                let myNameForGroup = window.mySettings?.name || "我";
+                if (s.userPersonaId !== undefined && s.userPersonaId !== null && s.userPersonaId !== "") {
+                    try {
+                        let ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
+                        if (ps[s.userPersonaId]) myNameForGroup = ps[s.userPersonaId].name;
+                    } catch(e){}
+                }
+                groupNames.push(myNameForGroup, "我", "系统");
+
+                // 🗡️ 核弹级精准切分：只要前面不是换行，但紧紧连着群员名字+冒号，直接一刀劈开！
+                groupNames.forEach(gn => {
+                    let safeName = gn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    let reg = new RegExp(`([^\\n])\\s*(${safeName})[:：]`, 'g');
+                    cleanText = cleanText.replace(reg, "$1\n$2:");
+                });
+
+                // 🗡️ 兜底清洗，处理未登记名字的散兵游勇或标点粘连
+                cleanText = cleanText.replace(/([。？！.?!~～”"’'」】\]]+)\s*([^:：\n]{1,8})[:：]/g, "$1\n$2:");
                 cleanText = cleanText.replace(/([^:：\n]{1,8})[:：]\s*\1[:：]/g, "$1:");
+
                 rawLines = cleanText.split('\n');
             } else {
                 let clean = replyText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/<br>/gi, '\n');
@@ -10673,6 +10696,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             .cls-msg.teacher .cls-bubble { background: #F0F8FF; border: 1px solid #BBDEFB; color: #1565C0; }
 
             .class-input-bar { display: flex; gap: 10px; align-items: center; padding: 10px 15px calc(10px + env(safe-area-inset-bottom)); background: #FAFAF7; border-top: 1px dashed #D2DCD7; }
+.class-input { flex: 1; height: 44px; border: 2px solid #EAE6DF; border-radius: 22px; padding: 0 15px; font-size: 15px; outline: none; background: #fff; color: #33443C; transition: 0.2s; min-width: 0; }
+.class-input:focus { border-color: #517163; }
+
             .class-send-btn { width: 44px; height: 44px; border-radius: 50%; background: #517163; color: #fff; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
             .cls-voice-btn { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #BBDEFB; color: #1565C0; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; margin-top: 8px; box-shadow: 0 2px 5px rgba(21,101,192,0.1); transition: 0.2s; }
             .cls-voice-btn:active { transform: scale(0.95); }
@@ -11011,16 +11037,24 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         list.innerHTML = window.customTutors.map((t, i) => {
             const isOwned = ownedIds.includes(t.id);
+            
+            // 🌟 原生同步通讯录里的数据
+            let dName = t.name, dAvt = t.avatar;
+            if(isOwned) {
+                let sess = window.sessions.find(x => x.tutorId === t.id);
+                if(sess) { dName = sess.name || dName; dAvt = sess.avatar || dAvt; }
+            }
+
             const btnHtml = isOwned 
                 ? `<button class="btn-hired">已在通讯录</button>` 
                 : `<button class="btn-hire" onclick="window.hireFamousTutor('${t.id}')">聘请 ¥${t.price}</button>`;
 
             return `
             <div class="tutor-card">
-                <div class="tutor-avt-wrap"><img class="tutor-avt" src="${t.avatar}"></div>
+                <div class="tutor-avt-wrap"><img class="tutor-avt" src="${dAvt}"></div>
                 <div class="tutor-info">
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                        <span class="tutor-name">${t.name}</span>
+                        <span class="tutor-name">${dName}</span>
                         <span class="tutor-tag">${t.subject}</span>
                     </div>
                     <div class="tutor-desc">${t.bio || t.prompt}</div>
@@ -11043,14 +11077,15 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const newSession = {
             id: Date.now().toString(), tutorId: t.id, isTutor: true, subject: t.subject, hourlyRate: t.price, expireTime: Date.now() + (60 * 60 * 1000), 
             type: 'single', name: t.name, avatar: t.avatar,
+            userPersonaId: window.mySettings?.activePersonaId || null,
             prompt: `【角色设定】：${t.prompt}\n【教学规则】：你现在是玩家花钱聘请的私教。请时刻保持你的人设解答问题！`,
             history: [{sys: `你已成功支付 ¥${t.price} 聘请 ${t.name} 为专属私教。\n当前课时剩余：60 分钟。`}]
         };
 
         window.sessions.push(newSession);
-        try { localStorage.setItem('panda_sessions', JSON.stringify(window.sessions)); } catch(e){}
+        if (typeof window.saveSessions === 'function') window.saveSessions(); else localStorage.setItem('panda_sessions', JSON.stringify(window.sessions));
         window.renderTutors();
-        alert(`🎉 聘请成功！【${t.name}】已加入通讯录。`);
+        alert(`聘请成功！【${t.name}】已加入通讯录。`);
     };
 
     window.std_openGenTutor = async function() {
@@ -11082,12 +11117,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     window.class_openSetup = function() {
         if (!window.customTutors || window.customTutors.length === 0) return alert("还没有名师入驻哦！");
         const tList = document.getElementById('classTutorList');
-        tList.innerHTML = window.customTutors.map((t, idx) => `
+        tList.innerHTML = window.customTutors.map((t, idx) => {
+            // 🌟 选课也同步通讯录
+            let dName = t.name, dAvt = t.avatar;
+            let sess = (window.sessions||[]).find(x => x.tutorId === t.id);
+            if(sess) { dName = sess.name || dName; dAvt = sess.avatar || dAvt; }
+            return `
             <div style="display:flex; flex-direction:column; align-items:center; cursor:pointer;" onclick="window.class_selectTutor(${idx})">
-                <img id="cls-tutor-${idx}" src="${t.avatar}" style="width:56px; height:56px; border-radius:16px; border:3px solid ${idx === 0 ? '#517163' : 'transparent'}; object-fit:cover;">
-                <div style="font-size:11px; font-weight:bold; color:#33443C; margin-top:6px; max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.name}</div>
+                <img id="cls-tutor-${idx}" src="${dAvt}" style="width:56px; height:56px; border-radius:16px; border:3px solid ${idx === 0 ? '#517163' : 'transparent'}; object-fit:cover;">
+                <div style="font-size:11px; font-weight:bold; color:#33443C; margin-top:6px; max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${dName}</div>
             </div>
-        `).join('');
+        `}).join('');
         window.classSelectedTutorIdx = 0;
         document.getElementById('classSetupModal').classList.add('active');
         setTimeout(() => document.getElementById('classSetupInner').style.transform = 'translateY(0)', 10);
@@ -11122,7 +11162,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         window.closeClassSetup();
         
-        document.getElementById('classRoomTitle').innerText = `${teacher.name} 的公开课`;
+                let dName = teacher.name;
+        let sess = (window.sessions||[]).find(x => x.tutorId === teacher.id);
+        if(sess) dName = sess.name || dName;
+        document.getElementById('classRoomTitle').innerText = `${dName} 的公开课`;
+
         document.getElementById('classBoardText').innerText = "等待老师书写板书...";
         document.getElementById('classChatLog').innerHTML = `<div style="text-align:center; color:#B4C6BE; font-size:11px; margin-top:10px; font-weight:bold;">- 铃声响起，同学们已落座 -</div>`;
         document.getElementById('stdClassOverlay').classList.add('active');
@@ -11134,7 +11178,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
         if(!api.key) return alert("请先去设置配置 API Key！");
 
-        const t = window.classState.teacher;
+                const t = window.classState.teacher;
+        let dName = t.name, dAvt = t.avatar;
+        let sess = (window.sessions||[]).find(x => x.tutorId === t.id);
+        if(sess) { dName = sess.name || dName; dAvt = sess.avatar || dAvt; }
+
         const mates = window.classState.classmates;
         let matesStr = mates.length > 0 ? mates.map(c => `[${c.name}]: ${c.prompt || '普通学生'}`).join('\n') : '几个普通的旁听学生';
         let myName = window.mySettings?.name || "我";
@@ -11221,9 +11269,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 let tAction = result.teacher_action ? `<div style="font-size:12px; color:#7A8F85; margin-bottom:6px; font-style:italic;">(${result.teacher_action})</div>` : '';
                 log.insertAdjacentHTML('beforeend', `
                     <div class="cls-msg teacher">
-                        <img class="cls-avatar" src="${t.avatar}" onerror="this.style.background='#eee'">
+                        <img class="cls-avatar" src="${dAvt}" onerror="this.style.background='#eee'">
                         <div class="cls-content">
-                            <div class="cls-name">🧑‍🏫 ${t.name} (老师)</div>
+                            <div class="cls-name">🧑‍🏫 ${dName} (老师)</div>
                             <div class="cls-bubble">
                                 ${tAction}
                                 <div class="cls-voice-btn" onclick="window.class_playVoice(this, '${result.teacher_voice.replace(/'/g, "\\'")}')">
@@ -11304,6 +11352,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         let myName = window.mySettings?.name || "我";
         let myAvatar = window.mySettings?.avatar || "https://api.dicebear.com/7.x/initials/svg?seed=Me";
+        
+        if (window.mySettings?.activePersonaId !== undefined && window.mySettings?.activePersonaId !== null) {
+            try {
+                let ps = JSON.parse(localStorage.getItem('panda_persona') || '[]');
+                let p = ps[window.mySettings.activePersonaId];
+                if (p) {
+                    myName = p.name || myName;
+                    myAvatar = p.avatar || myAvatar;
+                }
+            } catch(e) {}
+        }
 
         const log = document.getElementById('classChatLog');
         log.insertAdjacentHTML('beforeend', `
@@ -11780,12 +11839,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         if(!window.mySettings) window.mySettings = JSON.parse(localStorage.getItem('panda_me')||'{}');
         const ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
         
-        let html = `
-            <div class="cc-persona-item ${!window.mySettings.activePersonaId ? 'active' : ''}" onclick="window.ccSwitchPersona(null)">
-                <img class="cc-persona-avt" src="${window.mySettings.originalAvatar || window.mySettings.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Me'}">
-                <div style="font-size:10px; font-weight:bold; color:var(--text-dark);">本我</div>
-            </div>
-        `;
+        let html = ''; // 已彻底隐藏“本我”
 
         html += ps.map((p, idx) => `
             <div class="cc-persona-item ${window.mySettings.activePersonaId === String(idx) ? 'active' : ''}" onclick="window.ccSwitchPersona('${idx}', '${p.name}', '${p.avatar}')">
@@ -12315,14 +12369,13 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 【任务】：
 1. 提取出一个高光时刻，以你的第一人称写一篇短日记（正文）。
 2. 假装你偷偷看了玩家排版的手账，在旁边用笔写下了一句简短的“傲娇或深情的手写批注”。
-必须严格返回 JSON 格式：
-{
-  "title": "四个字/六个字的文艺标题",
-    "content": "日记正文，约 100-150 字（警告：绝对不允许按回车键换行！如果需要分段请写 \\n ）",
 
-  "emoji": "代表心情的一个Emoji",
-  "ai_comment": "你留在手账角落的一句简短吐槽/情话批注（20字内）"
-}`;
+！！！【格式生死线】！！！
+绝对不要输出 JSON！请严格使用以下标签输出，你可以在正文里随意换行排版、使用引号，绝不限制：
+<title>四个字/六个字的文艺标题</title>
+<content>日记正文，约 100-150 字</content>
+<emoji>代表心情的一个Emoji（如 ✨ 或 💢）</emoji>
+<comment>你留在手账角落的一句简短吐槽/情话批注（20字内）</comment>`;
 
         try {
             let endpoint = api.url.trim().replace(/\/+$/, '');
@@ -12334,7 +12387,23 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 body: JSON.stringify({ model: api.model, messages: [{role:'user', content: prompt}], temperature: 0.9 })
             });
             const data = await res.json();
-            const result = safeExtractJSON(data.choices[0].message.content);
+            
+            // 无敌文本解析器：无视一切格式错乱
+            let rawText = data.choices[0].message.content;
+            const extract = (tag) => {
+                const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, 'i');
+                const match = rawText.match(regex);
+                return match ? match[1].trim() : "";
+            };
+
+            const result = {
+                title: extract('title') || "羁绊记忆",
+                content: extract('content') || rawText.replace(/<[^>]+>/g, '').trim(), // 兜底：如果它连标签都不写，直接把整段话拿来当正文
+                emoji: extract('emoji') || "✨",
+                ai_comment: extract('comment') || ""
+            };
+            
+            if (!result.content) throw new Error("大模型什么都没写");
 
             if(!s.journals) s.journals = [];
             s.journals.push({
@@ -12665,14 +12734,14 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 
                 <div class="ts-body">
                     <div class="ts-card">
-                        <div class="ts-card-title">🖼️ 全局壁纸</div>
+                        <div class="ts-card-title">全局壁纸</div>
                         <div class="ts-row" onclick="document.getElementById('tsDesktopBgIn').click()"><span class="ts-label">桌面背景</span><div class="ts-val">${window.themeSettings.desktopBg?'已设':'默认'} ›</div></div>
                         <div class="ts-row" onclick="document.getElementById('tsChatBgIn').click()"><span class="ts-label">聊天全局背景</span><div class="ts-val">${window.themeSettings.chatGlobalBg?'已设':'默认'} ›</div></div>
                         <div class="ts-row" onclick="document.getElementById('tsLockBgIn').click()"><span class="ts-label">锁屏壁纸</span><div class="ts-val">${window.themeSettings.lockBg?'已设':'默认'} ›</div></div>
                     </div>
 
                     <div class="ts-card">
-                        <div class="ts-card-title">🎨 基础颜色与图片气泡</div>
+                        <div class="ts-card-title">基础颜色与图片气泡</div>
                         <div class="ts-row"><span class="ts-label">我的底色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeBg.length===7 ? window.themeSettings.bubbleMeBg : '#95EC69'}" onchange="window.updateThemeValue('bubbleMeBg', this.value)"></div>
                         <div class="ts-row"><span class="ts-label">我的文字颜色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeText.length===7 ? window.themeSettings.bubbleMeText : '#000000'}" onchange="window.updateThemeValue('bubbleMeText', this.value)"></div>
                         <div class="ts-row" onclick="document.getElementById('tsBubbleMeImgIn').click()"><span class="ts-label">我的图片气泡 (.9拉伸)</span><div class="ts-val">${window.themeSettings.bubbleMeImg?'已设':'未设'} ›</div></div>
@@ -12734,7 +12803,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         const btn = document.getElementById('aiGenFontBtn');
         const oldText = btn.innerText;
-        btn.innerText = "⏳ 正在寻找支持中文的神仙字体...";
+        btn.innerText = "正在寻找支持中文的神仙字体...";
         btn.style.pointerEvents = "none";
 
         const promptText = `你是一个UI设计师。用户需求：“${req}”。
@@ -12806,7 +12875,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     };
 
     window.nuclearResetTheme = function() {
-        if(confirm("🚨 这将清空所有壁纸、自定义颜色和 AI 生成的特效代码，恢复系统出厂 UI！确定吗？")) {
+        if(confirm("这将清空所有壁纸、自定义颜色和 AI 生成的特效代码，恢复系统出厂 UI！确定吗？")) {
             window.themeSettings = { ...defaultTheme };
             localStorage.setItem('panda_theme_settings', JSON.stringify(window.themeSettings));
             const styleEl = document.getElementById('panda-nuclear-theme');
@@ -12915,7 +12984,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             const _rawFetch = window.fetch;
             window.fetch = async function(url, options) {
                 const res = await _rawFetch(url, options);
-                if (url.includes('chat/completions') && options.body && options.body.includes('写下一篇手账日记')) {
+                if (url.includes('chat/completions') && options.body && options.body.includes('提取出一个高光时刻')) {
                     const clone = res.clone();
                     try {
                         const data = await clone.json();
@@ -13796,7 +13865,7 @@ id="petUpdateBtn">🔄 更新扩充灵魂语库</button>
 
         const btn = document.getElementById('petUpdateBtn');
         const oldTxt = btn.innerText;
-        btn.innerText = "⏳ 正在狂暴写入海量灵魂代码...";
+        btn.innerText = "正在狂暴写入海量灵魂代码...";
         btn.style.pointerEvents = "none";
 
         // 🔥 强迫 AI 输出 20+ 条，并且用最严厉的语气禁止它加编号前缀
@@ -17544,16 +17613,15 @@ ${npcListStr}
     }
 
        // 2. 抢救 AI 生成气泡特效 (物理防爆版：直接提取纯CSS)
-    if (window.autoGenBubbleCss) {
-        window.autoGenBubbleCss = async function() {
-            const req = prompt("请描述你想要的气泡样式？\n(例如：赛博朋克霓虹发光 / 梦幻粉色渐变带阴影)");
+    window.autoGenBubbleCss = async function() {
+        const req = prompt("请描述你想要的气泡样式？\n(例如：赛博朋克霓虹发光 / 梦幻粉色渐变带阴影)");
             if(!req) return;
             const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
             if(!api.key) return alert("请先配置 API Key！");
             
             const btn = document.getElementById('aiGenBubbleBtn');
             const oldText = btn ? btn.innerText : '';
-            if(btn) { btn.innerText = "⏳ AI 正在爆肝敲代码..."; btn.style.pointerEvents = "none"; }
+            if(btn) { btn.innerText = "AI 正在爆肝敲代码..."; btn.style.pointerEvents = "none"; }
             
             const promptText = `编写聊天气泡CSS。“${req}”。\n【重要】你只需用这2个极其简短的选择器来写发光、阴影、渐变特效：\nbody .ts-me-bubble { /* 我发的消息 */ }\nbody .ts-other-bubble { /* 对方发的消息 */ }\n要求：所有CSS属性后必须加上 !important。
             【极其重要】：直接输出纯 CSS 代码！绝对不要输出其他任何解释文字或代码块！`;
@@ -17572,26 +17640,24 @@ ${npcListStr}
                 const box = document.getElementById('themeBubbleCss');
                 if(box) box.value = cssCode;
                 window.updateThemeValue('customBubbleCSS', cssCode); 
-                alert("✨ 气泡特效已生成并自动生效！快退出看看吧！");
+                alert("气泡特效已生成并自动生效！快退出看看吧！");
             } catch(e) { 
                 alert("AI 工程师罢工了，请重试！(" + e.message + ")"); 
             } finally { 
                 if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } 
             }
         };
-    }
 
     // 3. 抢救 AI 生成全局主题 (无敌真身版：彻底抛弃JSON，绝不报错)
-    if (window.autoGenGlobalCss) {
-        window.autoGenGlobalCss = async function() {
-            const req = prompt("请描述你想要的全系统界面样式？\n(例如：把系统所有App、面板、输入框和按钮全部变成极光紫渐变透明风格)");
+    window.autoGenGlobalCss = async function() {
+        const req = prompt("请描述你想要的全系统界面样式？\n(例如：把系统所有App、面板、输入框和按钮全部变成极光紫渐变透明风格)");
             if(!req) return;
             const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
             if(!api.key) return alert("请先配置 API Key！");
 
             const btn = document.getElementById('aiGenGlobalBtn');
             const oldText = btn ? btn.innerText : '';
-            if(btn) { btn.innerText = "⏳ AI 正在深度改造全系统..."; btn.style.pointerEvents = "none"; }
+            if(btn) { btn.innerText = "AI 正在深度改造全系统..."; btn.style.pointerEvents = "none"; }
 
             const promptText = `你是一位顶级的 OS 操作系统 UI/UX 架构师。用户要求：“${req}”。
             请对以下全系统的 CSS 选择器进行统一的美化覆盖：
@@ -17636,7 +17702,7 @@ ${npcListStr}
                 if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } 
             }
         };
-    }
+    
 
 
     // 4. 重铸去绿漆引擎：解除死锁，暴力洗刷！
@@ -17747,9 +17813,13 @@ ${npcListStr}
             if (s && s.bondNickname) {
                 sysContent += `\n\n👑【羁绊最高特权：专属称呼】：玩家已经为你设定了专属称呼【${s.bondNickname}】！从现在开始，你对玩家的称呼必须全部替换为“${s.bondNickname}”！绝对不允许再叫“你”或者玩家本名！这是不可违背的法则！`;
             }
-                        // 🌍 多语言自动字幕法则 (免二次请求，0消耗翻译)
-            sysContent += `\n\n🌍【自动字幕法则】：如果你在回复中使用了外语（如英语、日语等），请务必在整段话的最后另起一行加上 \`[译: 对应的中文翻译]\`，系统会自动提取为玩家显示中文字幕！
+                     
+====
+            // 🌍 多语言自动字幕法则 (免二次请求，0消耗翻译)
+            sysContent += `\n\n🌍【自动字幕法则】：如果你在回复中使用了外语（如英语、日语等），请务必在【该句外语的末尾立刻紧跟（千万不要换行，也绝不能放到整段最后）】 \`[译: 对应的中文翻译]\`，系统会自动为玩家显示中文字幕！
 🚨【防复读红线】：如果你使用了 \`[VOICE: 外语原句]\` 标签来发语音，外语原句【只准】写在 VOICE 标签里！绝对、绝对不准在普通的文字对话中再把英语重复打一遍！`;
+>>>>
+
 
             // 💥💥💥 终极记忆修复：无缝衔接线上与线下，绝不失忆！ 💥💥💥
 
@@ -20386,12 +20456,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         if(!window.mySettings) window.mySettings = JSON.parse(localStorage.getItem('panda_me')||'{}');
         const ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
         
-        let html = `
-            <div class="cc-persona-item ${!window.mySettings.activePersonaId ? 'active' : ''}" onclick="window.ccSwitchPersona(null)">
-                <img class="cc-persona-avt" src="${window.mySettings.originalAvatar || window.mySettings.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Me'}">
-                <div style="font-size:10px; font-weight:bold; color:var(--text-dark);">本我</div>
-            </div>
-        `;
+        let html = ''; // 已彻底隐藏“本我”
 
         // 💥 修复核心：onclick 只传 idx 数字，绝不传巨型图片字符串！
         html += ps.map((p, idx) => `
@@ -20499,26 +20564,32 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         };
     }
 
-    // 重写注入灵魂结束后的保存动作
-    const _origUpdateSoul = window.pet_updateSoul;
-    if (_origUpdateSoul) {
-        window.pet_updateSoul = async function(manualCall) {
-            // 拦截底层的 localStorage.setItem，强行导流到新版存储
-            const _origSetItem = localStorage.setItem;
-            localStorage.setItem = function(key, val) {
-                if (key === 'panda_pet_v18') {
-                    savePetMulti(); // 强制存入多马甲字典
-                } else {
-                    _origSetItem.apply(this, arguments);
-                }
+           // 重写注入灵魂结束后的保存动作
+        const _origUpdateSoul = window.pet_updateSoul;
+        if (_origUpdateSoul) {
+            window.pet_updateSoul = async function(manualCall) {
+                // 拦截底层的 localStorage.setItem，强行导流到新版存储
+                const _origSetItem = localStorage.setItem;
+                localStorage.setItem = function(key, val) {
+                    if (key === 'panda_pet_v18') {
+                        // 🚨 修复死循环爆炸：直接用底层原生方法存，别调外部函数套娃了！
+                        let pid = window.mySettings?.activePersonaId || 'default_me';
+                        let allPets = JSON.parse(localStorage.getItem('panda_pet_multi_v18') || '{}');
+                        allPets[pid] = window.petDataV2;
+                        _origSetItem.call(localStorage, 'panda_pet_multi_v18', JSON.stringify(allPets));
+                        _origSetItem.call(localStorage, 'panda_pet_v18', JSON.stringify(window.petDataV2));
+                    } else {
+                        _origSetItem.apply(this, arguments);
+                    }
+                };
+
+                await _origUpdateSoul.apply(this, arguments);
+
+                // 恢复正常的 localStorage.setItem
+                localStorage.setItem = _origSetItem;
             };
-            
-            await _origUpdateSoul.apply(this, arguments);
-            
-            // 恢复正常的 localStorage.setItem
-            localStorage.setItem = _origSetItem;
-        };
-    }
+        }
+
 
     // 页面加载完成后，立刻为当前马甲读取专属桌宠
     setTimeout(() => {
