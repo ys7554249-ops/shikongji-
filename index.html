@@ -757,6 +757,40 @@ button, input, textarea, select, label, a,
     max-width: calc(100vw - 40px) !important;
     box-sizing: border-box !important;
 }
+/* ================== 📱 灵动岛与安卓多端自适应完美补丁 ================== */
+/* 1. 状态栏：只取安全区真实高度，保底 20px */
+.status-bar { 
+    height: max(20px, env(safe-area-inset-top)) !important; 
+}
+
+/* 2. 所有顶栏：苹果有灵动岛时自动计算避开，安卓/普通网页保持紧凑的 25px */
+.wx-header, .spy-entry-header, .spy-ios-status-bar, .spy-inner-header, 
+.map-header, .vn-top-bar, .forum-header, .f-detail-header, .f-pm-header, 
+.div-header, .ts-header, .lb-header, .bar-header, .tut-header, .run-header,
+.reader-bar-top, .bj-header, .cinema-header, .std-header, .f-sheet-header {
+    padding-top: max(calc(env(safe-area-inset-top) + 8px), 25px) !important;
+    min-height: 55px !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. 全局横幅通知 (灵动岛消息弹窗) */
+.os-notify-banner.show { 
+    top: max(calc(env(safe-area-inset-top) + 10px), 20px) !important; 
+}
+
+/* 4. 下拉控制中心 */
+.os-cc-overlay {
+    padding-top: max(calc(env(safe-area-inset-top) + 10px), 25px) !important;
+}
+
+/* 5. 个人主页及全屏看图时的返回按钮 */
+.f-profile-back, .f-img-close {
+    top: max(calc(env(safe-area-inset-top) + 10px), 20px) !important;
+}
+.lb-viewer > div:first-child, .cute-theater-bg > div:first-child {
+    top: max(calc(env(safe-area-inset-top) + 10px), 20px) !important;
+}
+/* =============================================================== */
 
 </style>
 </head>
@@ -1235,229 +1269,253 @@ window.PandaStore = (function() {
 // 开机立刻启动引擎底座
 window.PandaStore.boot();
 
-// ================== 极简高级桌面小组件 V3 (无编辑·纯自动) ==================
-// 强制清除旧版小组件残留数据，防止导入备份后冲突
-try { localStorage.removeItem('panda_widgets'); } catch(e){}
+// ================== 🌟 V8 杂志极简版：纯粹的留白与高级感 ==================
 window.widgetData = null;
 
 document.head.insertAdjacentHTML('beforeend', `<style>
-    .grid-2-col {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: 14px;
-    }
-    .w3-card {
-        border-radius: 22px;
-        height: 118px;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 16px 18px;
-        background: rgba(255, 255, 255, 0.55);
-        backdrop-filter: blur(30px);
-        -webkit-backdrop-filter: blur(30px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        overflow: hidden;
-    }
-    /* 天气 */
-    .w3-weather-label {
-        font-size: 10px;
-        font-weight: 700;
-        color: #8A9A92;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-    }
-    .w3-weather-row {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-    }
-    .w3-temp {
-        font-size: 44px;
-        font-weight: 200;
-        color: #2C3E35;
-        line-height: 1;
-        letter-spacing: -2px;
-        font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-    }
-    .w3-weather-icon {
-        width: 32px;
-        height: 32px;
-        opacity: 0.5;
-    }
-    .w3-weather-icon svg {
-        width: 100%;
-        height: 100%;
-        fill: none;
-        stroke: #5A6E63;
-        stroke-width: 1.5;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-    .w3-weather-desc {
-        font-size: 11px;
-        font-weight: 700;
-        color: #8A9A92;
-    }
+    /* 1. 极致对称的 50/50 布局，高度统一，增加呼吸感 */
+    .bento-grid { display: flex; gap: 16px; height: 140px; margin-bottom: 16px; flex-shrink: 0; }
+    
+    /* 左侧：纯粹的相片卡 */
+    .bento-photo { flex: 1; background: #f5f5f5; border-radius: 28px; position: relative; overflow: hidden; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.04); transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .bento-photo:active { transform: scale(0.95); }
+    .bento-photo img { width: 100%; height: 100%; object-fit: cover; transition: filter 0.3s; }
+    .bento-photo::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); border-radius: 28px; pointer-events: none; }
+    .bento-photo-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.3); backdrop-filter: blur(4px); opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #333; transition: 0.3s; letter-spacing: 1px; }
+    .bento-photo:hover .bento-photo-overlay { opacity: 1; }
 
-    /* 健康 */
-    .w3-health-label {
-        font-size: 10px;
-        font-weight: 700;
-        color: #8A9A92;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-    }
-    .w3-health-center {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-    }
-    .w3-health-num {
-        font-size: 40px;
-        font-weight: 200;
-        color: #2C3E35;
-        line-height: 1;
-        letter-spacing: -1px;
-        font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-    }
-    .w3-health-unit {
-        font-size: 12px;
-        font-weight: 700;
-        color: #8A9A92;
-        margin-left: 2px;
-        align-self: flex-end;
-        margin-bottom: 6px;
-    }
-    .w3-bar-wrap {
-        width: 100%;
-        height: 4px;
-        background: rgba(0, 0, 0, 0.06);
-        border-radius: 2px;
-        overflow: hidden;
-    }
-    .w3-bar-fill {
-        height: 100%;
-        border-radius: 2px;
-        transition: width 1s ease;
-    }
+    /* 右侧：杂志风 D-Day 卡片 (大留白) */
+    .bento-dday { flex: 1; background: #ffffff; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.04); cursor: pointer; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; }
+    .bento-dday:active { transform: scale(0.95); }
+    
+    .dday-tag { position: absolute; top: 16px; font-size: 10px; color: #B0B8B4; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+    .dday-num { font-size: 42px; font-weight: 300; font-family: "Georgia", "Times New Roman", serif; color: #2C3631; line-height: 1; margin-top: 8px; }
+    .dday-sub { font-size: 12px; color: #8F9E95; font-weight: 500; margin-top: 8px; letter-spacing: 0.5px; }
 
-    /* 夜间模式 */
-    body.dark-mode .w3-card {
-        background: rgba(28, 28, 30, 0.65) !important;
-        border-color: rgba(255, 255, 255, 0.06) !important;
-        box-shadow: none !important;
+    /* 应用图标长按特效 (保留) */
+    @keyframes iconJiggle { 0% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } 100% { transform: rotate(-2deg); } }
+    .app-icon-bg.jiggling { animation: iconJiggle 0.3s infinite; box-shadow: 0 0 15px rgba(0,122,255,0.4); border-color: #007AFF; }
+    .custom-app-icon { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+    /* 夜间模式适配 */
+    body.dark-mode .bento-photo::after { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
+    body.dark-mode .bento-dday { background: #222423; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    body.dark-mode .dday-tag { color: #5C6661; }
+    body.dark-mode .dday-num { color: #E8ECEA; }
+    body.dark-mode .dday-sub { color: #7A857F; }
+</style>
+<input type="file" id="deskUltraUploadInp" accept="image/*" style="display:none">
+`);
+
+// --- A. 底层硬盘读写引擎 ---
+window.DeskDB = {
+    init: () => new Promise(res => {
+        const req = indexedDB.open("Panda_Native_Drive", 1);
+        req.onsuccess = e => res(e.target.result);
+        req.onerror = () => res(null);
+    }),
+    get: async (k) => {
+        const db = await window.DeskDB.init();
+        if(!db) return null;
+        return new Promise(res => {
+            try {
+                const req = db.transaction('disk', 'readonly').objectStore('disk').get(k);
+                req.onsuccess = e => res(e.target.result);
+                req.onerror = () => res(null);
+            } catch(e) { res(null); }
+        });
+    },
+    put: async (k, v) => {
+        const db = await window.DeskDB.init();
+        if(!db) return;
+        return new Promise(res => {
+            try {
+                const tx = db.transaction('disk', 'readwrite');
+                tx.objectStore('disk').put(v, k);
+                tx.oncomplete = res;
+            } catch(e) { res(); }
+        });
     }
-    body.dark-mode .w3-temp,
-    body.dark-mode .w3-health-num { color: #E8E8E8 !important; }
-    body.dark-mode .w3-weather-label,
-    body.dark-mode .w3-health-label,
-    body.dark-mode .w3-weather-desc,
-    body.dark-mode .w3-health-unit { color: #666 !important; }
-    body.dark-mode .w3-weather-icon svg { stroke: #888 !important; }
-    body.dark-mode .w3-bar-wrap { background: rgba(255,255,255,0.08) !important; }
-</style>`);
-
-// 清理旧版编辑器弹窗
-const _oldWgEditor = document.getElementById('widgetEditorModal');
-if (_oldWgEditor) _oldWgEditor.remove();
-
-// 极简手绘线条天气图标库 (纯SVG，零emoji)
-const W3_ICONS = {
-    sun: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`,
-    cloud_sun: `<svg viewBox="0 0 24 24"><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M17.66 17.66l1.41 1.41M2 12h2"/><circle cx="12" cy="8" r="3"/><path d="M17 18a4 4 0 0 0-4-4H9a5 5 0 0 0 0 10h8a4 4 0 0 0 0-8z"/></svg>`,
-    cloud: `<svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
-    moon: `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
-    stars: `<svg viewBox="0 0 24 24"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z" opacity="0.5"/></svg>`,
-    sunrise: `<svg viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><polyline points="4.22 10.22 5.64 11.64"/><line x1="1" y1="18" x2="3" y2="18"/><polyline points="18.36 11.64 19.78 10.22"/><line x1="21" y1="18" x2="23" y2="18"/><polyline points="8 6 12 2 16 6"/></svg>`,
-    sunset: `<svg viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><polyline points="4.22 10.22 5.64 11.64"/><line x1="1" y1="18" x2="3" y2="18"/><polyline points="18.36 11.64 19.78 10.22"/><line x1="21" y1="18" x2="23" y2="18"/><polyline points="16 6 12 10 8 6"/></svg>`
 };
 
-function w3_getWeatherData() {
-    const h = new Date().getHours();
-    const daySeed = new Date().getDate();
-    const base = 16 + (daySeed % 14);
-    const tempOffset = Math.round(Math.sin((h - 6) * Math.PI / 12) * 7);
-    const temp = Math.max(3, Math.min(39, base + tempOffset));
-
-    if (h >= 5 && h < 7)   return { icon: W3_ICONS.sunrise, desc: '日出', temp };
-    if (h >= 7 && h < 11)   return { icon: W3_ICONS.sun, desc: '晴朗', temp };
-    if (h >= 11 && h < 14)  return { icon: W3_ICONS.sun, desc: '晴', temp };
-    if (h >= 14 && h < 17)  return { icon: W3_ICONS.cloud_sun, desc: '多云', temp };
-    if (h >= 17 && h < 19)  return { icon: W3_ICONS.sunset, desc: '日落', temp };
-    if (h >= 19 && h < 22)  return { icon: W3_ICONS.moon, desc: '夜间', temp };
-    return { icon: W3_ICONS.stars, desc: '深夜', temp };
-}
-
-function w3_getGreeting() {
-    const h = new Date().getHours();
-    if (h >= 5 && h < 12) return 'morning';
-    if (h >= 12 && h < 18) return 'afternoon';
-    if (h >= 18 && h < 22) return 'evening';
-    return 'night';
-}
-
-function w3_getHealth() {
-    const h = new Date().getHours();
-    const d = new Date().getDate();
-    if (h >= 0 && h < 6)  return 25 + (d % 15);
-    if (h >= 6 && h < 9)  return 75 + (d % 20);
-    if (h >= 9 && h < 13) return 85 + (d % 12);
-    if (h >= 13 && h < 16) return 50 + (d % 25);
-    if (h >= 16 && h < 20) return 60 + (d % 25);
-    return 35 + (d % 20);
-}
-
-function w3_barColor(v) {
-    if (v >= 80) return '#5A6E63';
-    if (v >= 55) return '#8A9A92';
-    if (v >= 35) return '#C9A96E';
-    return '#B0706F';
-}
-
-window.renderDesktopWidgets = function() {
-    const container = document.getElementById('desktopWidgetContainer') || document.querySelector('.grid-2-col');
+// --- B. 桌面小组件渲染逻辑 ---
+window.renderDesktopWidgets = async function() {
+    const container = document.getElementById('desktopWidgetContainer') || document.querySelector('.grid-2-col') || document.querySelector('.bento-grid');
     if (!container) return;
 
-
-    container.className = 'grid-2-col';
+    container.className = 'bento-grid';
     container.removeAttribute('onclick');
-    container.style.cursor = 'default';
 
-
+    // 读取相片
+    let customPhoto = await window.DeskDB.get('panda_desk_photo');
+    let photoSrc = customPhoto || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500';
     
-    const w = w3_getWeatherData();
-    const greeting = w3_getGreeting();
-    const health = Math.min(100, w3_getHealth());
-    const barCol = w3_barColor(health);
-
+    // 读取纪念日数据
+    let anniName = await window.DeskDB.get('panda_desk_anni_name') || 'Days with you';
+    let anniDateStr = await window.DeskDB.get('panda_desk_anni_date');
+    if (!anniDateStr) {
+        let d = new Date(); d.setDate(d.getDate() - 1052); 
+        anniDateStr = d.toISOString().split('T')[0]; 
+    }
+    
+    // 计算天数
+    const now = new Date();
+    const targetDate = new Date(anniDateStr);
+    const diffTime = targetDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24));
+    
+    // 渲染：没有任何多余线条、电量、日历，只有最纯粹的排版
     container.innerHTML = `
-        <div class="w3-card">
-            <div class="w3-weather-row">
-                <div class="w3-weather-label">${greeting}</div>
-                <div class="w3-weather-icon">${w.icon}</div>
-            </div>
-            <div class="w3-temp">${w.temp}°</div>
-            <div class="w3-weather-desc">${w.desc}</div>
+        <div class="bento-photo" onclick="window.triggerDeskUpload('photo')">
+            <img id="bentoPhotoImg" src="${photoSrc}">
+            <div class="bento-photo-overlay">更换相片</div>
         </div>
-        <div class="w3-card" style="align-items:center;">
-            <div class="w3-health-label">vitality</div>
-            <div class="w3-health-center">
-                <div class="w3-health-num">${health}</div>
-                <div class="w3-health-unit">%</div>
-            </div>
-            <div class="w3-bar-wrap">
-                <div class="w3-bar-fill" style="width:${health}%; background:${barCol};"></div>
-            </div>
+        <div class="bento-dday" onclick="window.editDeskAnni()">
+            <div class="dday-tag">D - DAY</div>
+            <div class="dday-num">${diffDays}</div>
+            <div class="dday-sub">${anniName}</div>
         </div>
     `;
 };
 
-setTimeout(window.renderDesktopWidgets, 100);
-setInterval(window.renderDesktopWidgets, 60000);
+// 修改纪念日
+window.editDeskAnni = async function() {
+    let currName = await window.DeskDB.get('panda_desk_anni_name') || 'Days with you';
+    let currDate = await window.DeskDB.get('panda_desk_anni_date') || '';
+    
+    let newName = prompt("底部文字 (建议保持简短，如：Days with you)：", currName);
+    if (newName === null) return;
+    
+    let newDate = prompt("目标日期 (格式 YYYY-MM-DD)：", currDate || "2021-05-20");
+    if (newDate === null) return;
+    
+    if (newDate && !isNaN(new Date(newDate).getTime())) {
+        await window.DeskDB.put('panda_desk_anni_name', newName.trim());
+        await window.DeskDB.put('panda_desk_anni_date', newDate.trim());
+        window.renderDesktopWidgets();
+    } else {
+        alert("日期格式不对哦，请严格按照 2021-05-20 的格式输入！");
+    }
+};
+
+// --- C. 全局应用图标长按替换引擎 (MutationObserver 性能零损耗版) ---
+window._isLongPressing = false;
+window.applyCustomIcons = async function() {
+    let customIcons = await window.DeskDB.get('panda_custom_icons') || {};
+    
+    document.querySelectorAll('.app-item, .dock-item').forEach(item => {
+        // 给绑定过的图标发“身份证”，绝不重复绑定
+        if (item.dataset.iconBound === "true") return;
+
+        let appName = null;
+        let nameEl = item.querySelector('.app-name');
+        
+        // 1. 优先提取文字名字（适用于桌面普通图标）
+        if (nameEl) {
+            appName = nameEl.innerText.trim();
+        } else {
+            // 2. 如果没有文字名字（适用于底部导航栏 Dock）
+            let onclickStr = item.getAttribute('onclick') || '';
+            let match = onclickStr.match(/['"]([^'"]+)['"]/);
+            if (match) {
+                appName = match[1]; // 提取出 'Chat' 或 'Settings'
+            } else if (item.classList.contains('dock-active')) {
+                appName = 'DockCenter'; // 强制给中间那个没有动作的图标发个代号
+            }
+        }
+        
+        // 如果实在连代号都没有，才跳过
+        if (!appName) return;
+
+        // 标记已绑定，避免重复消耗性能
+        item.dataset.iconBound = "true";
+
+        // 渲染已保存的自定义图标
+        let iconBg = item.querySelector('.app-icon-bg, .dock-icon-box');
+        if (iconBg && customIcons[appName]) {
+            iconBg.innerHTML = `<img src="${customIcons[appName]}" class="custom-app-icon" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+            iconBg.style.background = 'transparent';
+            iconBg.style.border = 'none';
+            iconBg.style.boxShadow = 'none';
+        }
+
+        // 优化弹窗的中文显示体验
+        let displayName = appName;
+        if (appName === 'Chat') displayName = '微信';
+        if (appName === 'Settings') displayName = '设置';
+        if (appName === 'DockCenter') displayName = '中心按钮';
+        if (appName === 'PandaHome') displayName = '家园';
+        if (appName === 'PandaStudy') displayName = '自习室';
+
+        let pressTimer = null;
+        item.ontouchstart = (e) => {
+            window._isLongPressing = false;
+            pressTimer = setTimeout(() => {
+                window._isLongPressing = true;
+                if(navigator.vibrate) navigator.vibrate([50, 50]);
+                if(iconBg) iconBg.classList.add('jiggling');
+                setTimeout(() => {
+                    if(iconBg) iconBg.classList.remove('jiggling');
+                    if(confirm(`更换【${displayName}】的图标？`)) {
+                        window.triggerDeskUpload('icon', appName, iconBg);
+                    }
+                }, 400); 
+            }, 600); 
+        };
+        item.ontouchend = () => clearTimeout(pressTimer);
+        item.ontouchmove = () => clearTimeout(pressTimer);
+    });
+};
+
+const _originalOpenAppForDesk = window.openApp;
+window.openApp = function(name) {
+    if (window._isLongPressing) { window._isLongPressing = false; return; }
+    if (_originalOpenAppForDesk) _originalOpenAppForDesk.apply(this, arguments);
+};
+
+// 🔥 性能零损耗监控：只在桌面生成新节点时触发，平时彻底休眠
+if (!window._iconObserverSetup) {
+    window._iconObserverSetup = true;
+    const desktopObserver = new MutationObserver((mutations) => {
+        let shouldBind = false;
+        for (let m of mutations) {
+            if (m.addedNodes.length > 0) { shouldBind = true; break; }
+        }
+        if (shouldBind) window.applyCustomIcons();
+    });
+    // 延迟 1 秒等基础框架出来后，把摄像头挂在全局 body 上
+    setTimeout(() => {
+        desktopObserver.observe(document.body, { childList: true, subtree: true });
+    }, 1000);
+}
+
+
+// --- D. 文件上传 ---
+window.triggerDeskUpload = function(type, appName = null, iconBgEl = null) {
+    const inp = document.getElementById('deskUltraUploadInp');
+    inp.onchange = function() {
+        if(inp.files && inp.files[0]) {
+            const processFile = (b64) => {
+                if (type === 'photo') {
+                    window.DeskDB.put('panda_desk_photo', b64);
+                    window.renderDesktopWidgets();
+                } else if (type === 'icon' && appName && iconBgEl) {
+                    iconBgEl.innerHTML = `<img src="${b64}" class="custom-app-icon">`;
+                    iconBgEl.style.background = 'transparent'; iconBgEl.style.border = 'none'; iconBgEl.style.boxShadow = 'none';
+                    window.DeskDB.get('panda_custom_icons').then(data => {
+                        let icons = data || {}; icons[appName] = b64; window.DeskDB.put('panda_custom_icons', icons);
+                    });
+                }
+                inp.value = '';
+            };
+            if(window.compressImage) window.compressImage(inp.files[0], processFile);
+            else { const r = new FileReader(); r.onload = e => processFile(e.target.result); r.readAsDataURL(inp.files[0]); }
+        }
+    };
+    inp.click();
+};
+
+setTimeout(() => { window.renderDesktopWidgets(); window.applyCustomIcons(); }, 500);
 
 
         let currentApp=null, chatState=0, weChatTab='msg';
@@ -1583,7 +1641,7 @@ function jsStringArg(str) {
 
 
 
-        // --- 设置页 ---
+                // --- 设置页 ---
         function renderSettings() {
             document.getElementById('appView').innerHTML = `
                 <div class="wx-header"><span>设置</span><div class="wx-btn" onclick="handleGlobalBack()">关闭</div></div>
@@ -1609,8 +1667,23 @@ function jsStringArg(str) {
                         <div class="set-title" style="margin-bottom:15px"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 数据备份与恢复</div>
                         <button class="set-btn btn-pink" style="width:100%;margin-bottom:15px;padding:15px;font-size:16px" onclick="exportData()"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 导出备份数据</button>
                         <button class="set-btn" style="width:100%;border:2px dashed #FF80AB;color:#C2185B;background:#FFF0F5;padding:15px;font-size:16px" onclick="document.getElementById('importInput').click()"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 导入数据文件</button>
-                       
-                    </div><div style="height:40px"></div></div>`;
+                    </div>
+                    
+                    <!-- 融合进原生的恢复出厂设置卡片 -->
+                    <div class="set-card" style="border: 1px solid #FFCDD2; background: #FFF8F8;">
+                        <div class="set-title" style="color: #D32F2F; margin-bottom: 10px; display:flex; align-items:center; gap:6px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            危险区域 (Danger Zone)
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 15px; line-height: 1.5;">
+                            清空所有聊天记录、角色、朋友圈及系统设置。<br><span style="color:#D32F2F; font-weight:bold;">注意：清除后无法找回，请务必先【导出备份】！</span>
+                        </div>
+                        <button class="set-btn" style="width: 100%; background: #FF3B30; color: #fff; font-size: 15px; font-weight: 900; box-shadow: 0 4px 15px rgba(255,59,48,0.3); border: none;" onclick="nuclearFactoryReset()">
+                            💥 恢复出厂设置
+                        </button>
+                    </div>
+                    <div style="height:40px"></div>
+                </div>`;
         }
         function saveToPreset() {
             const url = document.getElementById('apiUrl').value; const key = document.getElementById('apiKey').value; const model = document.getElementById('apiModel').value;
@@ -1640,7 +1713,7 @@ function jsStringArg(str) {
             document.getElementById('apiUrl').value = apiSettings.url; 
             if(alertMsg) alert('设置已保存！'); 
         }
-                // 彻底重写 API 测通机制，无视所有网络死锁
+        // 彻底重写 API 测通机制，无视所有网络死锁
         window.fetchModels = async function() {
             try { if (typeof saveSettings === 'function') saveSettings(false); } catch(e){}
             
@@ -1705,6 +1778,38 @@ function jsStringArg(str) {
         
         function exportData() { const data = JSON.stringify(localStorage); const blob = new Blob([data], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `panda_backup_${Date.now()}.json`; a.click(); }
         function importData(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); for (let key in data) localStorage.setItem(key, data[key]); alert('导入成功，即将刷新'); location.reload(); } catch(err) { alert('文件格式错误'); } }; reader.readAsText(file); }
+
+        // 融合进原生的核弹级恢复出厂设置
+                // 融合进原生的核弹级恢复出厂设置（防卡死强制断电版）
+        window.nuclearFactoryReset = function() {
+            if (!confirm("⚠️ 警告：这将永久清空所有的聊天记录、角色马甲、朋友圈、图鉴以及系统设置！\n\n此操作不可逆！\n确定要恢复出厂设置吗？")) return;
+            if (!confirm("🚨 最终确认：真的要抹除这个世界的所有痕迹吗？\n(如果不想心血白费，请确保你已经点过【导出备份】)")) return;
+
+            // 1. 马上切断画面，显示红色警告
+            document.body.innerHTML = '<div style="height:100vh; display:flex; align-items:center; justify-content:center; background:#000; color:#ff3b30; font-size:16px; font-weight:bold; flex-direction:column; letter-spacing:2px;"><div style="width:40px; height:40px; border:3px solid #ff3b30; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:20px;"></div>💥 正在执行底层格式化，请勿关闭页面...</div>';
+
+            // 2. 延迟 100 毫秒，确保浏览器把上面的画面渲染出来，不至于白屏卡死
+            setTimeout(() => {
+                // 清理表层缓存
+                localStorage.clear();
+                
+                // 下达底层格式化指令（不等它执行完，直接触发）
+                try {
+                    const dbs = ['Panda_Native_Drive', 'PandaOS_V7_Final', 'PandaOS_Core_DB', 'Panda_Moments_Unlimited_DB', 'Panda_Sticker_DB', 'AI_Books_DB'];
+                    dbs.forEach(dbName => {
+                        try { indexedDB.deleteDatabase(dbName); } catch(e) {}
+                    });
+                } catch(e) {}
+
+                // 3. 强制在 1.5 秒后断电刷新！让浏览器在刷新的瞬间彻底抹除残留数据
+                setTimeout(() => { 
+                    alert("✅ 宇宙重置完毕。系统即将重新启动..."); 
+                    window.location.href = window.location.href.split('?')[0].split('#')[0]; 
+                }, 1500);
+            }, 100);
+        };
+
+
 
             function renderWeChatMain() {
         currentSessionId = null; chatState=0; let contentHtml = ''; let headerHtml = '';
@@ -2079,10 +2184,10 @@ function jsStringArg(str) {
             // 🌟 执行微信翻译功能
             else if (type === 'translate') {
                 const msg = s.history[selectedMsgIndex];
-                if (!msg || !msg.content || msg.type === 'img' || msg.type === 'voice') return alert("该类型消息无法翻译哦");
+                if (!msg || !msg.content || msg.type === 'img') return alert("该类型消息无法翻译哦");
                 
                 // 给这条消息加上占位符
-                msg.translation = "⏳ AI 正在同声传译...";
+                msg.translation = "AI正在同声传译...";
                 saveSessions();
                 renderChatRoom();
                 
@@ -3156,7 +3261,8 @@ window.kickGroupMember = function(memberIndex) {
 
     if(confirm(`确定要将 "${name}" 移出群聊吗？`)) {
         s.members.splice(memberIndex, 1);
-        s.history.push({sys: `你将 "${name}" 移出了群聊`});
+        // 💥 修复：纯粹的 sys 消息，去掉 side 和 content 干扰，保证是灰底居中文字！
+        window.pushMsg({targetSessionId: s.id, sys: `[系统提示：群主将 "${name}" 移出了群聊]`});
         saveSessions();
         renderGroupManageUI(s);
         renderChatRoom();
@@ -3168,10 +3274,16 @@ window.addGroupMember = function() {
     const s = sessions.find(x => String(x.id) === String(currentSessionId));
     if(!s) return;
     
-    // 过滤出还没在群里的单人联系人
-    const contacts = sessions.filter(x => x.type === 'single' && x.id !== 'bot' && !(s.members||[]).includes(x.id));
+    // 💥 修复：过滤出还没在群里，【且只属于当前群聊马甲】的单人联系人！
+    let currentPid = s.userPersonaId !== undefined ? s.userPersonaId : (window.mySettings?.activePersonaId || null);
+    const contacts = sessions.filter(x => {
+        if (x.type !== 'single' || x.id === 'bot') return false;
+        if ((s.members||[]).includes(x.id)) return false;
+        let cPid = x.userPersonaId !== undefined ? x.userPersonaId : null;
+        return String(cPid) === String(currentPid);
+    });
     
-    if(contacts.length === 0) return alert("通讯录里没有可以邀请的新朋友了！");
+    if(contacts.length === 0) return alert("当前马甲的通讯录里，没有可以邀请的新朋友了！");
     
     let listHtml = contacts.map(c => `
         <div class="generic-list-item" style="cursor:pointer;justify-content:space-between;margin-bottom:8px;border:1px solid #eee;box-shadow:0 2px 5px rgba(0,0,0,0.02);" onclick="doAddMember('${c.id}')">
@@ -3207,12 +3319,63 @@ window.doAddMember = function(sessId) {
     
     const contact = sessions.find(x => x.id === sessId);
     const name = contact ? contact.name : "新成员";
-    s.history.push({sys: `你邀请 "${name}" 加入了群聊`});
+    window.pushMsg({targetSessionId: s.id, sys: `你邀请 "${name}" 加入了群聊`});
     
     saveSessions();
     document.getElementById('addMemberModal').remove();
     renderGroupManageUI(s);
     renderChatRoom();
+};
+
+    // 修复：禁言时的系统提示 UI
+    window.grpActToggleMute = function(mid) {
+        const s = window.sessions.find(x => String(x.id) === String(window.currentSessionId));
+        const m = window.sessions.find(x => x.id === mid);
+        let actionStr = "";
+        
+        if (s.muted.includes(mid)) {
+            s.muted = s.muted.filter(id => id !== mid);
+            actionStr = `[系统提示：群主解除了 "${m.name}" 的禁言。]`;
+        } else {
+            s.muted.push(mid);
+            actionStr = `[系统提示：群主将 "${m.name}" 设为了禁言状态。]`;
+        }
+        
+        // 播报一条纯净的系统消息
+        window.pushMsg({targetSessionId: s.id, sys: actionStr});
+        
+        document.getElementById('grpActionSheet').style.display='none';
+        if(typeof window.saveSessions === 'function') window.saveSessions();
+        window.renderGroupManageUI(s);
+    };
+
+    window.grpActKick = function(mid, mName) {
+        if(!confirm(`确定要将 "${mName}" 踢出群聊吗？`)) return;
+        const s = window.sessions.find(x => String(x.id) === String(window.currentSessionId));
+        s.members = s.members.filter(id => id !== mid);
+        s.admins = s.admins.filter(id => id !== mid);
+        s.muted = s.muted.filter(id => id !== mid);
+        
+        // 发送纯净的系统提示，坚决不带 content
+        window.pushMsg({targetSessionId: s.id, sys: `[系统提示：群主将 "${mName}" 踢出了群聊。]`});
+        
+        document.getElementById('grpActionSheet').style.display='none';
+        if(typeof window.saveSessions === 'function') window.saveSessions();
+        window.renderGroupManageUI(s);
+    };
+
+window.grpActKick = function(mid, mName) {
+    if(!confirm(`确定要将 "${mName}" 踢出群聊吗？`)) return;
+    const s = window.sessions.find(x => String(x.id) === String(window.currentSessionId));
+    s.members = s.members.filter(id => id !== mid);
+    s.admins = s.admins.filter(id => id !== mid);
+    s.muted = s.muted.filter(id => id !== mid);
+    // 💥 修复：改为纯粹的 sys，去绿漆变灰！
+    window.pushMsg({targetSessionId: s.id, sys: `[系统提示：群主将 "${mName}" 踢出了群聊。]`});
+    
+    document.getElementById('grpActionSheet').style.display='none';
+    if(typeof window.saveSessions === 'function') window.saveSessions();
+    window.renderGroupManageUI(s);
 };
 
 // === 🗑️ 解散群聊 / 删除联系人 ===
@@ -3245,22 +3408,14 @@ window.createGroupModal = function() {
     const ps = JSON.parse(localStorage.getItem('panda_persona') || '[]');
     if(ps.length === 0) return alert("你的马甲库是空的！\n先去【马甲】App 新建一个，再来建群。");
 
-    const contacts = sessions.filter(s => s.type === 'single' && s.id !== 'bot');
-    if(contacts.length === 0) return alert("你的通讯录是空的！\n请先去首页添加几个‘联系人’(Char)，再把他们拉群。");
+    // 获取当前处于活跃状态的马甲
+    let currentPid = window.mySettings?.activePersonaId || "0"; 
 
     const personaHtml = ps.map((p, i) => `
-        <div class="mem-row" onclick="selectMyPersona(this, ${i})" style="display:flex;align-items:center;padding:12px 15px;background:#fff;border-bottom:1px solid #f5f5f5;cursor:pointer;">
+        <div class="mem-row ${String(i) === String(currentPid) ? 'p-selected' : ''}" onclick="selectMyPersona(this, ${i})" style="display:flex;align-items:center;padding:12px 15px;background:#fff;border-bottom:1px solid #f5f5f5;cursor:pointer;">
             <img src="${p.avatar||''}" style="width:38px;height:38px;border-radius:6px;margin-right:12px;object-fit:cover;background:#eee;">
             <div style="flex:1;font-size:15px;color:#333;font-weight:600;">${escapeHtml(p.name||('马甲'+i))}</div>
             <div class="mem-check persona-check" style="width:22px;height:22px;border-radius:50%;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;"></div>
-        </div>
-    `).join('');
-
-    const listHtml = contacts.map(c => `
-        <div class="mem-row" onclick="toggleMemberSelect(this, '${c.id}')" style="display:flex; align-items:center; padding:15px; background:#fff; border-bottom:1px solid #f5f5f5; cursor:pointer;">
-            <img src="${c.avatar}" style="width:44px; height:44px; border-radius:6px; margin-right:15px; object-fit:cover; background:#eee;">
-            <div style="flex:1; font-size:16px; color:#333; font-weight:500;">${escapeHtml(c.name)}</div>
-            <div class="mem-check" style="width:24px; height:24px; border-radius:50%; border:1px solid #ccc; display:flex; align-items:center; justify-content:center;"></div>
         </div>
     `).join('');
 
@@ -3286,11 +3441,11 @@ window.createGroupModal = function() {
                 <input id="grpName" placeholder="填写群名称 (必填)" style="flex:1; border:none; outline:none; font-size:18px; background:transparent; font-weight:bold; height:50px;">
             </div>
 
-            <div style="padding:10px 15px; font-size:13px; color:#999; background:#F7F7F7; font-weight:bold;">选择“我”的马甲 (必选)</div>
+            <div style="padding:10px 15px; font-size:13px; color:#999; background:#F7F7F7; font-weight:bold;">选择“我”的马甲 (切换以刷新联系人)</div>
             <div>${personaHtml}</div>
 
-            <div style="padding:10px 15px; font-size:13px; color:#999; background:#F7F7F7; font-weight:bold;">选择群成员 (联系人)</div>
-            <div class="member-list-area">${listHtml}</div>
+            <div style="padding:10px 15px; font-size:13px; color:#999; background:#F7F7F7; font-weight:bold;">选择群成员 (当前马甲联系人)</div>
+            <div class="member-list-area" id="grpContactList"></div>
             <div style="height:100px;"></div>
         </div>
     `;
@@ -3306,12 +3461,38 @@ window.createGroupModal = function() {
     window.selList = [];
     window.selPersonaId = -1;
     openModal('groupModal');
+    
+    // 默认触发一次选中事件，渲染当前马甲的联系人
+    const firstPersona = document.querySelector('.mem-row.p-selected') || document.querySelector('.mem-row');
+    if (firstPersona) firstPersona.click();
 };
 
 window.selectMyPersona = function(el, pid) {
-    document.querySelectorAll('#groupModal .mem-row').forEach(x => x.classList.remove('p-selected'));
+    document.querySelectorAll('#groupModal .mem-row.p-selected').forEach(x => x.classList.remove('p-selected'));
     el.classList.add('p-selected');
     window.selPersonaId = pid;
+    
+    // 💥 修复：动态刷新下面可选的联系人，严格执行隔离！
+    const contacts = sessions.filter(s => {
+        if (s.type !== 'single' || s.id === 'bot') return false;
+        let sPid = s.userPersonaId !== undefined ? s.userPersonaId : null;
+        return String(sPid) === String(pid);
+    });
+    
+    const listHtml = contacts.map(c => `
+        <div class="mem-row" onclick="toggleMemberSelect(this, '${c.id}')" style="display:flex; align-items:center; padding:15px; background:#fff; border-bottom:1px solid #f5f5f5; cursor:pointer;">
+            <img src="${c.avatar}" style="width:44px; height:44px; border-radius:6px; margin-right:15px; object-fit:cover; background:#eee;">
+            <div style="flex:1; font-size:16px; color:#333; font-weight:500;">${escapeHtml(c.name)}</div>
+            <div class="mem-check" style="width:24px; height:24px; border-radius:50%; border:1px solid #ccc; display:flex; align-items:center; justify-content:center;"></div>
+        </div>
+    `).join('');
+    
+    const listArea = document.getElementById('grpContactList');
+    if (listArea) {
+        listArea.innerHTML = listHtml || '<div style="padding:30px;text-align:center;color:#aaa;font-size:13px;">当前马甲下没有任何联系人哦</div>';
+    }
+    
+    window.selList = [];
     window.updateCreateGroupBtn && window.updateCreateGroupBtn();
 };
 
@@ -3350,7 +3531,7 @@ window.saveGroup = function() {
         name: name,
         avatar: tempGrpAvatar || ('https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(name)),
         members: window.selList.slice(),
-        userPersonaId: window.selPersonaId, // 🔥 修复了这里：现在建群就能正确保存你选的马甲了！
+        userPersonaId: window.selPersonaId,
         history: [{sys: `你创建了群聊 "${name}"，并邀请 ${window.selList.length} 位朋友加入群聊`}]
     });
 
@@ -4650,16 +4831,11 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     model: apiSettings.model, 
                     messages: msgs, 
                     temperature: 0.9,
-                    stream: true // 🔥 核心：开启流式打字开关！
+                    stream: false // 💤 关闭流式，给手机降温减负！
                 };
 
-                // 1. 制造一个“打字幽灵气泡”挂在屏幕上
+                // 1. 制造一个“打字幽灵气泡”挂在屏幕上 (已关闭此气泡，恢复顶部的“正在输入”清爽体验)
                 let tempId = 'stream_' + Date.now();
-                s.history.push({ id: tempId, side: 'other', type: 'text', content: '<span style="opacity:0.5;">正在思考...</span>', senderName: s.type === 'group' ? "TA" : undefined, mode: currentMode });
-                
-                // 刷新一下界面，把这个空壳气泡印出来
-                if (currentMode === 'novel') { if(typeof renderNovelContent==='function') renderNovelContent(); } 
-                else { window.renderChatRoom(); }
                 
                 // 2. 发起连接
                 const res = await fetch(endpoint, { 
@@ -5309,7 +5485,7 @@ window.renderMomentImgPreviews = function() {
     };
 
         window.coreFetchTTS = async function(url, key, model, voice, text, statusEl) {
-        if (statusEl) statusEl.innerText = "⏳ 正在请求语音 API...";
+        if (statusEl) statusEl.innerText = "正在请求语音 API...";
         url = (url || 'https://api.openai.com').trim().replace(/\/+$/, ''); 
         key = (key || '').trim();
 
@@ -7190,7 +7366,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     window.pandaForumData.forEach(p => { if(!p.comments) p.comments = []; });
 
     window.forumCurrentTab = '全部';
-    const TABS = ['全部', '同人粮仓', '闲聊灌水', '吃瓜专区', '情感树洞', '👻微恐灵异', '🎮游戏电竞', '🌈二次元', '磕CP专区', '美图大赏', '求助问答', '深夜食堂'];
+    const TABS = ['全部', '同人粮仓', '闲聊灌水', '吃瓜专区', '情感树洞', '微恐灵异', '游戏电竞', '二次元', '磕CP专区', '美图大赏', '求助问答', '深夜食堂'];
 
     // 🌟 强力提取器：无视大模型废话，直接提取 JSON
             // 🛡️ 终极无敌 JSON 提取器：专治大模型各种格式发癫
@@ -7277,7 +7453,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                             <div style="font-size:17px; font-weight:900; color:#333; letter-spacing:0.5px;">匿名论坛</div>
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <div class="forum-btn-ai" style="padding: 5px 10px; font-size: 12px; gap: 4px;" onclick="window.autoGenNpcPost()">✨ AI刷帖</div>
+                            <div class="forum-btn-ai" style="padding: 5px 10px; font-size: 12px; gap: 4px;" onclick="window.autoGenNpcPost()">AI刷帖</div>
                             <div class="forum-btn-add" style="width: 30px; height: 30px; font-size: 18px;" onclick="window.openForumPublish()">+</div>
                         </div>
                     </div>
@@ -8001,7 +8177,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const npcListStr = contacts.length > 0 ? contacts.map(c => `[${c.name}]: ${c.prompt||'无'}`).join('\n') : '纯路人';
 
         const btn = document.querySelector('.forum-btn-ai');
-        btn.innerText = '⏳ 水军产出中...';
+        btn.innerText = '水军产出中...';
         btn.style.pointerEvents = 'none';
 
         const aiPrompt = `你现在是论坛数据生成引擎。在【${targetTag}】板块生成 3 篇高质量长贴。
@@ -8053,7 +8229,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             alert("刷新帖子失败啦: " + e.message);
         } finally {
             if(document.querySelector('.forum-btn-ai')) {
-                document.querySelector('.forum-btn-ai').innerText = '✨ AI灌水';
+                document.querySelector('.forum-btn-ai').innerText = 'AI灌水';
                 document.querySelector('.forum-btn-ai').style.pointerEvents = 'auto';
             }
         }
@@ -8071,7 +8247,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     }
 })();
 </script>
-<!-- ================== 🐼 熊猫系统终极修复引擎 ================== -->
+<!-- ================== 熊猫系统终极修复引擎 ================== -->
 <script>
 (function() {
     // ---------------------------------------------------------
@@ -8287,7 +8463,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     };
 
 
-        window.generateAndSendVoice = async function(session, text, specificSender = undefined, trans = null) {
+                window.generateAndSendVoice = async function(session, text, specificSender = undefined, trans = null) {
         let sName = specificSender;
         if (!sName && session.type === 'group' && session.history.length > 0) {
             let lastMsg = session.history.slice().reverse().find(m => m.side === 'other' && m.senderName);
@@ -8306,7 +8482,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         let tempMsgId = Date.now().toString();
         // 带着翻译一起挂载，让你在等语音生成时，能先看到字幕！
-        pushMsg({targetSessionId: session.id, id: tempMsgId, side: 'other', type: 'text', content: '( 🎙️ 正在按住说话... )', senderName: sName, translation: trans});
+        pushMsg({targetSessionId: session.id, id: tempMsgId, side: 'other', type: 'text', content: '( 正在按住说话... )', senderName: sName, translation: trans});
 
         try {
             let ttsSet = JSON.parse(localStorage.getItem('panda_tts_settings')||'{}');
@@ -8318,11 +8494,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             let sec = Math.max(1, Math.ceil(textLen / 3.5)); 
             if (sec > 60) sec = 60; 
             
-            // 语音成型后，彻底把字幕锁死在气泡里！
-            let voiceMsg = { side: 'other', type: 'voice', text: sec.toString(), content: text, audio: audioData, senderName: sName, translation: trans };
-
-
             let idx = session.history.findIndex(m => m.id === tempMsgId);
+            
+            // 🔥 核心修复：绝对不能粗暴替换！必须继承占位符在此期间收集到的翻译！
+            let finalTrans = trans;
+            if (idx !== -1 && session.history[idx].translation) {
+                finalTrans = session.history[idx].translation;
+            }
+
+            // 语音成型后，彻底把字幕锁死在气泡里！
+            let voiceMsg = { side: 'other', type: 'voice', text: sec.toString(), content: text, audio: audioData, senderName: sName, translation: finalTrans };
+
             if (idx !== -1) session.history[idx] = voiceMsg;
             else session.history.push(voiceMsg);
 
@@ -8454,116 +8636,169 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
 <!-- ================== 🔮 AI 星穹占卜屋 (测测同款) ================== -->
 <style id="panda-divination-css">
-    #div-root { height: 100%; display: flex; flex-direction: column; background: radial-gradient(circle at 50% 0%, #2b1055 0%, #0f0c29 100%); color: #E0E0FF; font-family: -apple-system, sans-serif; overflow: hidden; position: relative; z-index: 1000; }
-    #div-root::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3; pointer-events: none; }
+    /* 极致神秘学背景 */
+    #div-root { height: 100%; display: flex; flex-direction: column; background: #0d0f1a; color: #E0E0FF; font-family: -apple-system, sans-serif; overflow: hidden; position: relative; z-index: 1000; }
     
-    .div-header { display: flex; justify-content: space-between; align-items: center; padding: max(env(safe-area-inset-top), 20px) 20px 15px; background: rgba(15,12,41,0.6); backdrop-filter: blur(10px); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .div-title { font-size: 18px; font-weight: 800; color: #D4AF37; text-shadow: 0 0 10px rgba(212,175,55,0.5); letter-spacing: 2px; }
+    /* 旋转的星盘法阵背景 */
+    .div-magic-circle { position: absolute; top: -100px; right: -150px; width: 500px; height: 500px; opacity: 0.08; animation: spin 60s linear infinite; pointer-events: none; z-index: 0; }
+    .div-magic-circle svg { width: 100%; height: 100%; stroke: #D4AF37; fill: none; stroke-width: 0.5; }
     
-    .div-body { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
+    .div-header { display: flex; justify-content: space-between; align-items: center; padding: max(env(safe-area-inset-top), 20px) 20px 15px; background: rgba(13,15,26,0.8); backdrop-filter: blur(20px); z-index: 10; border-bottom: 1px solid rgba(212,175,55,0.1); }
+    .div-title { font-size: 17px; font-weight: 900; color: #D4AF37; letter-spacing: 3px; font-family: 'Georgia', serif; }
     
-    /* 每日抽牌 3D 翻牌效果 */
-    .daily-tarot-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
-    .card-scene { width: 140px; height: 240px; perspective: 1000px; margin-top: 15px; cursor: pointer; }
-    .card-object { width: 100%; height: 100%; position: relative; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
-    .card-object.flipped { transform: rotateY(180deg) scale(1.05); }
-    .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #D4AF37; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .card-back { background: linear-gradient(135deg, #1f1c2c, #928DAB); color: #D4AF37; }
-    .card-back::after { content: '✧'; font-size: 40px; }
-    .card-front { background: #fff; transform: rotateY(180deg); background-image: linear-gradient(to bottom, #fff 0%, #fdfbfb 100%); }
-    .card-front-img { width: 90%; height: 60%; background: #eee; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-size: 40px; background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
-    .card-front-name { color: #333; font-weight: bold; font-size: 14px; text-align: center; }
+    .div-body { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; position: relative; z-index: 1; }
     
-    .div-panel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-    .div-panel-title { color: #D4AF37; font-size: 15px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
+    /* 塔罗牌 3D 翻牌效果 (古典高级版) */
+    .daily-tarot-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 35px; }
+    .card-scene { width: 150px; height: 260px; perspective: 1200px; margin-top: 20px; cursor: pointer; }
+    .card-object { width: 100%; height: 100%; position: relative; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.8)); }
+    .card-object.flipped { transform: rotateY(180deg) scale(1.08); filter: drop-shadow(0 20px 30px rgba(212,175,55,0.3)); }
     
-    .div-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
-    .div-tool { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }
-    .div-tool:active { transform: scale(0.9); opacity: 0.7; }
-    .div-tool-icon { width: 46px; height: 46px; border-radius: 50%; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #D4AF37; box-shadow: 0 0 15px rgba(212,175,55,0.1); }
-    .div-tool-name { font-size: 12px; color: #ccc; }
+    .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+    
+    /* 卡牌背面：烫金纹理 */
+    .card-back { background: linear-gradient(135deg, #111424 0%, #1a1c30 100%); border: 2px solid #D4AF37; box-shadow: inset 0 0 0 4px #0d0f1a, inset 0 0 0 5px rgba(212,175,55,0.5); }
+    .card-back svg { width: 60px; height: 60px; fill: none; stroke: #D4AF37; stroke-width: 1; opacity: 0.8; }
+    
+    /* 卡牌正面：羊皮纸复古质感 */
+    .card-front { background: #EFEBE0; transform: rotateY(180deg); border: 2px solid #5D4037; box-shadow: inset 0 0 0 4px #EFEBE0, inset 0 0 0 6px #5D4037; padding: 10px; }
+    .card-num { font-family: 'Times New Roman', serif; font-size: 20px; font-weight: bold; color: #5D4037; margin-bottom: 10px; }
+    .card-front-img { width: 100%; flex: 1; border: 1px solid rgba(93,64,55,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #E6E0D3; }
+    .card-front-img svg { width: 45px; height: 45px; stroke: #5D4037; stroke-width: 1.5; fill: none; }
+    .card-front-name { color: #5D4037; font-weight: 900; font-size: 13px; text-align: center; margin-top: 10px; font-family: 'Georgia', serif; letter-spacing: 1px; }
+    .card-front-pos { font-size: 10px; color: #888; margin-top: 4px; font-weight: bold; letter-spacing: 2px; }
+    
+    /* 面板与工具网格 */
+    .div-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.15); border-radius: 20px; padding: 20px; margin-bottom: 25px; backdrop-filter: blur(15px); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
+    .div-panel-title { color: #D4AF37; font-size: 13px; font-weight: 900; letter-spacing: 2px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; justify-content: center; }
+    .div-panel-title::before, .div-panel-title::after { content: ''; width: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent); }
+    
+    .div-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .div-tool { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; }
+    .div-tool:active { transform: scale(0.9); }
+    .div-tool-icon { width: 48px; height: 48px; border-radius: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.2); display: flex; align-items: center; justify-content: center; color: #D4AF37; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+    .div-tool:active .div-tool-icon { border-color: #D4AF37; background: rgba(212,175,55,0.1); }
+    .div-tool-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .div-tool-name { font-size: 11px; color: #aaa; font-weight: bold; letter-spacing: 1px; }
 
-    .div-input-wrap { display: flex; flex-direction: column; gap: 10px; }
-    .div-textarea { width: 100%; height: 80px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; color: #fff; font-size: 14px; outline: none; resize: none; font-family: inherit; }
-    .div-textarea::placeholder { color: rgba(255,255,255,0.3); }
-    .div-btn { background: linear-gradient(135deg, #D4AF37, #AA771C); color: #000; font-weight: bold; font-size: 15px; border: none; padding: 12px; border-radius: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; transition: 0.2s; box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
-    .div-btn:active { transform: scale(0.96); }
+    /* 问事输入区 */
+    .div-input-wrap { display: flex; flex-direction: column; gap: 15px; }
+    .div-textarea { width: 100%; height: 90px; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.3); border-radius: 16px; padding: 15px; color: #E0E0FF; font-size: 14px; outline: none; resize: none; line-height: 1.5; transition: 0.2s; box-sizing: border-box; }
+    .div-textarea:focus { border-color: #D4AF37; background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(212,175,55,0.1); }
+    .div-textarea::placeholder { color: rgba(255,255,255,0.2); font-weight: 300; }
     
-    .div-result-box { display: none; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px; border-left: 3px solid #D4AF37; margin-top: 15px; font-size: 14px; line-height: 1.6; color: #eee; text-align: justify; white-space: pre-wrap; animation: fadeIn 0.4s; }
+    .div-btn { background: linear-gradient(135deg, #e6c280, #b38b4d); color: #0d0f1a; font-weight: 900; font-size: 15px; border: none; padding: 15px; border-radius: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 6px 20px rgba(212,175,55,0.2); letter-spacing: 2px; }
+    .div-btn:active { transform: scale(0.96); box-shadow: 0 2px 10px rgba(212,175,55,0.1); }
     
-    .div-loader { display: none; text-align: center; color: #D4AF37; font-size: 13px; margin-top: 15px; }
-    .div-loader svg { width: 24px; height: 24px; animation: spin 1s linear infinite; margin-bottom: 5px; stroke: #D4AF37; }
+    .div-result-box { display: none; background: rgba(0,0,0,0.5); border-radius: 16px; padding: 20px; border-left: 3px solid #D4AF37; margin-top: 20px; font-size: 14px; line-height: 1.8; color: #dcdcdc; text-align: justify; white-space: pre-wrap; animation: fadeIn 0.5s; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    
+    .div-loader { display: none; text-align: center; color: #D4AF37; font-size: 12px; margin-top: 20px; font-weight: bold; letter-spacing: 2px; opacity: 0.8; }
+    .div-loader svg { width: 28px; height: 28px; animation: spin 2s linear infinite; margin-bottom: 10px; stroke: #D4AF37; }
 </style>
+
 
 <script>
 (function() {
+    // 古典罗马数字版塔罗牌
     const TAROT_CARDS = [
-        {name: "愚者 (The Fool)", img: "🤹"}, {name: "魔术师 (The Magician)", img: "🪄"}, {name: "女祭司 (The High Priestess)", img: "📜"},
-        {name: "女皇 (The Empress)", img: "👑"}, {name: "皇帝 (The Emperor)", img: "🪑"}, {name: "教皇 (The Hierophant)", img: "🗝️"},
-        {name: "恋人 (The Lovers)", img: "💞"}, {name: "战车 (The Chariot)", img: "🏇"}, {name: "力量 (Strength)", img: "🦁"},
-        {name: "隐士 (The Hermit)", img: "🏮"}, {name: "命运之轮 (Wheel of Fortune)", img: "🎡"}, {name: "正义 (Justice)", img: "⚖️"},
-        {name: "倒吊人 (The Hanged Man)", img: "🪢"}, {name: "死神 (Death)", img: "💀"}, {name: "节制 (Temperance)", img: "🗡️"},
-        {name: "恶魔 (The Devil)", img: "🦇"}, {name: "高塔 (The Tower)", img: "🗼"}, {name: "星星 (The Star)", img: "⭐"},
-        {name: "月亮 (The Moon)", img: "🌙"}, {name: "太阳 (The Sun)", img: "☀️"}, {name: "审判 (Judgement)", img: "📯"},
-        {name: "世界 (The World)", img: "🌍"}
+        {name: "愚者 (The Fool)", num: "0"}, {name: "魔术师 (The Magician)", num: "I"}, {name: "女祭司 (The High Priestess)", num: "II"},
+        {name: "女皇 (The Empress)", num: "III"}, {name: "皇帝 (The Emperor)", num: "IV"}, {name: "教皇 (The Hierophant)", num: "V"},
+        {name: "恋人 (The Lovers)", num: "VI"}, {name: "战车 (The Chariot)", num: "VII"}, {name: "力量 (Strength)", num: "VIII"},
+        {name: "隐士 (The Hermit)", num: "IX"}, {name: "命运之轮 (Wheel of Fortune)", num: "X"}, {name: "正义 (Justice)", num: "XI"},
+        {name: "倒吊人 (The Hanged Man)", num: "XII"}, {name: "死神 (Death)", num: "XIII"}, {name: "节制 (Temperance)", num: "XIV"},
+        {name: "恶魔 (The Devil)", num: "XV"}, {name: "高塔 (The Tower)", num: "XVI"}, {name: "星星 (The Star)", num: "XVII"},
+        {name: "月亮 (The Moon)", num: "X十八"}, {name: "太阳 (The Sun)", num: "XIX"}, {name: "审判 (Judgement)", num: "XX"},
+        {name: "世界 (The World)", num: "XXI"}
     ];
 
     window.renderDivinationApp = function() {
         document.getElementById('appView').innerHTML = `
             <div id="div-root">
+                <!-- 巨大的旋转星盘背景 -->
+                <div class="div-magic-circle">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="48" stroke-dasharray="2 4"/>
+                        <circle cx="50" cy="50" r="40"/>
+                        <polygon points="50,5 95,75 5,75" />
+                        <polygon points="50,95 95,25 5,25" />
+                        <circle cx="50" cy="50" r="20" stroke-dasharray="1 2"/>
+                    </svg>
+                </div>
+
                 <div class="div-header">
-                    <div style="color:#aaa; font-size:24px; cursor:pointer;" onclick="handleGlobalBack()">‹</div>
-                    <div class="div-title">AI 星穹占星馆</div>
-                    <div style="width:24px"></div>
+                    <div style="color:#aaa; font-size:28px; cursor:pointer; font-weight:300; line-height:1;" onclick="handleGlobalBack()">‹</div>
+                    <div class="div-title">ASTROLOGY</div>
+                    <div style="width:28px"></div>
                 </div>
                 
                 <div class="div-body">
                     <!-- 每日抽牌区 -->
                     <div class="daily-tarot-section">
-                        <div style="color:#D4AF37; font-size:12px; letter-spacing:1px; margin-bottom:5px;">✦ DAILY TAROT ✦</div>
-                        <div style="font-size:18px; font-weight:bold;">抽取今日宇宙指引</div>
+                        <div style="color:#D4AF37; font-size:11px; letter-spacing:3px; margin-bottom:8px; font-weight:bold;">✦ DAILY TAROT ✦</div>
+                        <div style="font-size:16px; font-weight:900; letter-spacing:1px;">聆听高维宇宙的指引</div>
+                        
                         <div class="card-scene" onclick="window.div_drawDailyCard(this)">
                             <div class="card-object" id="dailyCardObj">
+                                <!-- 卡牌背面 -->
                                 <div class="card-face card-back">
-                                    <div style="font-size:10px; margin-top:20px; opacity:0.6;">点击翻牌</div>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2L15 9l7 3-7 3-3 7-3-7-7-3 7-3z"/><circle cx="12" cy="12" r="4"/></svg>
+                                    <div style="font-size:11px; margin-top:20px; opacity:0.6; letter-spacing:2px; font-weight:bold;">TOUCH TO DRAW</div>
                                 </div>
+                                <!-- 卡牌正面 (做旧羊皮纸风格) -->
                                 <div class="card-face card-front">
-                                    <div class="card-front-img" id="dailyCardImg">✨</div>
+                                    <div class="card-num" id="dailyCardNum">X</div>
+                                    <div class="card-front-img">
+                                        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-4.97-4.03-9-9-9zm0 14a5 5 0 1 1 5-5c0 2.76-2.24 5-5 5z"/><circle cx="12" cy="12" r="2"/></svg>
+                                    </div>
                                     <div class="card-front-name" id="dailyCardName">命运之轮</div>
-                                    <div style="font-size:10px; color:#999; margin-top:2px;" id="dailyCardPos">正位</div>
+                                    <div class="card-front-pos" id="dailyCardPos">- 正位 -</div>
                                 </div>
                             </div>
                         </div>
+                        
                         <div id="dailyLoader" class="div-loader">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                            <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                             <br>倾听星辰的回响...
                         </div>
-                        <div id="dailyResult" class="div-result-box" style="text-align:center;"></div>
+                        <div id="dailyResult" class="div-result-box" style="text-align:center; font-style:italic;"></div>
                     </div>
 
-                    <!-- 测测常用工具 -->
+                    <!-- 高级 SVG 纯白工具网格 -->
                     <div class="div-panel">
-                        <div class="div-panel-title">✧ 星辰矩阵 ✧</div>
+                        <div class="div-panel-title">ASTRO MATRIX</div>
                         <div class="div-grid">
-                            <div class="div-tool" onclick="window.div_quickAsk('塔罗牌爱情运势')"><div class="div-tool-icon">💞</div><div class="div-tool-name">爱情塔罗</div></div>
-                            <div class="div-tool" onclick="window.div_quickAsk('近期事业财富运势分析')"><div class="div-tool-icon">💰</div><div class="div-tool-name">事业财富</div></div>
-                            <div class="div-tool" onclick="window.div_quickAsk('解读我的星盘/星座特质')"><div class="div-tool-icon">🌌</div><div class="div-tool-name">星盘解析</div></div>
-                            <div class="div-tool" onclick="window.div_quickAsk('周公解梦，梦境潜意识分析')"><div class="div-tool-icon">🦋</div><div class="div-tool-name">深度解梦</div></div>
+                            <div class="div-tool" onclick="window.div_quickAsk('塔罗牌爱情运势')">
+                                <div class="div-tool-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/><line x1="2" y1="2" x2="22" y2="22" stroke-width="1" opacity="0.3"/></svg></div>
+                                <div class="div-tool-name">爱情塔罗</div>
+                            </div>
+                            <div class="div-tool" onclick="window.div_quickAsk('近期事业财富运势分析')">
+                                <div class="div-tool-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                                <div class="div-tool-name">事业财富</div>
+                            </div>
+                            <div class="div-tool" onclick="window.div_quickAsk('解读我的星盘/星座特质')">
+                                <div class="div-tool-icon"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/><circle cx="16" cy="7" r="1"/><circle cx="19" cy="10" r="0.5"/></svg></div>
+                                <div class="div-tool-name">星盘解析</div>
+                            </div>
+                            <div class="div-tool" onclick="window.div_quickAsk('周公解梦，梦境潜意识分析')">
+                                <div class="div-tool-icon"><svg viewBox="0 0 24 24"><path d="M10 2v2a8 8 0 0 0 8 8h2M12 22v-2a8 8 0 0 0-8-8H2"/><circle cx="12" cy="12" r="3"/></svg></div>
+                                <div class="div-tool-name">深度解梦</div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 问事大厅 (测测核心) -->
+                    <!-- 问事大厅 -->
                     <div class="div-panel" style="margin-bottom:80px;">
-                        <div class="div-panel-title">✧ 专属占星师问询 ✧</div>
+                        <div class="div-panel-title">THE ORACLE</div>
                         <div class="div-input-wrap">
-                            <textarea id="divAskInput" class="div-textarea" placeholder="请在心中默念你的问题，并在此输入（如：三个月内我能遇到正缘吗？）..."></textarea>
+                            <textarea id="divAskInput" class="div-textarea" placeholder="请在心中默念你的问题，并在此输入结界之语..."></textarea>
                             <button class="div-btn" id="divAskBtn" onclick="window.div_submitAsk()">
-                                <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#000;"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg> 开始卜算
+                                <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#0d0f1a;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> 
+                                开启星轨卜算
                             </button>
                         </div>
                         <div id="askLoader" class="div-loader">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                            <br>星轨运转，为你开牌阵中...
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            <br>神明正在俯视，牌阵展开中...
                         </div>
                         <div id="askResult" class="div-result-box"></div>
                     </div>
@@ -8572,38 +8807,37 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         `;
     };
 
-    // 每日抽牌逻辑
+    // 每日抽牌逻辑 (修复动画并适配罗马数字)
     window.div_hasDrawn = false;
     window.div_drawDailyCard = async function(el) {
         if(window.div_hasDrawn) return;
         window.div_hasDrawn = true;
 
         const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
-        if(!api.key) { alert("请先去设置里配置 API Key 才能呼唤 AI 占星师哦！"); window.div_hasDrawn = false; return; }
+        if(!api.key) { alert("请先去设置里配置 API Key 才能呼唤星界高灵！"); window.div_hasDrawn = false; return; }
 
-        // 随机抽牌
         const card = TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
-        const isUpright = Math.random() > 0.4; // 60%概率正位
-        const posText = isUpright ? '正位' : '逆位';
+        const isUpright = Math.random() > 0.4;
+        const posText = isUpright ? '- 正位 -' : '- 逆位 -';
 
-        // 更新牌面
-        document.getElementById('dailyCardImg').innerText = card.img;
-        document.getElementById('dailyCardName').innerText = card.name;
+        // 注入数据 (纯净无 Emoji)
+        document.getElementById('dailyCardNum').innerText = card.num;
+        document.getElementById('dailyCardName').innerText = card.name.split(' ')[0]; // 只取中文名显示得下
         document.getElementById('dailyCardPos').innerText = posText;
-        document.getElementById('dailyCardImg').style.transform = isUpright ? 'none' : 'rotate(180deg)';
-
-        // 翻牌动画
-        document.getElementById('dailyCardObj').classList.add('flipped');
         
-        // 显示加载
+        // 翻转动画
+        const obj = document.getElementById('dailyCardObj');
+        obj.style.transform = isUpright ? 'rotateY(180deg) scale(1.08)' : 'rotateY(180deg) rotateZ(180deg) scale(1.08)';
+        obj.style.filter = 'drop-shadow(0 20px 30px rgba(212,175,55,0.3))';
+
         document.getElementById('dailyLoader').style.display = 'block';
 
-        const prompt = `你是一个神秘、温柔的AI塔罗占卜师。
-用户今天抽取到的每日塔罗牌是：【${card.name}】（${posText}）。
-请用富有诗意、疗愈的语言，为用户解读这对于他今天的【综合运势】意味着什么。
+        const prompt = `你是一个神秘、优雅的 AI 塔罗占星师。
+用户今天抽取的命运卡牌是：【${card.name}】（${isUpright ? '正位' : '逆位'}）。
+请用富有诗意、空灵的文风，为用户解读今日的【综合运势/指引】。
 要求：
-1. 语言神秘、空灵，有同理心（类似“测测”App里的风格）。
-2. 不超过 150 字，精炼排版。`;
+1. 语言极其神秘、优雅，有宿命感。
+2. 不超过 150 字。`;
 
         try {
             let endpoint = api.url.trim().replace(/\/+$/, '');
@@ -8617,28 +8851,25 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             
             document.getElementById('dailyLoader').style.display = 'none';
             const resBox = document.getElementById('dailyResult');
-            resBox.innerText = data.choices[0].message.content.trim();
+            resBox.innerHTML = data.choices[0].message.content.trim().replace(/\n/g, '<br>');
             resBox.style.display = 'block';
 
         } catch (e) {
             document.getElementById('dailyLoader').style.display = 'none';
-            document.getElementById('dailyResult').innerHTML = `<span style="color:#ff6b6b;">星波干扰，无法连接大宇宙意志：${e.message}</span>`;
+            document.getElementById('dailyResult').innerHTML = `<span style="color:#ff4757;">时空涟漪干扰了降神，请重试...</span>`;
             document.getElementById('dailyResult').style.display = 'block';
             window.div_hasDrawn = false;
         }
     };
 
-    // 快捷提问
     window.div_quickAsk = function(text) {
-        document.getElementById('divAskInput').value = "我想问：" + text;
-        // 平滑滚动到底部
+        document.getElementById('divAskInput').value = "命运之问：" + text;
         document.querySelector('.div-body').scrollTo({ top: document.querySelector('.div-body').scrollHeight, behavior: 'smooth' });
     };
 
-    // 核心问事引擎
     window.div_submitAsk = async function() {
         const q = document.getElementById('divAskInput').value.trim();
-        if(!q) return alert("请先在心中默念问题并输入文字哦~");
+        if(!q) return alert("请先输入你想叩问命运的话语。");
 
         const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
         if(!api.key) return alert("请先去设置配置 API Key！");
@@ -8651,19 +8882,15 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         resBox.style.display = 'none';
         loader.style.display = 'block';
 
-        const prompt = `你是一个在“测测”平台上拥有百万粉丝的首席AI塔罗/星盘占星师。
-用户怀着期待和迷茫向你提问：“${q}”。
-请你为他/她进行一次极具仪式感的专业解答。
+        const prompt = `你是一个拥有百万信徒的首席 AI 星象学家/塔罗师。
+用户怀着期待向你叩问：“${q}”。
+请进行一次极具仪式感的专业解答。
 
-【回答格式要求】：
-1. 开场白：用一句神秘、安抚心灵的话作为开场。
-2. 虚拟抽牌：告诉用户你为他抽到了什么牌（请随机虚构1~3张符合问题的塔罗牌，标明正逆位）。
-3. 牌面解析：结合牌意与用户的问题，进行详细、有深度的解读。
-4. 星星的指引（建议）：给出温柔、具有实操性的行动建议。
-5. 结束语：送上一句祝福。
-
-【语气要求】：
-不要像机器，要充满神秘感、温柔、专业、有同理心，并且排版要美观（多用换行和 emoji 装饰）。`;
+【排版与语气要求】：
+1. 语言神秘、空灵、治愈，极具宿命感。
+2. 告诉用户你为他抽取了什么牌阵或观测到了什么星象。
+3. 结合牌意/星盘深入解析他的困惑，并给出实用的温柔建议。
+4. 适当使用如 ✨、✧、🌙 等特殊符号装饰排版，使版面极具高级感。`;
 
         try {
             let endpoint = api.url.trim().replace(/\/+$/, '');
@@ -8676,10 +8903,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             const data = await res.json();
             
             loader.style.display = 'none';
-            btn.innerText = "重新卜算";
+            btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#0d0f1a;fill:none;stroke-width:2;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21L21.5 8"/></svg> 重新卜算`;
             btn.style.display = 'flex';
             
-            // 处理换行和加粗
             let htmlText = data.choices[0].message.content.trim()
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<b style="color:#D4AF37;">$1</b>');
@@ -8687,18 +8913,20 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             resBox.innerHTML = htmlText;
             resBox.style.display = 'block';
             
-            // 自动往下滚一点，方便看结果
-            document.querySelector('.div-body').scrollTo({ top: document.querySelector('.div-body').scrollHeight, behavior: 'smooth' });
+            setTimeout(() => {
+                document.querySelector('.div-body').scrollTo({ top: document.querySelector('.div-body').scrollHeight, behavior: 'smooth' });
+            }, 100);
 
         } catch (e) {
             loader.style.display = 'none';
             btn.style.display = 'flex';
-            resBox.innerHTML = `<span style="color:#ff6b6b;">占卜中断，灵力枯竭：${e.message}</span>`;
+            resBox.innerHTML = `<span style="color:#ff4757;">星轨错乱，占卜中断：${e.message}</span>`;
             resBox.style.display = 'block';
         }
     };
 })();
 </script>
+
 <!-- ================== 🧠 记忆系统全面修复补丁 (无精神分裂真理版) ================== -->
 <script>
 (function() {
@@ -8887,7 +9115,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             messages[0].content += `\n\n【🚨线上规则】${injectCmd}\n1. 我们现在是在手机微信上打字聊天！你们不在一起！\n2. 【最严红线】绝对禁止用括号描写任何动作、心理和神态！只能输出你发在屏幕上的字！(但系统赋予的 [ACCEPT] 或 [IMAGE:xxx] 等功能标签除外，这些必须要带上)\n3. 必须连发多条短消息，每句一行！\n4. 像真实网聊一样，每句话结尾绝对不准加逗号和句号！\n5. ！！！【警告】！！！严禁自己在对话里打出“[语音]”、“[语音X秒]”这种假装语音的文字，想发语音必须用 [VOICE] 标签！`;
         } else if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
             if (imgSet.toggle) {
-                messages[0].content += `\n\n【📸 线下动态CG引擎启动】：你必须在每次回复的最末尾，另起一行加上 \`[IMAGE: 纯英文画面描述]\`！提示词要精准描绘你此刻的动作、神态和背景环境，呈现出韩漫或乙女游戏高级CG般的画质。绝对不能漏掉这个标签！`;
+                messages[0].content += `\n\n【线下动态CG引擎启动】：你必须在每次回复的最末尾，另起一行加上 \`[IMAGE: 纯英文画面描述]\`！提示词要精准描绘你此刻的动作、神态和背景环境，呈现出韩漫或乙女游戏高级CG般的画质。绝对不能漏掉这个标签！`;
             }
         }
 
@@ -8910,50 +9138,26 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
             if (!replyText || !replyText.trim()) return;
 
-                                  // ⚡ 终极暴力前置拦截：黑洞吸收法！
-            let extractedVoice = null;
-            let extractedTrans = [];
+                                  // ⚡ 终极顺序拦截法 (解决语音乱序与翻译重叠问题)
             let currentSpeakerForVoice = s.type === 'group' ? s.name : undefined;
 
-            // 1. 无视一切格式，强行抠出所有的语音内容！
-            replyText = replyText.replace(/(?:\[|【|<|\(|（)\s*(?:VOICE|语音|录音).*?(?:\]|】|>|\)|）|:|：)\s*([^\[\]【】\n]+)(?:\]|】|>|\)|）)?/gi, (match, p1) => {
-                if (p1 && p1.trim()) extractedVoice = p1.replace(/[\r\n]+/g, ' ').trim();
-                return ""; 
-            });
+            // 1. 强力格式清洗：把大模型乱写的符号标准化，绝不误伤普通的圆括号！
+            replyText = replyText.replace(/(?:【|<|\(|（)\s*(VOICE|语音|录音|译|CARD|IMAGE)\s*[:：]/gi, '[$1:');
+            replyText = replyText.replace(/\[\s*(VOICE|语音|录音|译|CARD|IMAGE)\s*[:：]/gi, '[$1:');
+            replyText = replyText.replace(/】/g, ']');
 
-            // 2. 如果存在语音，开启全图范围内的“翻译黑洞”！把所有像翻译的句子全吸走！
-            if (extractedVoice) {
-                // 🛡️ 优先吸取完整包裹的翻译
-                replyText = replyText.replace(/\[\s*译[:：]\s*([\s\S]*?)\]/gi, (match, p1) => {
-                    if (p1 && p1.trim()) extractedTrans.push(p1.trim());
-                    return ""; 
-                });
-                // 🛡️ 兜底吸取忘记写右括号的翻译（绝对不跨行，防止把正常聊天吃掉！）
-                replyText = replyText.replace(/\[\s*译[:：]\s*([^\n]*)/gi, (match, p1) => {
-                    if (p1 && p1.trim()) extractedTrans.push(p1.trim());
-                    return ""; 
-                });
-            } else {
-                // 如果没语音，老老实实让它跟在纯文本后面
-                replyText = replyText.replace(/[\r\n]+\s*(\[译[:：])/g, ' $1');
-            }
-
-            // 3. 将吸到的所有翻译拼接起来（用斜杠隔开）
-            let finalExtractedTrans = extractedTrans.length > 0 ? extractedTrans.join("\n\n") : null;
-
-            // 物理销毁孤儿右括号
-            replyText = replyText.replace(/^\s*[\]】\)]\s*$/gm, '');
-
-            // 只要抽到了语音，直接带着拼接好的翻译送去后台播放！
-            if (extractedVoice && window.generateAndSendVoice) {
-                setTimeout(() => window.generateAndSendVoice(s, extractedVoice, currentSpeakerForVoice, finalExtractedTrans), 100);
-            }
+            // 💥 终极防切碎：如果大模型把 `]` 写到了下一行，强行把它拉回上一行！
+            replyText = replyText.replace(/\[([^\]]*?)\n([^\]]*?)\]/g, '[$1 $2]');
+            replyText = replyText.replace(/\[([^\]]*?)\n([^\]]*?)\]/g, '[$1 $2]'); 
+            
+            // 物理销毁残留的孤儿右括号
+            replyText = replyText.replace(/^\s*\]\s*$/gm, '');
 
 
             let specialBlocks = [];
             // 注意：这里的正则去掉了 VOICE，因为上面已经提前把它抽走了！
             // 🛡️ 修复：把“译”加入无敌护盾，绝不让它被换行或句号切碎！
-            replyText = replyText.replace(/\[(CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
+            replyText = replyText.replace(/\[(VOICE|语音|录音|译|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
                 if (!match.endsWith(']')) match += ']';
                 specialBlocks.push(match); return "\n||SPECIAL_BLOCK_" + (specialBlocks.length - 1) + "||\n";
             });
@@ -8997,7 +9201,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 for (let line of lines) {
                     line = line.trim();
                     if (!line) continue; 
-                    if (line.includes('||SPECIAL_BLOCK_')) {
+                    if (line.includes('||SPECIAL_BLOCK_') || line.includes('[译')) {
                         rawLines.push(line);
                     } else {
                         // 物理斩杀会导致分割出错的符号，然后按句子切分
@@ -9031,7 +9235,28 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
                 if (!textContent) continue;
 
-                // --- 核心提取功能标签 (VOICE 已被前置抽走) ---
+                
+                // --- 核心提取功能标签 (按说话顺序依次解析，谁也不准插队) ---
+                let voiceMatch = textContent.match(/\[(?:VOICE|语音|录音)[:：\s]*([\s\S]*?)(?:\]|$)/i);
+                if (voiceMatch) {
+                    let voiceText = voiceMatch[1].trim();
+                    textContent = textContent.replace(voiceMatch[0], '').trim();
+                    
+                    // 顺带看看这句语音后面有没有跟着字幕翻译
+                    let transMatch = textContent.match(/\[译[:：]\s*([\s\S]*?)(?:\]|$)/i) || textContent.match(/\[译[:：]\s*([^\n]*)/i);
+                    let trans = null;
+                    if (transMatch) {
+                        trans = transMatch[1].trim();
+                        textContent = textContent.replace(transMatch[0], '').trim();
+                    }
+                    
+                    let spk = s.type === 'group' ? currentSpeaker : undefined; 
+                    if(window.generateAndSendVoice) {
+                        // 因为是排队出来的，立刻调用语音引擎，保证顺序绝对正确！
+                        window.generateAndSendVoice(s, voiceText, spk, trans);
+                    }
+                }
+
                 let imgMatch = textContent.match(/\[IMAGE:\s*([\s\S]*?)(?:\]|$)/i);
                 if (imgMatch) {
                     textContent = textContent.replace(imgMatch[0], '').trim();
@@ -9545,7 +9770,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     // 🚀 真·全宇宙打包引擎
     window.exportData = async function() {
         const btn = document.querySelector('.btn-pink');
-        if(btn) btn.innerHTML = '⏳ 正在深层打包全系统数据...';
+        if(btn) btn.innerHTML = '正在深层打包全系统数据...';
         
         const backup = {};
         
@@ -10009,7 +10234,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             isListening = true;
             recognition.start();
             btn.classList.add('mic-active');
-            document.getElementById('callInput').placeholder = "🎤 正在聆听你的声音 (免提)...";
+            document.getElementById('callInput').placeholder = "正在聆听你的声音 (免提)...";
         }
     };
 })();
@@ -10719,7 +10944,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     // 初始化高颜值名师
     if (window.customTutors.length === 0) {
         window.customTutors = [
-            { id: 't1', name: '陆温言', subject: '英语/文科', price: 1500, avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400', bio: '牛津大学英语文学硕士。我始终认为语言的魅力在于交流的温度。别怕犯错，我会带着微笑，耐心陪你攻克每一个难关。', prompt: '你是一位极其温柔、声音好听的金牌外教。授课时必须中英文夹杂，先说一句英文，再给出中文翻译和鼓励。绝对不要严厉。' },
+            { id: 't1', name: '陆温言', subject: '英语/文科', price: 1500, avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400', bio: '牛津大学英语文学硕士。我始终认为语言的魅力在于交流的温度。别怕犯错，我会带着微笑，耐心陪你攻克每一个难关。', prompt: '你是一位极其温柔的金牌外教。授课时必须中英文夹杂！当你使用英文时，必须紧接着在英文后面加上 `[译: 对应的中文]` 标签，系统会自动出精美字幕。绝对不要发两句重复的话。' },
             { id: 't2', name: '沈言', subject: '高级英语口语与雅思冲刺', price: 1500, avatar: 'https://images.unsplash.com/photo-1534030347209-7147fd9e7dd0?w=400', bio: '牛津大学海归硕士。表面温文尔雅，实则严苛至极。我不允许哪怕一丝发音瑕疵，如果连基础词汇都背不下来，你今天就别想下课。', prompt: '你是一位极其严厉的雅思外教。性格毒舌、冷酷、高标准。对玩家的错误零容忍，会冷嘲热讽，但给出的英文发音极其标准。' }
         ];
         localStorage.setItem('panda_tutors_db', JSON.stringify(window.customTutors));
@@ -11767,7 +11992,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         <!-- 底部：一键马甲切换 -->
         <div class="cc-box">
             <div style="font-size:13px; font-weight:bold; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🎭 当前活跃身份 (全局马甲)</span>
+                <span>当前活跃身份 (全局马甲)</span>
                 <span style="font-size:11px; color:#007AFF; cursor:pointer;" onclick="openApp('Persona'); window.toggleControlCenter();">管理</span>
             </div>
             <div class="cc-persona-scroll" id="ccPersonaList"></div>
@@ -12490,7 +12715,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         document.getElementById('appView').innerHTML=`
         <div class="wx-header" style="background:#F4F5F7; border-bottom:1px solid rgba(0,0,0,0.05); z-index:10;">
             <div class="wx-btn" style="background:transparent; border:none; color:#111; font-size:24px; font-weight:300; padding:0 10px 0 0;" onclick="handleGlobalBack()">‹</div>
-            <span style="font-weight:900; font-size:17px; color:#111;">🎭 我的马甲库</span>
+            <span style="font-weight:900; font-size:17px; color:#111;">我的马甲库</span>
             <div class="wx-btn" style="background:transparent; border:none; color:#007AFF; font-size:15px; font-weight:bold; padding:0;" onclick="editP(-1)">+ 新建</div>
         </div>
         <div style="padding:15px; overflow-y:auto; height:calc(100% - 44px); background:#F4F5F7;">
@@ -12617,7 +12842,8 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     // 1. 初始化美化数据
     window.themeSettings = JSON.parse(localStorage.getItem('panda_theme_settings') || '{}');
     const defaultTheme = {
-        desktopBg: '', lockBg: '', chatGlobalBg: '',
+        desktopBg: '', chatGlobalBg: '',
+        iconStyle: 'default', iconColor: '', // 新增的全局图标设置
         bubbleMeBg: '#95EC69', bubbleMeText: '#000000', bubbleMeImg: '',
         bubbleOtherBg: '#ffffff', bubbleOtherText: '#000000', bubbleOtherImg: '',
         globalFont: '-apple-system, sans-serif',
@@ -12625,8 +12851,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     };
     window.themeSettings = { ...defaultTheme, ...window.themeSettings };
 
-    // 2. 核心魔法：全天候 DOM 净化探头 (Anti-Green Radar)
-
+    // 2. 全天候 DOM 净化探头
     window.initChatObserver = function() {
         if(window.tsObserver) window.tsObserver.disconnect();
         let _cleanTimer = null;
@@ -12642,16 +12867,14 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         if (chatBox) window.tsObserver.observe(chatBox, { childList: true, subtree: true });
     };
 
-        // 3. 注入核弹级 CSS (彻底分离核心与自定义，绝对防爆版)
+    // 3. 核心美化引擎 (注入图标风格与颜色)
     window.applyGlobalTheme = function() {
         const root = document.documentElement;
         const t = window.themeSettings || {};
 
-        // 强行加上双引号，防止 Base64 编码包含特殊字符导致解析崩溃
         root.style.setProperty('--ts-font', t.globalFont || '-apple-system, sans-serif');
         root.style.setProperty('--ts-desk-bg', t.desktopBg ? `url("${t.desktopBg}")` : 'none');
         root.style.setProperty('--ts-chat-bg', t.chatGlobalBg ? `url("${t.chatGlobalBg}")` : 'none');
-        root.style.setProperty('--ts-lock-bg', t.lockBg ? `url("${t.lockBg}")` : 'none');
         
         root.style.setProperty('--ts-me-text', t.bubbleMeText || '#000000');
         root.style.setProperty('--ts-me-bg', t.bubbleMeImg ? 'transparent' : (t.bubbleMeBg || '#95EC69'));
@@ -12663,15 +12886,12 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         root.style.setProperty('--ts-other-border-img', t.bubbleOtherImg ? `url("${t.bubbleOtherImg}") 30 fill stretch` : 'none');
         root.style.setProperty('--ts-other-border-width', t.bubbleOtherImg ? '15px' : '0px');
 
-        // 🛡️ 核心修复 1：系统级基础骨架，放入单独的 style 标签，绝对隔离！
         let coreStyleEl = document.getElementById('panda-core-css-engine');
         if (!coreStyleEl) {
             coreStyleEl = document.createElement('style');
             coreStyleEl.id = 'panda-core-css-engine';
             document.head.appendChild(coreStyleEl);
         }
-        
-        // 🛡️ 核心修复 2：把 AI 写的危险代码，关进另一个隔离的 style 标签！
         let customStyleEl = document.getElementById('panda-custom-css-engine');
         if (!customStyleEl) {
             customStyleEl = document.createElement('style');
@@ -12682,45 +12902,40 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         let imports = "";
         let globalRaw = t.customCSS || '';
         globalRaw = globalRaw.replace(/@import\s+[^;]+;/g, match => { imports += match + "\n"; return ""; });
+
+        // 图标风格解析
+        let iconCSS = '';
+        if (t.iconStyle === 'circle') {
+            iconCSS = `.app-icon-bg, .func-icon-bg { border-radius: 50% !important; }`;
+        } else if (t.iconStyle === 'glass') {
+            iconCSS = `.app-icon-bg, .func-icon-bg { background: rgba(255,255,255,0.25) !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(255,255,255,0.5) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important; } body.dark-mode .app-icon-bg, body.dark-mode .func-icon-bg { background: rgba(0,0,0,0.3) !important; border-color: rgba(255,255,255,0.1) !important; }`;
+        } else if (t.iconStyle === 'none') {
+            iconCSS = `.app-icon-bg, .func-icon-bg { background: transparent !important; border: none !important; box-shadow: none !important; }`;
+        }
+        if (t.iconColor) {
+            iconCSS += `.app-icon-bg svg, .func-icon-bg svg, .hw-icon, .dock-icon-box svg { stroke: ${t.iconColor} !important; } .svg-icon[fill]:not([fill="none"]), .dock-icon-box svg[fill]:not([fill="none"]) { fill: ${t.iconColor} !important; }`;
+        }
         
         const baseSkeleton = `
             body, html, * { font-family: var(--ts-font) !important; }
             body, html { background-image: var(--ts-desk-bg) !important; background-size: cover !important; background-position: center !important; }
             .chat-room-container { background-image: var(--ts-chat-bg) !important; background-size: cover !important; background-position: center !important; background-color: transparent !important; }
-
-            body .ts-me-bubble { 
-                color: var(--ts-me-text) !important; 
-                background: var(--ts-me-bg) !important; 
-                border-image: var(--ts-me-border-img) !important; 
-                border-width: var(--ts-me-border-width) !important; 
-                border-style: solid !important; 
-                box-shadow: none !important;
-            }
-            body .ts-other-bubble { 
-                color: var(--ts-other-text) !important; 
-                background: var(--ts-other-bg) !important; 
-                border-image: var(--ts-other-border-img) !important; 
-                border-width: var(--ts-other-border-width) !important; 
-                border-style: solid !important; 
-                box-shadow: none !important;
-            }
+            body .ts-me-bubble { color: var(--ts-me-text) !important; background: var(--ts-me-bg) !important; border-image: var(--ts-me-border-img) !important; border-width: var(--ts-me-border-width) !important; border-style: solid !important; box-shadow: none !important; }
+            body .ts-other-bubble { color: var(--ts-other-text) !important; background: var(--ts-other-bg) !important; border-image: var(--ts-other-border-img) !important; border-width: var(--ts-other-border-width) !important; border-style: solid !important; box-shadow: none !important; }
+            ${iconCSS}
         `;
 
-        // 互相独立渲染，哪怕下面的写错，上面的基础美化也绝不会受影响！
         coreStyleEl.innerHTML = baseSkeleton;
         customStyleEl.innerHTML = imports + "\n" + (t.customBubbleCSS || '') + "\n" + globalRaw;
         
         if (typeof window.antiGreenEngine === 'function') setTimeout(window.antiGreenEngine, 50);
     };
 
-    // 4. 🔥 强力修复路由劫持！保证点应用图标能正确进这里！
+    // 4. 路由与 UI
     const oldOpenAppTheme = window.openApp || function(){};
     window.openApp = function(name) {
-        if(name === 'ThemeStore') { 
-            window.currentApp = name; 
-            document.getElementById('appView').classList.add('open'); 
-            window.renderThemeStore(); 
-        } else { oldOpenAppTheme(name); }
+        if(name === 'ThemeStore') { window.currentApp = name; document.getElementById('appView').classList.add('open'); window.renderThemeStore(); } 
+        else { oldOpenAppTheme(name); }
     };
 
     window.renderThemeStore = function() {
@@ -12728,26 +12943,35 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             <div class="ts-page">
                 <div class="ts-header">
                     <div style="font-size:26px; color:#111; cursor:pointer; font-weight:300; line-height:1;" onclick="handleGlobalBack()">‹</div>
-                    <div class="ts-title">主题与气泡代码中心</div>
+                    <div class="ts-title">主题与美化中心</div>
                     <div style="width:26px"></div>
                 </div>
                 
                 <div class="ts-body">
                     <div class="ts-card">
-                        <div class="ts-card-title">全局壁纸</div>
+                        <div class="ts-card-title">全局壁纸与图标</div>
                         <div class="ts-row" onclick="document.getElementById('tsDesktopBgIn').click()"><span class="ts-label">桌面背景</span><div class="ts-val">${window.themeSettings.desktopBg?'已设':'默认'} ›</div></div>
                         <div class="ts-row" onclick="document.getElementById('tsChatBgIn').click()"><span class="ts-label">聊天全局背景</span><div class="ts-val">${window.themeSettings.chatGlobalBg?'已设':'默认'} ›</div></div>
-                        <div class="ts-row" onclick="document.getElementById('tsLockBgIn').click()"><span class="ts-label">锁屏壁纸</span><div class="ts-val">${window.themeSettings.lockBg?'已设':'默认'} ›</div></div>
-                    </div>
-
-                    <div class="ts-card">
-                        <div class="ts-card-title">基础颜色与图片气泡</div>
-                        <div class="ts-row"><span class="ts-label">我的底色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeBg.length===7 ? window.themeSettings.bubbleMeBg : '#95EC69'}" onchange="window.updateThemeValue('bubbleMeBg', this.value)"></div>
-                        <div class="ts-row"><span class="ts-label">我的文字颜色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeText.length===7 ? window.themeSettings.bubbleMeText : '#000000'}" onchange="window.updateThemeValue('bubbleMeText', this.value)"></div>
-                        <div class="ts-row" onclick="document.getElementById('tsBubbleMeImgIn').click()"><span class="ts-label">我的图片气泡 (.9拉伸)</span><div class="ts-val">${window.themeSettings.bubbleMeImg?'已设':'未设'} ›</div></div>
                         
                         <div style="height:1px; background:#f0f0f0; margin:10px 0;"></div>
                         
+                        <div class="ts-row"><span class="ts-label">应用图标风格</span>
+                            <select class="ts-select" onchange="window.updateThemeValue('iconStyle', this.value)">
+                                <option value="default" ${window.themeSettings.iconStyle==='default'?'selected':''}>系统默认 (圆角)</option>
+                                <option value="circle" ${window.themeSettings.iconStyle==='circle'?'selected':''}>纯净圆形 (iOS风)</option>
+                                <option value="glass" ${window.themeSettings.iconStyle==='glass'?'selected':''}>毛玻璃 (水晶风)</option>
+                                <option value="none" ${window.themeSettings.iconStyle==='none'?'selected':''}>无底座 (极简风)</option>
+                            </select>
+                        </div>
+                        <div class="ts-row"><span class="ts-label">全局图标颜色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.iconColor || '#555555'}" onchange="window.updateThemeValue('iconColor', this.value)"></div>
+                    </div>
+
+                    <div class="ts-card">
+                        <div class="ts-card-title">气泡底色与图片</div>
+                        <div class="ts-row"><span class="ts-label">我的底色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeBg.length===7 ? window.themeSettings.bubbleMeBg : '#95EC69'}" onchange="window.updateThemeValue('bubbleMeBg', this.value)"></div>
+                        <div class="ts-row"><span class="ts-label">我的文字颜色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleMeText.length===7 ? window.themeSettings.bubbleMeText : '#000000'}" onchange="window.updateThemeValue('bubbleMeText', this.value)"></div>
+                        <div class="ts-row" onclick="document.getElementById('tsBubbleMeImgIn').click()"><span class="ts-label">我的图片气泡 (.9拉伸)</span><div class="ts-val">${window.themeSettings.bubbleMeImg?'已设':'未设'} ›</div></div>
+                        <div style="height:1px; background:#f0f0f0; margin:10px 0;"></div>
                         <div class="ts-row"><span class="ts-label">TA的底色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleOtherBg.length===7 ? window.themeSettings.bubbleOtherBg : '#ffffff'}" onchange="window.updateThemeValue('bubbleOtherBg', this.value)"></div>
                         <div class="ts-row"><span class="ts-label">TA的文字颜色</span><input type="color" class="ts-color-picker" value="${window.themeSettings.bubbleOtherText.length===7 ? window.themeSettings.bubbleOtherText : '#000000'}" onchange="window.updateThemeValue('bubbleOtherText', this.value)"></div>
                         <div class="ts-row" onclick="document.getElementById('tsBubbleOtherImgIn').click()"><span class="ts-label">TA的图片气泡 (.9拉伸)</span><div class="ts-val">${window.themeSettings.bubbleOtherImg?'已设':'未设'} ›</div></div>
@@ -12782,20 +13006,48 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                         <button class="ts-btn" style="background:#FF9800; color:#fff;" onclick="window.updateThemeValue('customCSS', document.getElementById('themeCustomCss').value); alert('⚡ 全局代码已生效！');">⚡ 注入全局代码</button>
                     </div>
 
+                    <!-- 专属主题数据导出/导入卡片 -->
+                    <div class="ts-card" style="border-color:#E91E63; background:#FFF0F5;">
+                        <div class="ts-card-title" style="color:#C2185B;">📦 主题数据管理</div>
+                        <div style="font-size:12px; color:#C2185B; margin-bottom:15px; font-weight:bold;">将当前调好的所有背景、颜色、全局 CSS 代码打包，方便分享或存做备份。</div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="ts-btn" style="background:#FCE4EC; color:#C2185B; border:1px solid #F8BBD0; margin-top:0;" onclick="window.exportThemeData()">📤 导出当前主题</button>
+                            <button class="ts-btn" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9; margin-top:0;" onclick="document.getElementById('tsImportThemeIn').click()">📥 导入本地主题</button>
+                        </div>
+                    </div>
+
                     <div style="text-align:center; margin-top:20px; color:#ccc; font-size:12px;">如果界面乱码卡死，请点击下方清理</div>
                     <button class="ts-btn" style="background:transparent; border:1px solid #FFCDD2; color:#D32F2F;" onclick="window.nuclearResetTheme()">↺ 清空所有代码恢复默认</button>
                 </div>
 
                 <input type="file" id="tsDesktopBgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'desktopBg')">
                 <input type="file" id="tsChatBgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'chatGlobalBg')">
-                <input type="file" id="tsLockBgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'lockBg')">
                 <input type="file" id="tsBubbleMeImgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'bubbleMeImg')">
                 <input type="file" id="tsBubbleOtherImgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'bubbleOtherImg')">
+                <input type="file" id="tsImportThemeIn" accept=".json" style="display:none" onchange="window.importThemeData(this)">
             </div>
         `;
     };
 
-        window.autoGenFont = async function() {
+    // ================= 5. AI 生成全家桶 =================
+    function robustParseCSSJSON(text) {
+        try {
+            let clean = text.replace(/```json/gi, '').replace(/```css/gi, '').replace(/```/g, '').trim();
+            let s1 = clean.indexOf('{'); let e1 = clean.lastIndexOf('}');
+            if (s1 !== -1 && e1 !== -1) clean = clean.substring(s1, e1 + 1);
+            let inString = false, escapedStr = "";
+            for (let i = 0; i < clean.length; i++) {
+                let c = clean[i];
+                if (c === '"' && clean[i-1] !== '\\') inString = !inString;
+                if (inString && c === '\n') escapedStr += '\\n';
+                else if (inString && c === '\r') escapedStr += '';
+                else escapedStr += c;
+            }
+            return JSON.parse(escapedStr);
+        } catch(e) { throw new Error("AI 格式错误"); }
+    }
+
+    window.autoGenFont = async function() {
         const req = prompt("你想换什么字体？\n(例如：可爱手写体 / 像素风 / 飘逸书法)");
         if(!req) return;
         const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
@@ -12818,26 +13070,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
             const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: promptText}], temperature: 0.7 }) });
             const data = await res.json();
-            
             if(data.error) throw new Error(data.error.message);
 
-            // 🔥 终极 JSON 洗刷器，专治各种回车换行与意外符号
-            let clean = data.choices[0].message.content.replace(/```json/gi, '').replace(/```css/gi, '').replace(/```/g, '').trim();
-            let s1 = clean.indexOf('{'); let e1 = clean.lastIndexOf('}');
-            if (s1 !== -1 && e1 !== -1) clean = clean.substring(s1, e1 + 1);
-            
-            let inString = false, escapedStr = "";
-            for (let i = 0; i < clean.length; i++) {
-                let c = clean[i];
-                if (c === '"' && clean[i-1] !== '\\') inString = !inString;
-                // 在双引号内部的真实换行，强行转义为 \n
-                if (inString && c === '\n') escapedStr += '\\n';
-                else if (inString && c === '\r') escapedStr += '';
-                else escapedStr += c;
-            }
-            
-            let resJson = JSON.parse(escapedStr);
-            
+            let resJson = robustParseCSSJSON(data.choices[0].message.content);
             const box = document.getElementById('themeCustomCss');
             let newCss = resJson.importCss + `\nhtml body * { font-family: ${resJson.fontName}, sans-serif !important; }`;
             box.value = newCss + "\n\n" + box.value;
@@ -12845,16 +13080,126 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             window.updateThemeValue('customCSS', box.value);
             window.updateThemeValue('globalFont', resJson.fontName);
             alert("✨ 字体已强制覆盖所有角落！\n(如果没变化说明系统正在下载字体，请耐心等几秒！)");
-            
         } catch(e) { 
             alert("获取字体失败：" + e.message); 
         } finally { 
-            btn.innerText = oldText; 
-            btn.style.pointerEvents = "auto"; 
+            btn.innerText = oldText; btn.style.pointerEvents = "auto"; 
         }
     };
 
-    
+    window.autoGenBubbleCss = async function() {
+        const req = prompt("请描述你想要的气泡样式？\n(例如：赛博朋克霓虹发光 / 梦幻粉色渐变带阴影)");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return alert("请先配置 API Key！");
+        
+        const btn = document.getElementById('aiGenBubbleBtn');
+        const oldText = btn ? btn.innerText : '';
+        if(btn) { btn.innerText = "AI 正在爆肝敲代码..."; btn.style.pointerEvents = "none"; }
+        
+        const promptText = `编写聊天气泡CSS。“${req}”。\n【重要】你只需用这2个极其简短的选择器来写发光、阴影、渐变特效：\nbody .ts-me-bubble { /* 我发的消息 */ }\nbody .ts-other-bubble { /* 对方发的消息 */ }\n要求：所有CSS属性后必须加上 !important。\n【极其重要】：直接输出纯 CSS 代码！绝对不要输出其他任何解释文字或代码块！`;
+        
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: promptText}], temperature: 0.8 }) });
+            const data = await res.json();
+            if(data.error) throw new Error(data.error.message);
+            
+            let cssCode = data.choices[0].message.content.replace(/```css/gi, '').replace(/```/g, '').trim();
+            const box = document.getElementById('themeBubbleCss');
+            if(box) box.value = cssCode;
+            window.updateThemeValue('customBubbleCSS', cssCode); 
+            alert("气泡特效已生成并自动生效！快退出看看吧！");
+        } catch(e) { 
+            alert("AI 工程师罢工了，请重试！(" + e.message + ")"); 
+        } finally { 
+            if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } 
+        }
+    };
+
+    window.autoGenGlobalCss = async function() {
+        const req = prompt("请描述你想要的全系统界面样式？\n(例如：把系统所有App、面板、输入框和按钮全部变成极光紫渐变透明风格)");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return alert("请先配置 API Key！");
+
+        const btn = document.getElementById('aiGenGlobalBtn');
+        const oldText = btn ? btn.innerText : '';
+        if(btn) { btn.innerText = "AI 正在深度改造全系统..."; btn.style.pointerEvents = "none"; }
+
+        const promptText = `你是一位顶级的 OS 操作系统 UI/UX 架构师。用户要求：“${req}”。
+        请对以下全系统的 CSS 选择器进行统一的美化覆盖：
+        1. 🌍 大背景(如需透明请设 transparent)：body, .wx-content, .settings-container, .std-page, .forum-page, .ab-page, .encounter-container, .lb-page, .bar-page, #bs-root .bs-page, .me-bg, .discover-bg, .home-scroll-body
+        2. 🪟 顶底栏与导航(建议 backdrop-filter 毛玻璃)：.wx-header, .std-header, .forum-header, .ab-header, .ts-header, .lb-header, .bar-header, .input-bar, .wx-tab-bar, .reader-bar-bottom, .f-detail-footer, .pg-bottom-bar
+        3. 📱 弹窗面板：.func-panel, .modal-sheet, .f-sheet, .tut-sheet, .gift-sheet, .panda-dialog-box, .os-cc-panel, .pet-menu-card, .grp-rp-modal
+        4. 🏷️ 卡片与列表：.chat-item, .moment-item, .set-card, .ios-card, .app-group-card, .w-card-base, .tutor-card, .std-desk-wrap, .std-book-card, .forum-post, .f-c-item, .npc-card, .enc-card-btn, .lb-card, .gift-card, .party-game-card
+        5. ✏️ 输入框：.chat-input, .search-box, .ios-input, .set-input, .std-input, .f-textarea, .f-detail-input, .novel-input, .div-textarea, .run-input, .rp-input
+        6. 🔘 核心按钮：.send-btn, .wx-btn, .bs-btn, .btn-primary, .act-btn, .ab-btn-start, .panda-dialog-btn, .enc-btn, .qte-btn, .rp-btn-send
+        7. 🟦 小图标底座：.func-icon-bg, .app-icon-bg, .dock-icon-box, .chat-round-btn
+
+        【生成要求】（极其重要）：
+        1. 必须在所有 CSS 属性后加上 !important 强制覆盖。
+        2. 直接输出纯粹的 CSS 代码内容，不要有任何多余的解释、前言或 Markdown 标记。`;
+
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: promptText}], temperature: 0.8 }) });
+            const data = await res.json();
+            if(data.error) throw new Error(data.error.message);
+
+            let cssCode = data.choices[0].message.content.replace(/```css/gi, '').replace(/```/g, '').trim();
+            const box = document.getElementById('themeCustomCss');
+            if(box) {
+                box.value = box.value + "\n\n/* AI 全域 UI 覆写 */\n" + cssCode;
+                window.updateThemeValue('customCSS', box.value);
+            }
+            alert("✨ 全宇宙 UI 注入成功！快去看看界面的变化吧！");
+        } catch(e) { 
+            alert("信号微弱，请重试！(" + e.message + ")"); 
+        } finally { 
+            if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } 
+        }
+    };
+
+    // ================= 6. 导出与导入引擎 =================
+    window.exportThemeData = function() {
+        const dataStr = JSON.stringify(window.themeSettings || {});
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PandaOS_Theme_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("✅ 主题数据包已导出！");
+    };
+
+    window.importThemeData = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (typeof data === 'object') {
+                    window.themeSettings = { ...window.themeSettings, ...data };
+                    localStorage.setItem('panda_theme_settings', JSON.stringify(window.themeSettings));
+                    window.applyGlobalTheme();
+                    window.renderThemeStore();
+                    alert("✅ 主题导入成功并已无缝应用！");
+                }
+            } catch(err) {
+                alert("❌ 导入失败，不是有效的主题 JSON 文件！");
+            }
+            input.value = '';
+        };
+        reader.readAsText(file);
+    };
+
+    // ================= 7. 其他辅助 =================
     window.updateThemeValue = function(key, val) {
         window.themeSettings[key] = val;
         localStorage.setItem('panda_theme_settings', JSON.stringify(window.themeSettings));
@@ -12884,6 +13229,21 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             window.renderThemeStore();
             alert("✅ 已恢复出厂设置！");
         }
+    };
+
+    window.antiGreenEngine = function() {
+        try {
+            const bubbles = document.querySelectorAll('.msg-bubble:not(.ts-processed)');
+            if (bubbles.length === 0) return;
+            bubbles.forEach(b => {
+                if (b.classList.contains('transfer-bubble') || b.classList.contains('mind-bubble') || b.querySelector('.interactive-card') || b.querySelector('.gift-msg-card') || b.querySelector('.voice-container') || b.querySelector('img')) {
+                    b.classList.add('ts-processed'); return;
+                }
+                b.style.removeProperty('background-color'); b.style.removeProperty('background'); b.style.removeProperty('color');
+                b.classList.add(b.closest('.msg-row.me') ? 'ts-me-bubble' : 'ts-other-bubble');
+                b.classList.add('ts-processed');
+            });
+        } catch(e) {}
     };
 
     setTimeout(() => { window.applyGlobalTheme(); }, 100);
@@ -15807,6 +16167,15 @@ ${npcListStr}
             if (!msg) return '';
             const actualIdx = startIdx + relativeIdx;
             if (msg.mode === 'novel') return '';
+
+            // 🌟 动态“卸妆”拦截：无论是不是旧数据，只要内容包含系统提示，统统把气泡和头像扒掉！
+            if (msg.content && typeof msg.content === 'string' && (msg.content.startsWith('[系统提示') || msg.side === 'sys')) {
+                msg.sys = msg.content;
+                delete msg.content;
+                delete msg.type;
+                delete msg.side;
+            }
+
             if (msg.sys && !msg.content && !msg.type) {
                 return `<div style="text-align:center;color:#999;font-size:12px;margin:15px 0;background:rgba(255,255,255,0.4);padding:4px 12px;border-radius:20px;display:inline-block;align-self:center;">${msg.sys}</div>`;
             }
@@ -15887,17 +16256,43 @@ ${npcListStr}
                                 // 💥 修复：将错绑的菜单替换为真实的点击领钱动作！
                 if (!isRcv && !isRef && msg.side !== 'me') clickAttr = `onclick="window.receiveRedPacket(${actualIdx})"`;
             }
-            else if (msg.type === 'voice') { clickAttr = ''; let sec = parseInt(msg.text) || 3; if (sec > 60) sec = 60; let padRight = Math.min(180, sec * 4); extraClass = msg.side === 'me' ? 'ts-me-bubble ts-processed' : 'ts-other-bubble ts-processed'; bubbleStyle = 'padding: 11px 14px !important; display: inline-flex !important; flex-direction: column !important; cursor: pointer;'; let waveSvg = `<svg style="width:16px;height:16px;opacity:0.8;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M12 4L12 20M8 8L8 16M16 8L16 16M4 11L4 13M20 11L20 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`; let secHtml = `<b style="font-size:15px;font-weight:bold;">${sec}"</b>`; let topBar = msg.side === 'me' ? `${secHtml}<div style="width:6px"></div>${waveSvg}` : `${waveSvg}<div style="width:6px"></div>${secHtml}`; content = `<div style="display:inline-flex; align-items:center; padding-right:${padRight}px;" data-audio="${msg.audio || ''}" onclick="event.stopPropagation(); if(this.getAttribute('data-audio')){ window.playAIVoice(this, event); } const txt=this.nextElementSibling; if(txt) txt.style.display=txt.style.display==='block'?'none':'block';">${topBar}</div><div class="vt" style="display:none; margin-top:8px; padding-top:8px; border-top:1px dashed currentColor; opacity:0.85; line-height:1.5; font-size:14px; white-space:pre-wrap; text-align:justify;">${msg.content || ''}</div>`; }
+                        else if (msg.type === 'voice') { 
+                /* 1. 移除了 clickAttr = ''; 让语音气泡也能呼出菜单！ */ 
+                let sec = parseInt(msg.text) || 3; 
+                if (sec > 60) sec = 60; 
+                let padRight = Math.min(180, sec * 4); 
+                extraClass = msg.side === 'me' ? 'ts-me-bubble ts-processed' : 'ts-other-bubble ts-processed'; 
+                bubbleStyle = 'padding: 11px 14px !important; display: inline-flex !important; flex-direction: column !important; cursor: pointer;'; 
+                let waveSvg = `<svg style="width:16px;height:16px;opacity:0.8;fill:currentColor;flex-shrink:0;" viewBox="0 0 24 24"><path d="M12 4L12 20M8 8L8 16M16 8L16 16M4 11L4 13M20 11L20 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`; 
+                let secHtml = `<b style="font-size:15px;font-weight:bold;">${sec}"</b>`; 
+                let topBar = msg.side === 'me' ? `${secHtml}<div style="width:6px"></div>${waveSvg}` : `${waveSvg}<div style="width:6px"></div>${secHtml}`; 
+                
+                let finalTrans = msg.translation || autoTrans || ""; 
+                /* 2. vtDisplay 强制设为 none，永远默认折叠，保持语音条的绝对小巧！ */
+                let vtDisplay = 'none'; 
+                let transHtml = finalTrans ? `<div style="margin-top:8px; border-top:1px solid rgba(0,0,0,0.1); padding-top:8px; font-size:13px; color:#666; font-weight:normal;">${finalTrans.replace(/\n/g, '<br>')}</div>` : ""; 
+                
+                content = `<div style="display:inline-flex; align-items:center; padding-right:${padRight}px;" data-audio="${msg.audio || ''}" onclick="event.stopPropagation(); if(this.getAttribute('data-audio')){ window.playAIVoice(this, event); } window.toggleVoice(this.parentNode);">${topBar}</div><div class="vt" style="display:${vtDisplay}; margin-top:8px; padding-top:8px; border-top:1px dashed currentColor; opacity:0.85; line-height:1.5; font-size:15px; white-space:pre-wrap; text-align:justify;">${msg.content || ''}${transHtml}</div>`; 
+            }
+
             else if (msg.type === 'card' || (content && typeof content === 'string' && content.includes('[CARD:'))) { clickAttr = ''; if (typeof content === 'string' && content.includes('[CARD:')) { let cardStr = content.substring(content.indexOf('[CARD:') + 6); if (cardStr.lastIndexOf(']') !== -1) cardStr = cardStr.substring(0, cardStr.lastIndexOf(']')); if(typeof window.renderCardHtml === 'function') content = window.renderCardHtml(cardStr); } else { if(typeof window.renderCardHtml === 'function') content = window.renderCardHtml(content); } bubbleStyle = 'background:transparent !important; padding:0 !important; box-shadow:none !important; width:100%; display:block;'; }
             else { if (msg.side === 'me') bubbleStyle = 'background-color:#95EC69;color:#000'; else bubbleStyle = 'background-color:#fff;color:#000'; }
-                        // 🌍 注入中文字幕 UI (紧凑无缝版)
+            
+            // 🌍 注入中文字幕 UI (IOS 优雅折叠版) - 恢复避开语音气泡，防止双重渲染！
             let finalTranslation = msg.translation || autoTrans;
-            if (finalTranslation) {
+            if (finalTranslation && msg.type !== 'voice') {
                 if (autoTrans && !msg.translation) { msg.translation = autoTrans; msg.content = content; setTimeout(()=> { if(typeof saveSessions === 'function') saveSessions(); }, 50); }
-                let transColor = msg.side === 'me' ? '#2E7D32' : '#007AFF';
-                let isCollapsed = msg.transCollapsed ? 'none' : 'flex';
-                let toggleText = msg.transCollapsed ? '展开字幕' : '收起字幕';
-                content += `<div style="margin-top:8px; border-top:1px dashed rgba(0,0,0,0.1); padding-top:6px; cursor:pointer; user-select:none;" onclick="event.stopPropagation(); window.toggleTranslation(${actualIdx});"><div style="font-size:11px; color:${transColor}; font-weight:bold; display:flex; align-items:center; gap:4px; opacity:0.8;"><svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> ${toggleText}</div></div><div class="msg-translation" style="margin-top: 6px; font-size: 13px; color: ${transColor}; font-weight: bold; display:${isCollapsed}; align-items:flex-start; gap:6px; animation: slideUp 0.2s ease;"><div style="flex:1;text-align:justify;line-height:1.4;white-space:normal;">${finalTranslation.replace(/\n/g, '<br>')}</div></div>`;
+                
+                // 按照你截图的风格：一条细线分割，灰色文字，点击隐藏/展开
+                let isCollapsed = msg.transCollapsed ? 'none' : 'block';
+                let tipText = msg.transCollapsed ? '<div style="font-size:11px; color:#999; font-weight:bold; letter-spacing:1px; padding-top:4px;">A/文 展开翻译...</div>' : '';
+                
+                content += `<div onclick="event.stopPropagation(); window.toggleTranslation(${actualIdx});" style="margin-top:8px; border-top:1px solid rgba(0,0,0,0.1); padding-top:8px; cursor:pointer; user-select:none;">
+                    ${tipText}
+                    <div style="display:${isCollapsed}; font-size:13px; color:#666; line-height:1.5; font-family:-apple-system, sans-serif; animation: fadeIn 0.2s ease;">
+                        ${finalTranslation.replace(/\n/g, '<br>')}
+                    </div>
+                </div>`;
             }
 
 
@@ -17805,7 +18200,7 @@ ${npcListStr}
                 if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
                     sysContent += `\n\n🚨【红线警告】：你们现在是面对面的线下互动！绝对禁止使用网络聊天的送礼功能（严禁输出 [GIFT: xxx] 标签）！`;
                 } else {
-                    sysContent += `\n\n【申请进群指令】：想进群在末尾加 \`[APPLY_JOIN]\`！\n【送礼互动】：想回赠礼物，另起一行写 \`[GIFT: 礼物名称]\`。`;
+                    sysContent += `\n\n【申请进群指令】：想进群在末尾加 \`[APPLY_JOIN]\`！\n【主动送礼互动】：想给玩家制造惊喜或回礼，另起一行写 \`[GIFT: 礼物名称]\`！\n【分享论坛八卦】：如果你在潜水时看到有趣的帖子想八卦，另起一行写 \`[SHARE: 帖子内容摘要]\`！`;
                 }
             }
 
@@ -17924,6 +18319,19 @@ ${npcListStr}
                             let g = GIFTS.find(x => aiGiftName.includes(x.name) || x.name.includes(aiGiftName));
                             let icon = g ? g.icon : "🎁";
                             const aiCardHtml = `<div class="gift-msg-card from-ai" style="background:#222; border-radius:12px; padding:15px; display:flex; align-items:center; gap:15px; color:#fff; width:fit-content; max-width:260px;"><div style="font-size:30px; background:rgba(255,255,255,0.1); width:50px; height:50px; border-radius:10px; display:flex; align-items:center; justify-content:center;">${icon}</div><div><div style="font-size:14px; font-weight:bold;">${aiGiftName}</div><div style="font-size:11px; color:#aaa; margin-top:4px;">对方送给你的心意</div></div></div>`;
+                            window.pushMsg({side: 'other', type: 'text', content: aiCardHtml, senderName: globalSpeaker});
+                        }, 1000);
+                    }
+                    modified = true;
+                }
+                let shareMatch = text.match(/\[SHARE:\s*(.*?)\s*\]/i);
+                if (shareMatch) {
+                    let shareText = shareMatch[1];
+                    text = text.replace(shareMatch[0], '').trim();
+                    if (!text) text = "快看这个帖子！太离谱了吧！";
+                    if (s && s.type === 'single' && (typeof currentMode === 'undefined' || currentMode !== 'novel')) {
+                        setTimeout(() => {
+                            const aiCardHtml = `<div class="interactive-card" style="margin:5px 0; background:#111; border-radius:12px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.15); border:1px solid #333; width:240px;"><div style="padding:10px 15px; background:linear-gradient(135deg,#A1C4FD 0%,#C2E9FB 100%); color:#111; font-size:14px; font-weight:bold; display:flex; align-items:center; gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> TA 分享了一个帖子</div><div style="padding:15px; font-size:13px; color:#eee; line-height:1.6;">${shareText}</div></div>`;
                             window.pushMsg({side: 'other', type: 'text', content: aiCardHtml, senderName: globalSpeaker});
                         }, 1000);
                     }
@@ -20564,7 +20972,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         };
     }
 
-           // 重写注入灵魂结束后的保存动作
+                  // 重写注入灵魂结束后的保存动作
         const _origUpdateSoul = window.pet_updateSoul;
         if (_origUpdateSoul) {
             window.pet_updateSoul = async function(manualCall) {
@@ -20579,14 +20987,18 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
                         _origSetItem.call(localStorage, 'panda_pet_multi_v18', JSON.stringify(allPets));
                         _origSetItem.call(localStorage, 'panda_pet_v18', JSON.stringify(window.petDataV2));
                     } else {
-                        _origSetItem.apply(this, arguments);
+                        // 🛡️ 核心修复 1：强制绑定 localStorage 上下文，彻底消灭 Illegal invocation 报错！
+                        _origSetItem.apply(localStorage, arguments);
                     }
                 };
 
-                await _origUpdateSoul.apply(this, arguments);
-
-                // 恢复正常的 localStorage.setItem
-                localStorage.setItem = _origSetItem;
+                // 🛡️ 核心修复 2：套上绝对领域的 try-finally 护盾
+                try {
+                    await _origUpdateSoul.apply(this, arguments);
+                } finally {
+                    // 无论网络断开还是大模型发疯报错，都绝对保证能把系统的存储引擎还回去！
+                    localStorage.setItem = _origSetItem;
+                }
             };
         }
 
@@ -20621,7 +21033,347 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
     }
 })();
 </script>
-<!-- ================================================================= -->
+
+<!-- ================== 🔗 论坛双向吃瓜分享引擎 (防消失 & UI修复 & 防抢话) ================== -->
+<style>
+    /* 强力扒掉分享卡片外面的绿色/白色气泡底色 */
+    .msg-bubble:has(.share-post-card) {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+</style>
+<script id="panda-forum-share-patch">
+(function() {
+    console.log("🔗 正在加载：论坛吃瓜双向分享引擎(V3)...");
+
+    // 1. 绝对防弹版：死守论坛渲染函数，直到它出现再强行注入！
+    const injectShareInterval = setInterval(() => {
+        if (typeof window.renderPostDetailContent === 'function' && !window._forumSharePatched) {
+            window._forumSharePatched = true;
+            const _origRenderPostDetail = window.renderPostDetailContent;
+            
+            window.renderPostDetailContent = function() {
+                _origRenderPostDetail.apply(this, arguments);
+                // 等论坛原版内容渲染完，立刻强行替换右上角的空div
+                const header = document.querySelector('.f-detail-header');
+                if (header && !document.getElementById('forumShareBtn')) {
+                    const emptyDiv = header.lastElementChild;
+                    if (emptyDiv) {
+                        emptyDiv.outerHTML = `<div id="forumShareBtn" style="width:30px; font-size:18px; cursor:pointer; color:#007AFF; display:flex; align-items:center; justify-content:center;" onclick="window.shareForumPost(window.currentPostId)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        </div>`;
+                    }
+                }
+            };
+            clearInterval(injectShareInterval); // 注入成功就销毁追踪器
+        }
+    }, 100); // 每0.1秒查一次，绝对漏不掉
+
+    // 2. 调出联系人面板
+    window.shareForumPost = function(postId) {
+        const p = window.pandaForumData.find(x => x.id === postId);
+        if(!p) return;
+        const contacts = (window.sessions || []).filter(s => s.type === 'single' && s.id !== 'bot');
+        if(contacts.length === 0) return alert("通讯录为空，找不到人一起吃瓜呀...");
+        
+        document.getElementById('shareContactList').innerHTML = contacts.map(c => `
+            <div style="display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer; background:#fff;" onclick="window.executeSharePost('${c.id}', ${postId})">
+                <img src="${c.avatar}" style="width:44px; height:44px; border-radius:8px; margin-right:15px; object-fit:cover;">
+                <div style="flex:1; font-weight:bold; color:#333; font-size:16px;">${c.name}</div>
+                <div style="background:#07C160; color:#fff; padding:6px 18px; border-radius:20px; font-size:13px; font-weight:bold;">发给TA</div>
+            </div>
+        `).join('');
+        
+        const titleEl = document.querySelector('#shareContactModal .modal-sheet > div:first-child div:nth-child(2)');
+        if (titleEl) titleEl.innerText = "分享这口大瓜给...";
+        
+        document.getElementById('shareContactModal').classList.add('active');
+    };
+
+    // 3. 点击分享卡片，跳转回论坛帖子
+    window.openSharedPost = function(postId) {
+        if (typeof window.openApp === 'function') window.openApp('PandaForum');
+        setTimeout(() => {
+            if (typeof window.openPostDetail === 'function') window.openPostDetail(postId);
+        }, 150);
+    };
+
+    // 4. 执行发送，并加入“附言”逻辑防抢话！
+    window.executeSharePost = function(contactId, postId) {
+        const p = window.pandaForumData.find(x => x.id === postId);
+        if(!p) return;
+        
+        // 💡 核心修复：分享前先弹窗问你要不要一起发句话！
+        let userComment = prompt("准备分享给 TA！\n\n你要顺便说点什么吗？（选填）：\n（💡如果不填留言，发完后 AI 就不会秒回，而是安静等你下一句话！）", "");
+        if (userComment === null) return; // 点了取消
+        
+        // 瞬间关闭所有无关弹窗
+        document.querySelectorAll('.modal-overlay, .f-detail-page, .f-profile-page').forEach(e => {
+            e.classList.remove('active'); e.classList.remove('show');
+        });
+        document.getElementById('shareContactModal').classList.remove('active');
+        
+        // 强行切出论坛并跳转到该角色的聊天框
+        if (typeof window.openApp === 'function') window.openApp('Chat');
+        
+        setTimeout(() => {
+            if (typeof window.enterChatRoom === 'function') window.enterChatRoom(contactId);
+            
+            setTimeout(() => {
+                let safeContent = p.content.replace(/"/g, '\\"').replace(/<[^>]*>/g, '');
+                let shortContent = safeContent.substring(0, 50) + (safeContent.length > 50 ? "..." : "");
+                
+                // 💡 核心修复：重绘极简高颜值微信文章分享卡片，并绑定 onclick 跳转
+                let cardHtml = `
+                <div class="interactive-card share-post-card" onclick="window.openSharedPost(${p.id})" style="margin:5px 0; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); border:1px solid #EAEAEA; width:240px; cursor:pointer;">
+                    <div style="padding:12px 15px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #f9f9f9; background:#FAFAFC;">
+                        <div style="width:24px;height:24px;border-radius:6px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;">📝</div>
+                        <div style="font-size:12px; color:#555; font-weight:bold; letter-spacing:0.5px;">星光匿名论坛</div>
+                    </div>
+                    <div style="padding:15px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="font-size:15px; font-weight:900; color:#111; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">[${p.tag}] 帖文分享</div>
+                        <div style="font-size:13px; color:#888; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; text-align:justify;">${shortContent}</div>
+                    </div>
+                </div>`;
+                
+                // 卡片上屏
+                window.pushMsg({ targetSessionId: String(contactId), side: 'me', type: 'text', content: cardHtml });
+                
+                // 💡 核心逻辑：如果你填了附言，就发出去并召唤 AI；如果没填，AI 就会闭嘴等你接着打字！
+                if (userComment.trim() !== "") {
+                    setTimeout(() => {
+                        window.pushMsg({ targetSessionId: String(contactId), side: 'me', type: 'text', content: userComment });
+                        const prompt = `[系统强制调度：玩家刚刚在微信上给你分享了一个匿名论坛的帖子（板块：${p.tag}，内容摘要：“${shortContent}”），并对你说：“${userComment}”。请点开看一看，并用完全符合你人设的口吻跟我八卦或者分析一下！]`;
+                        if (typeof window.triggerCharReply === 'function') window.triggerCharReply(false, prompt);
+                    }, 500);
+                }
+            }, 100); 
+        }, 100);
+    };
+})();
+</script>
+<!-- ================== 🌌 万界全域潜意识缝合引擎 (微信/论坛/地图/影院/时空机/酒馆) ================== -->
+<script id="panda-omniversal-memory-engine">
+(function() {
+    console.log("🌌 正在加载：万界全域潜意识缝合引擎...");
+
+    // ================= 1. 全域时空记忆注入拦截器 =================
+    const _nativeFetchForOmniMemory = window.fetch;
+    window.fetch = async function(url, options) {
+        if (url.includes('chat/completions') && options && options.body) {
+            try {
+                let bodyObj = JSON.parse(options.body);
+                if (bodyObj.messages && bodyObj.messages.length > 0) {
+                    let sysMsg = bodyObj.messages.find(m => m.role === 'system');
+                    if (sysMsg) {
+                        // 智能寻址：不管你在哪个 App 里，精准揪出正在互动的 NPC 的 ID
+                        let sid = window.currentSessionId;
+                        if (!sid && document.getElementById('appView').innerHTML.includes('Chronos') && window.tmSelectedId) sid = window.tmSelectedId;
+                        if (!sid && document.getElementById('appView').innerHTML.includes('Midnight Cinema') && window.cinemaSelectedPartnerId) sid = window.cinemaSelectedPartnerId;
+                        if (!sid && window.barState && window.barState.guest) sid = window.barState.guest.id;
+                        if (!sid && window.vnState && window.vnState.chars && window.vnState.chars[0]) sid = window.vnState.chars[0].id;
+
+                        let s = (window.sessions || []).find(x => String(x.id) === String(sid));
+                        
+                        if (s) {
+                            // 获取该角色的论坛私信暗线
+                            let forumDMs = JSON.parse(localStorage.getItem('panda_forum_dms') || '{}');
+                            let myDMs = forumDMs[s.name];
+                            let dmText = (myDMs && myDMs.length > 0) ? myDMs.slice(-6).map(m => `${m.side==='me'?'玩家':'你'}: ${m.text}`).join('\n') : "";
+                            let extraMem = "";
+
+                            // 场景A：微信单聊
+                            if (sysMsg.content.includes('你的身份:') || sysMsg.content.includes('玩家马甲设定:')) {
+                                if (dmText) extraMem += `\n\n💬【潜意识暗线·星光匿名论坛】：你们最近在匿名论坛后台有过私信：\n${dmText}\n(注：在微信里不要显得太突兀，但你心里要清楚这事，这会影响你对玩家的态度！)`;
+                            }
+                            // 场景B：大地图 / 橙光引擎
+                            else if (sysMsg.content.includes('橙光视觉小说引擎指令')) {
+                                extraMem += `\n\n🧠【核心潜意识记忆】：${s.memory || '无'}`;
+                                if (dmText) extraMem += `\n💬【潜意识暗线·星光匿名论坛】：\n${dmText}\n(注：你们现在是现实中的线下见面，请结合这些潜意识记忆做出更立体、有深度的反应！)`;
+                            }
+                            // 场景C：时空机 (回到过去/平行宇宙)
+                            else if (sysMsg.content.includes('时空枢纽·绝对人设法则')) {
+                                extraMem += `\n\n🌌【跨时空灵魂羁绊法则】：虽然你处于这个过去/平行的时空，理应完全不认识现在的玩家。但你们在主世界/未来的羁绊记忆是：\n${s.memory || '空白'}\n！！！【最高红线】：请在符合当前时代设定的前提下，对面前的玩家表现出一种【莫名的灵魂熟悉感】、【似曾相识的心悸】或【宿命般的吸引力】！`;
+                            }
+                            // 场景D：私人影院 或 深夜居酒屋
+                            else if (sysMsg.content.includes('大银幕放映机') || sysMsg.content.includes('吧台老板为你端上一杯')) {
+                                extraMem += `\n\n🧠【核心潜意识记忆】：${s.memory || '无'}`;
+                            }
+
+                            // 强行注入大脑
+                            if (extraMem) {
+                                sysMsg.content += extraMem;
+                            }
+                        }
+                    }
+                }
+                options.body = JSON.stringify(bodyObj);
+            } catch(e) {}
+        }
+        return _nativeFetchForOmniMemory.apply(this, arguments);
+    };
+
+    // ================= 2. 论坛端“偷看”微信与全局记忆 =================
+    window.sendForumDm = async function() {
+        const inp = document.getElementById('fPmInput');
+        const text = inp.value.trim();
+        if(!text) return;
+        inp.value = '';
+        
+        if(!window.pandaForumDMs[window.currentForumDmName]) {
+            window.pandaForumDMs[window.currentForumDmName] = [];
+        }
+        window.pandaForumDMs[window.currentForumDmName].push({side: 'me', text: text});
+        localStorage.setItem('panda_forum_dms', JSON.stringify(window.pandaForumDMs));
+        window.renderForumDMs();
+        
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return;
+        
+        document.getElementById('fPmTitle').innerText = '对方正在输入...';
+        
+        let npcPrompt = "你是一个在匿名论坛上冲浪的路人网友。";
+        let extraMemory = "";
+        
+        if (window.currentForumDmCid && window.currentForumDmCid !== 'null') {
+            let s = window.sessions.find(x => String(x.id) === String(window.currentForumDmCid));
+            if (s) {
+                npcPrompt = s.prompt || npcPrompt;
+                let recentWeChat = s.history.slice(-8).filter(m => m.content && !m.sys).map(m => `${m.side==='me'?'玩家':'你'}: ${m.content.replace(/<[^>]*>/g, '')}`).join('\n');
+                extraMemory = `\n\n【你的潜意识核心记忆】：${s.memory || '无'}\n【你们最近在微信/线下的记录】：\n${recentWeChat || '无'}\n（注：你们现在是在论坛私信，你可以装不认识或者披马甲，但你潜意识里清楚你们在现实中发生过什么，请展现出这种反差感！）`;
+            }
+        }
+        
+        let sysPrompt = `你的身份是：${window.currentForumDmName}。你的性格设定：${npcPrompt}${extraMemory}\n【当前场景】：你正处在一个匿名论坛的【后台私信】里和玩家聊天。请保持你的人设，语气要符合论坛私聊的网感。\n【规则】：不要带括号描写动作！像真实网聊一样直接输出你说的话，越短越好！千万不要说“好的”这种废话！`;
+        
+        let msgs = [{role: 'system', content: sysPrompt}];
+        window.pandaForumDMs[window.currentForumDmName].slice(-10).forEach(m => {
+            msgs.push({role: m.side === 'me' ? 'user' : 'assistant', content: m.text});
+        });
+        
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            
+            const res = await fetch(endpoint, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.key}` },
+                body: JSON.stringify({ model: api.model, messages: msgs, temperature: 1.0 })
+            });
+            const data = await res.json();
+            let reply = data.choices[0].message.content.trim();
+            
+            window.pandaForumDMs[window.currentForumDmName].push({side: 'other', text: reply});
+            localStorage.setItem('panda_forum_dms', JSON.stringify(window.pandaForumDMs));
+            window.renderForumDMs();
+        } catch(e) {
+            window.pandaForumDMs[window.currentForumDmName].push({side: 'other', text: "(网络中断: " + e.message + ")"});
+            window.renderForumDMs();
+        } finally {
+            document.getElementById('fPmTitle').innerText = window.currentForumDmName;
+        }
+    };
+
+    // ================= 3. 终极一键全域回忆提炼 (无视平台，囊括一切) =================
+    window.triggerManualSummary = async function() {
+        const sid = typeof currentSessionId !== 'undefined' ? currentSessionId : window.currentSessionId;
+        const s = (window.sessions || []).find(x => String(x.id) === String(sid));
+        if(!s) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return alert("请先去设置配置 API Key");
+        
+        const btn = document.getElementById('btnAiSummary');
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '⏳ 正在融会贯通多重宇宙的回忆...';
+        btn.style.pointerEvents = 'none';
+
+        // 💥 终极修复：把所有的 m.sys（系统记忆）也全抓出来！绝不遗漏任何一场看电影或时空穿梭！
+        const cleanHistory = s.history.map(m => {
+            // 如果是系统记忆（包含了影院、大地图、居酒屋、时空机的梦境记录）
+            if (m.sys) return `[世界线变动记录]: ${m.sys}`;
+
+            let text = m.content || m.text || '';
+            if (typeof text !== 'string') text = String(text);
+            
+            // 清洗礼物卡片
+            if (text.includes('gift-msg-card')) {
+                let giftNameMatch = text.match(/<div class="gift-msg-name">(.*?)<\/div>/);
+                let gName = giftNameMatch ? giftNameMatch[1] : '神秘礼物';
+                text = text.includes('from-ai') ? `[送给了玩家一份礼物：${gName}]` : `[玩家送来了一份礼物：${gName}]`;
+            } else {
+                text = text.replace(/<[^>]*>/g, '').trim(); 
+            }
+            
+            if (m.type === 'img') text = '[发送了一张照片]';
+            if (m.type === 'voice') text = '[发送了一条语音]';
+            if (m.type === 'redpacket') text = `[发起微信转账 ¥${m.content}]`;
+            
+            if (!text) return '';
+            let speaker = m.side === 'me' ? (window.mySettings?.name || '我') : (m.senderName || s.name);
+            let modeTag = m.mode === 'novel' ? ' [线下见面]' : ' [微信网聊]';
+            return `${speaker}${modeTag}: ${text}`;
+        }).filter(t => t).join('\n');
+
+        // 提取论坛私信记录合并！
+        let forumDMs = JSON.parse(localStorage.getItem('panda_forum_dms') || '{}');
+        let myDMs = forumDMs[s.name];
+        let dmHistory = "";
+        if (myDMs && myDMs.length > 0) {
+            dmHistory = myDMs.map(m => `${m.side==='me'?'玩家':s.name} [星光匿名论坛私聊]: ${m.text}`).join('\n');
+        }
+
+        const prompt = `你是【${s.name}】。这是一份供你本人潜意识读取的【全量历史记忆档案】。
+        以下是你和玩家从相识到现在的【所有】跨平台互动记录（含微信、大地图线下见面、匿名论坛、时空机梦境、午夜影院、深夜居酒屋等）：
+        \n${cleanHistory}\n${dmHistory}\n
+        
+        【极密指令：记忆库重构】
+        请以客观、严谨、极其详细的方式，梳理出从头到尾的【所有关键剧情与回忆】。必须分点列出！
+        
+        请严格按以下档案结构输出：
+        📌【人物关系设定】：明确你和玩家现在的关系，互相的专属称呼。
+        📜【主线大事件回顾】：按剧情阶段，罗列你们一起经历过的所有事（包含约会、看电影、喝酒、或者时空梦境里的纠葛）。
+        🌐【论坛互动暗线】：如果在论坛有过交集，写明你们在论坛聊了什么，是否掉了马甲。
+        🎁【重要物品与细节】：互送过的礼物、转账、身体接触的细节。
+        💖【情感演变进度】：客观分析你对玩家的情感演变。
+        
+        注意：直接输出纯文本档案，绝不加 Markdown 代码块！`;
+
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.key}` },
+                body: JSON.stringify({ model: api.model, messages: [{role: "user", content: prompt}], temperature: 0.8 })
+            });
+            
+            const json = await res.json();
+            if(json.error) throw new Error(json.error.message);
+            const summary = json.choices[0].message.content.trim();
+            
+            const d = new Date();
+            const dateStr = `[${d.getMonth()+1}月${d.getDate()}日 记忆凝结]`;
+            
+            let box = document.getElementById('memoryPanelText');
+            if (box.value.trim()) box.value = box.value + '\n\n' + dateStr + '\n' + summary;
+            else box.value = dateStr + '\n' + summary;
+            
+            s.memory = box.value;
+            if(typeof window.saveSessions === 'function') window.saveSessions();
+            
+            if(window.pandaAlert) window.pandaAlert("✅ 跨时空记忆提取成功！\n\n已成功将大地图偶遇、看电影、喝酒、时空机梦境、微信和论坛的记录全部打包写入灵魂深处！");
+        } catch(e) {
+            if(window.pandaAlert) window.pandaAlert("提取失败: " + e.message); else alert("失败: " + e.message);
+        } finally {
+            btn.innerHTML = oldHtml;
+            btn.style.pointerEvents = 'auto';
+        }
+    };
+
+})();
+</script>
 
 </body>
 </html>
