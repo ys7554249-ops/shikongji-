@@ -72,8 +72,16 @@
 * { scrollbar-width: none; -ms-overflow-style: none; }
 
 
-/* 默认不让随便选中文字，但必须放开表单/按钮交互（iOS 上很关键） */
-body, #app, .swiper, .app-full-screen { user-select: none; -webkit-user-select: none; }
+/* 默认不让随便选中文字，禁止任何系统级长按弹窗，实现 100% 原生 App 体验 */
+body, #app, .swiper, .app-full-screen { 
+    user-select: none; 
+    -webkit-user-select: none; 
+    -webkit-touch-callout: none; /* 🔪 核心杀手：禁止全系统长按弹出的原生菜单 */
+}
+img, svg { 
+    -webkit-touch-callout: none; 
+    -webkit-user-drag: none; /* 🚫 禁止长按拖拽图片产生讨厌的残影 */
+}
 
 button, input, textarea, select, label, a,
 .chat-round-btn, .send-btn, .func-item, .card-btn, .wx-btn,
@@ -85,9 +93,10 @@ button, input, textarea, select, label, a,
 }
 
 .chat-input, #msgIn, #novelIn, #callInput, #chatInputArea,
-.ios-input, .ios-textarea, .set-input {
-    user-select: text;
-    -webkit-user-select: text;
+.ios-input, .ios-textarea, .set-input, input, textarea {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -webkit-touch-callout: default !important; /* 🔥 这一句是强行唤出安卓/iOS复制粘贴菜单的核心 */
 }
         body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background-color: var(--bg-color); background-image: radial-gradient(var(--dot-color) 20%, transparent 20%); background-position: 0 0; background-size: 22px 22px; color: var(--text-dark); }
 #app { width: 100%; height: 100dvh; display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -1378,15 +1387,15 @@ window.renderDesktopWidgets = async function() {
     `;
 };
 
-// 修改纪念日
+// 修改纪念日 (全面接入 Panda OS 高定弹窗)
 window.editDeskAnni = async function() {
     let currName = await window.DeskDB.get('panda_desk_anni_name') || 'Days with you';
     let currDate = await window.DeskDB.get('panda_desk_anni_date') || '';
     
-    let newName = prompt("底部文字 (建议保持简短，如：Days with you)：", currName);
+    let newName = window.pandaPrompt ? await window.pandaPrompt("设置底部文字 (建议保持简短，如：Days with you)：", currName, "例如：Days with you") : prompt("底部文字：", currName);
     if (newName === null) return;
     
-    let newDate = prompt("目标日期 (格式 YYYY-MM-DD)：", currDate || "2021-05-20");
+    let newDate = window.pandaPrompt ? await window.pandaPrompt("设置目标日期 (格式 YYYY-MM-DD)：", currDate || "2021-05-20", "例如：2021-05-20") : prompt("目标日期：", currDate || "2021-05-20");
     if (newDate === null) return;
     
     if (newDate && !isNaN(new Date(newDate).getTime())) {
@@ -1394,7 +1403,7 @@ window.editDeskAnni = async function() {
         await window.DeskDB.put('panda_desk_anni_date', newDate.trim());
         window.renderDesktopWidgets();
     } else {
-        alert("日期格式不对哦，请严格按照 2021-05-20 的格式输入！");
+        if(window.pandaAlert) window.pandaAlert("日期格式不对哦，请严格按照 2021-05-20 的格式输入！", "格式错误"); else alert("日期格式不对哦！");
     }
 };
 
@@ -1454,9 +1463,11 @@ window.applyCustomIcons = async function() {
                 window._isLongPressing = true;
                 if(navigator.vibrate) navigator.vibrate([50, 50]);
                 if(iconBg) iconBg.classList.add('jiggling');
-                setTimeout(() => {
+                setTimeout(async () => {
                     if(iconBg) iconBg.classList.remove('jiggling');
-                    if(confirm(`更换【${displayName}】的图标？`)) {
+                    // 强制召唤系统级高定弹窗，告别浏览器的流氓提示！
+                    const isConfirm = window.pandaConfirm ? await window.pandaConfirm(`确定要为【${displayName}】换上专属的图标吗？`, "✨ 个性化装扮") : confirm(`更换【${displayName}】的图标？`);
+                    if(isConfirm) {
                         window.triggerDeskUpload('icon', appName, iconBg);
                     }
                 }, 400); 
@@ -2295,8 +2306,9 @@ function jsStringArg(str) {
 
             document.getElementById('appView').innerHTML = `
                 <style>@keyframes novelFadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>
-                <div class="wx-header" style="background:transparent; border-bottom:none; z-index:100; padding:0; position:absolute; top:0; width:100%;">
-                    <div style="background:rgba(255,255,255,0.6); backdrop-filter:blur(20px); border-bottom:1px solid rgba(0,0,0,0.03); width:100%; display:flex; flex-direction:column; padding-top: env(safe-area-inset-top);">
+                <div class="wx-header" style="background:transparent !important; border-bottom:none !important; z-index:100; padding:0 !important; min-height:0 !important; position:absolute; top:0; width:100%;">
+    <div style="background:rgba(255,255,255,0.6); backdrop-filter:blur(20px); border-bottom:1px solid rgba(0,0,0,0.03); width:100%; display:flex; flex-direction:column; padding-top: max(calc(env(safe-area-inset-top) + 8px), 25px); box-sizing: border-box;">
+
                         <div style="display:flex; align-items:center; padding:10px 15px;">
                             <div class="wx-btn" style="background:transparent; border:none; font-size:24px; color:#5D4037; padding:0 10px 0 0;" onclick="renderChatRoom()">‹</div>
                             <span style="font-weight:800; color:#3E2723; font-size:16px; flex:1; text-align:center; letter-spacing:1px; font-family:-apple-system, sans-serif;">沉浸剧场</span>
@@ -5355,7 +5367,7 @@ window.renderMomentImgPreviews = function() {
                 </div>
                 <div style="font-size:11px; color:#888; margin-bottom:10px;">*这里的提示词是"全局保底"。如果你在角色资料里设置了专属长相，会优先用角色的！</div>
                 <div class="set-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#E8F5E9; padding:10px; border-radius:8px;">
-                    <label class="set-label" style="margin:0; font-weight:bold; color:#2E7D32;">允许发送照片</label>
+                    <label class="set-label" style="margin:0; font-weight:bold; color:#2E7D32;">开启全局 AI 生图 (含照片/线下/电影等)</label>
                     <input type="checkbox" id="imgToggle" ${window.imgSettings.toggle ? 'checked' : ''} style="width:24px;height:24px;accent-color:#07C160; cursor:pointer;" onchange="saveAllEngines()">
                 </div>
                 <div class="set-row"><label class="set-label">API 地址</label><input class="set-input" id="imgUrl" value="${window.imgSettings.url}"></div>
@@ -8407,14 +8419,20 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 <script>
 (function() {
     // --- 1. 赋予三大外挂“精准识别发件人”的能力 (彻底移除有毒的 window. 前缀) ---
-        window.generateAndSendImage = async function(session, imgPrompt, specificSender = undefined) {
+            window.generateAndSendImage = async function(session, imgPrompt, specificSender = undefined) {
+        // 👇 插入这一段核心防线：如果生图开关没开，绝对不画！
+        let imgSet = JSON.parse(localStorage.getItem('panda_img_settings')||'{}');
+        if (!imgSet.toggle) return; 
+
+       
+
         let sName = specificSender; 
         if (!sName && session.type === 'group' && session.history.length > 0) {
             let lastMsg = session.history.slice().reverse().find(m => m.side === 'other' && m.senderName);
             if(lastMsg) sName = lastMsg.senderName;
         }
 
-        let imgSet = JSON.parse(localStorage.getItem('panda_img_settings')||'{}');
+      
         let basePos = session.imgPos || imgSet.posPrompt || "1boy, handsome";
         let baseNeg = session.imgNeg || imgSet.negPrompt || "nsfw, lowres, bad anatomy, ugly, deformed, comic, funny"; 
         
@@ -9157,7 +9175,8 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             let specialBlocks = [];
             // 注意：这里的正则去掉了 VOICE，因为上面已经提前把它抽走了！
             // 🛡️ 修复：把“译”加入无敌护盾，绝不让它被换行或句号切碎！
-            replyText = replyText.replace(/\[(VOICE|语音|录音|译|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
+                        replyText = replyText.replace(/\[(GAME|HTML|VOICE|语音|录音|译|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
+
                 if (!match.endsWith(']')) match += ']';
                 specialBlocks.push(match); return "\n||SPECIAL_BLOCK_" + (specialBlocks.length - 1) + "||\n";
             });
@@ -9262,6 +9281,14 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                     textContent = textContent.replace(imgMatch[0], '').trim();
                     let spk = s.type === 'group' ? currentSpeaker : undefined; 
                     if(window.generateAndSendImage) setTimeout(() => window.generateAndSendImage(s, imgMatch[1], spk), 100);
+                }
+                let gameMatch = textContent.match(/\[(GAME|HTML)[:：\s]*([\s\S]*?)(?:\]|$)/i);
+                if (gameMatch) {
+                    let rawHtml = gameMatch[2].trim();
+                    textContent = textContent.replace(gameMatch[0], '').trim();
+                    let spk = s.type === 'group' ? currentSpeaker : undefined;
+                    // 强行包装成一个专属的 html_game 类型，送上屏幕
+                    window.pushMsg({targetSessionId: s.id, side: 'other', type: 'html_game', content: rawHtml, senderName: spk});
                 }
 
                 let stickerMatch = textContent.match(/\[STICKER\]/i);
@@ -13907,8 +13934,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             btn.innerHTML = `<div style="width:18px;height:18px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div> 正在快门连拍生成中...`;
 
             let imgUrl = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600"; 
-            if (imgApi.key && window.coreFetchImage) {
+                        // 🛑 必须判断 imgApi.toggle 是否为 true，如果不允许生图，直接跳过用网图兜底
+            if (imgApi.toggle && imgApi.key && window.coreFetchImage) {
                 let baseFace = s.imgPos || imgApi.posPrompt || "(masterpiece, best quality:1.2), beautiful aesthetic";
+
+                
                 // 拼接玩家意愿生成的 prompt
                 let finalImagePrompt = `${baseFace}, ${result.imgPrompt}`;
                 let baseNeg = s.imgNeg || imgApi.negPrompt || "(worst quality, low quality:1.4), nsfw, bad anatomy, deformed";
@@ -14402,10 +14432,11 @@ id="petUpdateBtn">🔄 更新扩充灵魂语库</button>
 (function() {
     console.log("🚀 正在加载：XML 终极防爆朋友圈 & 论坛全域生图...");
 
-    // 1. 统一后台无缝生图管线 (供朋友圈和论坛共同调用)
+       // 1. 统一后台无缝生图管线 (供朋友圈和论坛共同调用)
     window.bgGenerateImageCore = async function(promptEng, callback) {
         const imgSet = JSON.parse(localStorage.getItem('panda_img_settings') || '{}');
-        if (!imgSet.key || !imgSet.url || !window.coreFetchImage) return;
+        // 👇 加上 !imgSet.toggle 拦截，严格遵守全局生图开关
+        if (!imgSet.toggle || !imgSet.key || !imgSet.url || !window.coreFetchImage) return;
         try {
             let basePos = imgSet.posPrompt || "masterpiece, best quality, highres";
             let baseNeg = imgSet.negPrompt || "nsfw, lowres, bad anatomy";
@@ -16237,6 +16268,15 @@ ${npcListStr}
 
             if (msg.type === 'img') { content = `<img src="${msg.content}" style="max-width:160px;border-radius:8px;display:block;">`; bubbleStyle = 'background:transparent !important; border:none !important; padding:0 !important; box-shadow:none !important;'; } 
             else if (msg.type === 'mind') { extraClass = 'mind-bubble'; } 
+            else if (msg.type === 'html_game') { 
+                extraClass = 'html-game-bubble'; 
+                // 扒掉一切气泡底色和限制，撑满屏幕
+                bubbleStyle = 'background:transparent !important; border:none !important; padding:0 !important; box-shadow:none !important; width:100%; display:block; overflow:hidden; border-radius: 12px;'; 
+                // 强行恢复鼠标点击和文字选中权限，防止游戏里的按钮点不动
+                content = `<div style="background:#fff; border:1px solid #eee; padding:15px; pointer-events:auto !important; user-select:auto !important; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow-x:auto;">${msg.content}</div>`; 
+                clickAttr = ''; 
+            }
+
             else if (msg.type === 'group_rp') {
                 let isRcv = msg.grabbedBy && msg.grabbedBy.includes(window.mySettings?.name || '我');
                 let rpColor = isRcv ? '#F5C695' : '#FA9D3B';
@@ -16671,6 +16711,10 @@ ${npcListStr}
             newBtnOk.onclick = () => { overlay.classList.remove('active'); resolve(true); };
             newBtnCancel.onclick = () => { overlay.classList.remove('active'); resolve(false); };
         });
+    };
+    // 💥 终极劫持：把全系统所有丑陋的原生 alert 弹窗，强制收编到高定 UI！
+    window.alert = function(msg) {
+        window.pandaAlert(String(msg), "系统通知");
     };
 
     })();
@@ -17235,8 +17279,11 @@ ${npcListStr}
 
             let topHtml = `<div style="font-size:11px;color:#888;margin-bottom:8px;">[ 结算 ] 调出: ${drinkName} | 技法评价: ${window.barState.qteScore} 分</div>`;
             
+            // 💥 终极修复：强行把 AI 回复的“85分”、“八十五”全提炼成纯数字 85！
+            let finalScore = parseInt(String(result.score).replace(/[^\d]/g, '')) || 0;
+            
             let secretHtml = null;
-            if (result.score >= 80 && result.secret && result.secret !== 'null') {
+            if (finalScore >= 80 && result.secret && String(result.secret).toLowerCase() !== 'null' && result.secret !== '无') {
                 secretHtml = `🍷 <b>微醺的心语</b>：<br>“${result.secret}”`;
                 const tip = Math.floor(Math.random() * 300) + 150;
                 window.mySettings.balance += tip; localStorage.setItem('panda_me', JSON.stringify(window.mySettings));
