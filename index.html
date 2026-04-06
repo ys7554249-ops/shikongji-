@@ -13170,11 +13170,21 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const blob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `PandaOS_Theme_${Date.now()}.json`;
+        
+        // 核心修复：必须把下载标签强行塞进页面里，苹果手机才会放行！
+        document.body.appendChild(a); 
         a.click();
-        URL.revokeObjectURL(url);
-        alert("✅ 主题数据包已导出！");
+        
+        // 完事后过一小会儿再过河拆桥，保证下载任务已经成功触发
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 300);
+        
+        alert("✅ 主题数据包已强制导出！请在手机的【文件】App 中查看。");
     };
 
     window.importThemeData = function(input) {
@@ -21374,6 +21384,49 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
 
 })();
 </script>
+<!-- ================== 📱 终极桌面防吃字 + 完美黄金比例排版补丁 ================== -->
+<style id="panda-desktop-perfect-fix">
+    /* 1. 彻底解决普通浏览器底部 Dock 栏被吞没的问题，把 App 锁死在真实可见区域 */
+    body, html, #app {
+        height: 100% !important;
+        position: fixed !important; 
+        top: 0; left: 0; right: 0; bottom: 0;
+        overflow: hidden !important;
+        touch-action: none; 
+    }
+
+    /* 2. 让桌面不仅能均匀排列，在屏幕太矮时还能丝滑滑动，绝不硬性裁切 */
+    .swiper-slide {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important; 
+        height: 100% !important;
+        overflow-y: auto !important; 
+        padding-bottom: 10px !important;
+        gap: 15px !important; /* 恢复优雅的组件间距 */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 3. 修复白框：像海绵一样填满底部空白，且死死守住最小高度，绝不吃字！ */
+    .app-group-card {
+        flex-grow: 1 !important;        /* 屏幕高时，自动拉伸填满那块难看的空白！ */
+        min-height: 200px !important;   /* 屏幕矮时，死守底线，保证“美化”名字绝对完整！ */
+        max-height: none !important;    /* 打破原版限制 */
+        display: flex !important;
+        align-items: center !important; 
+        justify-content: center !important;
+        margin: 0 !important;
+    }
+
+    /* 4. 针对非全屏（如自带浏览器、有导航栏）的极限压榨优化，自动缩小上面组件给 App 让路 */
+    @media (max-height: 750px) {
+        .clock-widget { margin-top: 0 !important; transform: scale(0.85); transform-origin: top center; margin-bottom: -15px !important; }
+        .bento-grid { height: 120px !important; }
+        .music-row { height: 75px !important; }
+        .app-group-card { min-height: 180px !important; padding: 10px !important; }
+        .dock-container { height: 85px !important; padding-bottom: 15px !important; }
+    }
+</style>
 
 </body>
 </html>
