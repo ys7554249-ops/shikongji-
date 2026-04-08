@@ -1037,7 +1037,25 @@ button, input, textarea, select, label, a,
         <div class="pop-item" onclick="simulateProactive()"><svg class="hw-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 接收对方消息</div>
     </div>
     <div class="modal-overlay" id="groupModal"><div class="modal-sheet"><div class="sheet-header"><button class="sheet-btn" onclick="closeModal('groupModal')">取消</button><div class="sheet-title">发起群聊</div><button class="sheet-btn" onclick="saveGroup()">创建</button></div><div style="background:#fff;border-radius:12px;padding:10px;margin-bottom:15px"><div style="display:flex;align-items:center;padding:10px;border-bottom:1px solid #f0f0f0" onclick="document.getElementById('groupAvatarIn').click()"><span style="flex:1">群头像</span><img id="grpAvaPrev" src="" style="width:40px;height:40px;border-radius:6px;background:#eee"></div><div style="display:flex;align-items:center;padding:10px"><span style="flex:1">群名称</span><input id="grpName" class="set-input" style="width:150px;text-align:right;border:none" placeholder="输入群名"></div></div><div style="margin:10px 15px;font-size:14px;color:#666">选择成员 (从马甲库)</div><div id="memberSelect" style="padding:0 15px;display:flex;flex-wrap:wrap;gap:10px"></div></div></div>
-    <div class="modal-overlay" id="presetModal"><div class="modal-sheet"><div class="sheet-header"><button class="sheet-btn" onclick="closeModal('presetModal')">关闭</button><div class="sheet-title">管理预设</div><div></div></div><div id="presetList" style="padding-top:10px;padding-bottom:20px;"></div></div></div>
+    <div class="modal-overlay" id="presetModal" style="z-index: 9999;">
+    <div class="modal-sheet preset-sheet" style="background:#F4F5F7; height: 80vh; border-radius: 24px 24px 0 0; display:flex; flex-direction:column; padding:0; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+        <div style="padding: 20px; background: #fff; display: flex; justify-content: space-between; align-items: center; border-radius: 24px 24px 0 0; border-bottom: 1px solid rgba(0,0,0,0.05); flex-shrink:0;" class="preset-header">
+            <div style="font-size:32px; font-weight:300; color:#888; cursor:pointer; line-height:1; margin-top:-4px;" onclick="closeModal('presetModal')">‹</div>
+            <div style="font-weight:900; font-size:18px; color:#111; letter-spacing: 0.5px;" class="preset-title">API 预设管理</div>
+            <div style="width:28px;"></div>
+        </div>
+        <div id="presetList" style="flex:1; overflow-y:auto; padding: 20px 15px 40px; display:flex; flex-direction:column; gap:15px;"></div>
+    </div>
+    <style>
+        body.dark-mode .preset-sheet { background: #000 !important; }
+        body.dark-mode .preset-header { background: #1c1c1e !important; border-color: #333 !important; }
+        body.dark-mode .preset-title { color: #fff !important; }
+        body.dark-mode .preset-card { background: #1c1c1e !important; border-color: #333 !important; box-shadow: 0 8px 25px rgba(0,0,0,0.5) !important;}
+        body.dark-mode .preset-card-name { color: #eee !important; }
+        body.dark-mode .preset-card-bg { background: #2c2c2e !important; border-color: #444 !important; }
+        body.dark-mode .preset-card-val { color: #ccc !important; }
+    </style>
+</div>
     <input type="file" id="charAvatarInput" accept="image/*" style="display:none" onchange="handleImg(this)">
     <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="handleBg(this)">
     <input type="file" id="novelBgInput" accept="image/*" style="display:none" onchange="handleNovelBg(this)">
@@ -1106,13 +1124,12 @@ button, input, textarea, select, label, a,
 </div>
     <div class="modal-overlay" id="chatModal"><div class="modal-card"><h3 style="margin:0;font-size:18px;color:#333">编辑文字</h3><textarea id="chatInputArea" placeholder="输入你想在图标上显示的文字..."></textarea><button class="sheet-btn" style="margin-top:15px;width:100%;background:#111;color:#fff;border-radius:12px;padding:12px" onclick="saveMemo()">保存</button></div></div>
     
-    <!-- 消息操作菜单 (后悔药) -->
+        <!-- 消息操作菜单 (后悔药) -->
     <div class="msg-menu-modal" id="msgMenu">
         <div class="msg-menu-sheet">
             <button class="msg-menu-btn" onclick="menuAction('edit')"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> 编辑</button>
             <button class="msg-menu-btn" onclick="menuAction('revoke')"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> 撤回</button>
-            <button class="msg-menu-btn" onclick="menuAction('translate')" style="color:#007AFF;"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg> 划线翻译</button>
-            <button class="msg-menu-btn del" onclick="menuAction('del')"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 删除</button>
+            <button class="msg-menu-btn" onclick="window.toggleBatchDeleteMode(); document.getElementById('msgMenu').classList.remove('active')" style="color:#007AFF;"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/></svg> 多选删除</button>
             <button class="msg-menu-btn msg-menu-cancel" onclick="document.getElementById('msgMenu').classList.remove('active')">取消</button>
         </div>
     </div>
@@ -1696,17 +1713,18 @@ function jsStringArg(str) {
                     <div style="height:40px"></div>
                 </div>`;
         }
-        function saveToPreset() {
+                async function saveToPreset() {
             const url = document.getElementById('apiUrl').value; const key = document.getElementById('apiKey').value; const model = document.getElementById('apiModel').value;
-            if(!url) return alert('没填地址怎么存？'); const name = prompt("给这个配置起个名字：", "我的配置 " + (apiPresets.length + 1));
-            if(name) { apiPresets.push({ name, url, key, model, limit: document.getElementById('apiLimit').value, temp: document.getElementById('apiTemp').value }); localStorage.setItem('panda_api_presets', JSON.stringify(apiPresets)); alert('预设已保存！'); }
+            if(!url) return window.pandaAlert ? window.pandaAlert('没填地址怎么存？') : alert('没填地址怎么存？'); 
+            const name = window.pandaPrompt ? await window.pandaPrompt("给这个配置起个名字：", "我的配置 " + (apiPresets.length + 1)) : prompt("给这个配置起个名字：", "我的配置 " + (apiPresets.length + 1));
+            if(name) { apiPresets.push({ name, url, key, model, limit: document.getElementById('apiLimit').value, temp: document.getElementById('apiTemp').value }); localStorage.setItem('panda_api_presets', JSON.stringify(apiPresets)); if(window.pandaAlert) window.pandaAlert('预设已保存！'); else alert('预设已保存！'); }
         }
-        function openPresetManager() {
-            const list = document.getElementById('presetList');
-            if(apiPresets.length === 0) { list.innerHTML = '<div style="text-align:center;color:#999;padding:20px">暂无预设，请先在设置页保存一个。</div>'; } else {
-                list.innerHTML = apiPresets.map((p, i) => `<div class="generic-list-item" style="justify-content:space-between"><div onclick="loadPreset(${i})" style="flex:1;cursor:pointer"><div style="font-weight:bold">${p.name}</div><div style="font-size:11px;color:#999;margin-top:2px">${p.url}</div></div><div style="color:#FF3B30;font-weight:bold;padding:10px;cursor:pointer" onclick="delPreset(${i})">删除</div></div>`).join('');
-            } openModal('presetModal');
+
+        async function delPreset(i) { 
+            let isOk = window.pandaConfirm ? await window.pandaConfirm('确定删除这个预设吗？') : confirm('确定删除这个预设吗？');
+            if(isOk) { apiPresets.splice(i, 1); localStorage.setItem('panda_api_presets', JSON.stringify(apiPresets)); openPresetManager(); } 
         }
+
         function loadPreset(i) { const p = apiPresets[i]; apiSettings = { url: p.url, key: p.key, model: p.model, limit: parseInt(p.limit)||500, temp: parseFloat(p.temp)||1.0 }; localStorage.setItem('panda_api_settings', JSON.stringify(apiSettings)); closeModal('presetModal'); renderSettings(); alert(`已载入预设：${p.name}`); }
         function delPreset(i) { if(confirm('确定删除这个预设吗？')) { apiPresets.splice(i, 1); localStorage.setItem('panda_api_presets', JSON.stringify(apiPresets)); openPresetManager(); } }
         function onModelSelect(sel) { 
@@ -1938,34 +1956,27 @@ function jsStringArg(str) {
         document.getElementById('appView').innerHTML = `${headerHtml}${contentHtml}<div class="wx-tab-bar"><div class="wx-tab-item ${weChatTab==='msg'?'active':''}" onclick="weChatTab='msg';renderWeChatMain()">${svgChat}<div class="wx-tab-text">微信</div></div><div class="wx-tab-item ${weChatTab==='discover'?'active':''}" onclick="weChatTab='discover';renderWeChatMain()">${svgDiscover}<div class="wx-tab-text">发现</div></div><div class="wx-tab-item ${weChatTab==='me'?'active':''}" onclick="weChatTab='me';renderWeChatMain()">${svgMe}<div class="wx-tab-text">我</div></div></div>`;
     }
 
-            window.deleteMoment = function(id) {
-        if(!confirm("确定删除这条朋友圈吗？")) return;
+                window.deleteMoment = async function(id) {
+        let isOk = window.pandaConfirm ? await window.pandaConfirm("确定删除这条朋友圈吗？", "提示") : confirm("确定删除这条朋友圈吗？");
+        if(!isOk) return;
         
-        // 记录一下被删的是不是你自己的朋友圈
         let globalMoments = typeof moments !== 'undefined' ? moments : window.moments;
         const targetMoment = globalMoments.find(m => String(m.id) === String(id));
         const isMyMoment = targetMoment && targetMoment.name === (window.mySettings?.name || "我");
 
-        // 执行删除
         if (typeof moments !== 'undefined') moments = globalMoments.filter(m => String(m.id) !== String(id));
         window.moments = window.moments.filter(m => String(m.id) !== String(id));
         
         if (typeof saveMoments === 'function') saveMoments();
         if (typeof renderWeChatMain === 'function') renderWeChatMain();
 
-        // 触发秒删抓包联动！(50% 概率)
         if (isMyMoment && Math.random() < 0.5) {
             setTimeout(() => {
                 let globalSessions = typeof sessions !== 'undefined' ? sessions : (window.sessions || []);
                 const contacts = globalSessions.filter(s => s.type === 'single' && s.id !== 'bot');
                 if (contacts.length > 0) {
                     let stalker = contacts[Math.floor(Math.random() * contacts.length)];
-                    let delPrompt = `[系统最高红线突发事件：玩家刚刚发了一条朋友圈，但你还没来得及看清，TA就立刻“秒删”了！
-                    因为你一直在默默刷新/盯着TA的主页，你发现了这个动作！
-                    请立刻发微信私聊质问/关心玩家！
-                    （例如：“刚才发的朋友圈怎么秒删了？心情不好？”或“我看见你发动态了，为什么删掉？”）
-                    直接输出你发在微信上的台词！不要带动作描写！]`;
-                    
+                    let delPrompt = `[系统最高红线突发事件：玩家刚刚发了一条朋友圈，但你还没来得及看清，TA就立刻“秒删”了！因为你一直在默默刷新/盯着TA的主页，你发现了这个动作！请立刻发微信私聊质问/关心玩家！直接输出你发在微信上的台词！不要带动作描写！]`;
                     let oldSid = typeof currentSessionId !== 'undefined' ? currentSessionId : null; 
                     window.currentSessionId = stalker.id;
                     if(typeof window.triggerCharReply === 'function') window.triggerCharReply(true, delPrompt);
@@ -2003,8 +2014,8 @@ function jsStringArg(str) {
         }
     };
 
-    window.addComment = function(id) {
-        const text = prompt("评论：");
+        window.addComment = async function(id) {
+        const text = window.pandaPrompt ? await window.pandaPrompt("请输入评论：") : prompt("评论：");
         if(!text) return;
         const m = moments.find(x => String(x.id) === String(id));
         if(!m) return;
@@ -2012,27 +2023,21 @@ function jsStringArg(str) {
         m.comments.push({ author: mySettings.name, text: text, to: null });
         saveMoments();
         renderWeChatMain();
-        
-        if (m.name !== mySettings.name && apiSettings.key) {
-            triggerAICommentReply(m.id, mySettings.name, text, m.name);
-        }
+        if (m.name !== mySettings.name && apiSettings.key) { triggerAICommentReply(m.id, mySettings.name, text, m.name); }
     }
 
-    window.replyComment = function(momentId, authorName) {
+    window.replyComment = async function(momentId, authorName) {
         if(authorName === mySettings.name) return; 
-        const text = prompt(`回复 ${authorName}：`);
+        const text = window.pandaPrompt ? await window.pandaPrompt(`回复 ${authorName}：`) : prompt(`回复 ${authorName}：`);
         if(!text) return;
         const m = moments.find(x => String(x.id) === String(momentId));
         if(!m) return;
         m.comments.push({ author: mySettings.name, text: text, to: authorName });
         saveMoments();
         renderWeChatMain();
-
-        if (apiSettings.key) {
-            // 修复：将对方的名字传给AI，这样你回复谁，就是谁来找你说话
-            triggerAICommentReply(momentId, mySettings.name, text, authorName);
-        }
+        if (apiSettings.key) { triggerAICommentReply(momentId, mySettings.name, text, authorName); }
     }
+
 
 
   
@@ -3391,20 +3396,16 @@ window.grpActKick = function(mid, mName) {
 };
 
 // === 🗑️ 解散群聊 / 删除联系人 ===
-window.deleteCurrentContact = function() {
+window.deleteCurrentContact = async function() {
     const s = sessions.find(x => String(x.id) === String(currentSessionId));
     if(!s) return;
-    
     const msg = s.type === 'group' ? '确定要解散/退出这个群聊吗？所有聊天记录将永久丢失！' : '确定要删除这个联系人吗？聊天记录将永久丢失！';
-    if(!confirm(msg)) return;
+    let isOk = window.pandaConfirm ? await window.pandaConfirm(msg) : confirm(msg);
+    if(!isOk) return;
 
-    // 从列表中彻底删除当前会话
-window.sessions = window.sessions.filter(x => String(x.id) !== String(currentSessionId));
-sessions = window.sessions;
-
+    window.sessions = window.sessions.filter(x => String(x.id) !== String(currentSessionId));
+    sessions = window.sessions;
     saveSessions();
-    
-    // 关闭资料弹窗并退回列表页
     closeModal('editCharModal');
     handleGlobalBack(); 
     renderWeChatMain(); 
@@ -4092,39 +4093,28 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     window.handleBg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const s=sessions.find(x=>x.id==currentSessionId);s.chatBg=b;saveSessions();alert("背景已设置");renderChatRoom();});}};
     window.handleNovelBg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const s=sessions.find(x=>x.id==currentSessionId);s.novelBg=b;saveSessions();alert("剧情背景已设置");});}};
     window.handleChatImg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{pushMsg({side:'me', type:'img', content:b});document.getElementById('funcPanel').classList.remove('show');triggerCharReply(false, '[发送了一张图片]');});}};
-            window.sendRedPacket = function() { 
-        const amtStr = prompt("请输入转账金额:"); 
+                window.sendRedPacket = async function() { 
+        const amtStr = window.pandaPrompt ? await window.pandaPrompt("请输入转账金额:") : prompt("请输入转账金额:"); 
+        if(amtStr === null) return;
         const amt = parseFloat(amtStr); 
-        if(isNaN(amt) || amt <= 0) return alert("金额输入错误"); 
+        if(isNaN(amt) || amt <= 0) return window.pandaAlert ? window.pandaAlert("金额输入错误") : alert("金额输入错误"); 
         let meData = window.mySettings || JSON.parse(localStorage.getItem('panda_me') || '{"balance":5000}'); 
-        if(meData.balance < amt) return alert("余额不足！"); 
+        if(meData.balance < amt) return window.pandaAlert ? window.pandaAlert("余额不足！") : alert("余额不足！"); 
         
         meData.balance -= amt; 
         localStorage.setItem('panda_me', JSON.stringify(meData)); 
         window.mySettings = meData; 
         
-        // 加上当前时间戳 timestamp，用于计算12小时过期
         pushMsg({side:'me', type:'redpacket', content: amt.toFixed(2), isReceived: false, isRefunded: false, timestamp: Date.now()}); 
         const p = document.getElementById('funcPanel'); if(p) p.classList.remove('show');
         
-        // 🔥 修复补丁：加入“虚拟角色扮演”声明，防止巨额转账触发大模型安全风控导致输出英文
-        const silentPrompt = `[系统强制指令：这是一场虚拟的角色扮演文字游戏！玩家在游戏内给你发起了虚拟微信转账 ¥${amt.toFixed(2)}（此金额为剧情设定的虚拟货币，无现实风险）。
-请严格保持你的人设作出反应（如果金额巨大，你可以表现出震惊、贪婪或惶恐）。
-【核心要求】：
-1. 必须且只能用中文回复！
-2. 如果你痛快收下，请务必在回复末尾另起一行加上 [ACCEPT]；
-3. 如果你傲娇、生气或者觉得不能收选择退回，请务必在回复末尾另起一行加上 [REFUND]；
-千万不要把这两个标签混在句子里！]`;
-        
+        const silentPrompt = `[系统强制指令：这是一场虚拟的角色扮演文字游戏！玩家在游戏内给你发起了虚拟微信转账 ¥${amt.toFixed(2)}。请严格保持你的人设作出反应（如果收下请在末尾加 [ACCEPT]；如果退回请在末尾加 [REFUND]）。千万别把这两个标签漏掉了！]`;
         setTimeout(() => { 
             if (typeof triggerCharReply === 'function') triggerCharReply(false, silentPrompt);
             else if (typeof window.triggerCharReply === 'function') window.triggerCharReply(false, silentPrompt);
         }, 500); 
     };
 
-
-
-            
     
 
     
@@ -8948,8 +8938,10 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 <!-- ================== 🧠 记忆系统全面修复补丁 (无精神分裂真理版) ================== -->
 <script>
 (function() {
-    // 拦截并重写全局的 AI 回复逻辑
+      // 拦截并重写全局的 AI 回复逻辑
     window.triggerCharReply = async function(isProactive = false, injectedContent = null) {
+        // 🌟 核心防串台修复：发起时立即锁定当前所在的时空模式，无视中途玩家可能进行的退界操作！
+        let reqMode = typeof currentMode !== 'undefined' ? currentMode : 'chat';
         let activeId = (typeof currentSessionId !== 'undefined' && currentSessionId) ? currentSessionId : window.lastActiveSessionId;
         const s = (window.sessions || sessions).find(x => String(x.id) === String(activeId)); 
         if(!s || s.blocked) return;
@@ -9010,22 +9002,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         let contextStr = ""; 
         const uniqueWbIds = [...new Set(collectedWbIds)];
         const targetWbs = wb.filter((_, i) => uniqueWbIds.includes(i));
-        
-        // 🌟 终极修复：砸烂关键词触发机制！只要绑定了世界书，全部无条件载入！
         targetWbs.forEach(w => { contextStr += `\n- 《${w.title}》: ${w.content}`; });
 
         const nowTime = new Date();
         const realTime = `\n【当前现实时间】：${nowTime.getMonth()+1}月${nowTime.getDate()}日 ${String(nowTime.getHours()).padStart(2,'0')}:${String(nowTime.getMinutes()).padStart(2,'0')}。`;
-
-        // 🌟 核心提权：给世界书加上“绝对法则”的红线警告！
         let wbPrompt = contextStr ? `\n\n🌍【绝对世界观与常识法则】(最高优先级，你的所有言行必须严格遵守以下设定，绝不吃书！)：${contextStr}\n` : "";
 
         let systemInstruction = s.type === 'group' 
             ? `玩家马甲设定: ${userPersonaInfo}\n${groupInfo}${wbPrompt}${realTime}`
             : `你的身份: ${s.name}。\n你的详细人设: ${s.prompt || "保持人设"}\n玩家马甲设定: ${userPersonaInfo}${wbPrompt}${s.memory ? `\n【核心记忆】:\n${s.memory}\n` : ""}${realTime}`;
         
-              if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
-            // 🔥 原码修复：重新读取并注入文风与地点设定！
+        if (reqMode === 'novel') {
             const place = s.scene?.place || "未知地点";
             const styleBooks = JSON.parse(localStorage.getItem('panda_style_books') || '[]');
             const boundStyles = (s.scene?.boundStyleIds || []).map(id => styleBooks[id]?.content).join("\n");
@@ -9036,7 +9023,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 ！！！【最高红线警告】！！！
 绝对禁止出现任何网络聊天的行为（严禁发语音、表情包，严禁输出“22秒”等字眼）！请进行细腻的动作、环境、心理描写，输出一整段富有文采的长文（允许分段排版）。
 格式生死线：你的回复必须由第三人称动作/神态描写和“开口说的话”交织组成！绝对禁止用第一人称“我”写旁白！`;
-        } else if (typeof currentMode !== 'undefined' && currentMode === 'call') {
+        } else if (reqMode === 'call') {
             systemInstruction += `\n【当前模式：语音通话】\n口语化，简短。`;
         } else {
             systemInstruction += `\n【当前模式：微信聊天】\n多用口语化表达，严禁输出“(消息1)”、“1.”等编号。`;
@@ -9047,7 +9034,6 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const messages = [{role: "system", content: systemInstruction}];
         const apiSet = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
         
-        // 🌟 恢复记忆互通！把线上线下的记忆无缝接回来，绝不失忆！
         const recentMsgs = s.history.filter(m => m.content && m.content !== 'undefined').slice(-(parseInt(apiSet.limit) || 40)); 
         
         let hasImage = false; 
@@ -9058,7 +9044,6 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             if (m.type === 'mind') return; 
             let role = m.side === 'me' ? 'user' : 'assistant';
             if (m.type === 'img') {
-                // 💥 修复：只有将图片转为 image_url 数组格式，大模型才能真正看到你的图！
                 messages.push({
                     role: role,
                     content: [
@@ -9067,38 +9052,29 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                     ]
                 });
             } else if (m.type === 'redpacket' || m.type === 'group_rp') { 
-    let status = m.isReceived ? ' (已领取)' : (m.isRefunded ? ' (已退回)' : '');
-    messages.push({role: role, content: `[系统提示：${role==='user'?'我':'你'} 发送了微信红包${status}]`}); 
-} else {
-     let content = m.content;
-                
-         // 🌟 核心魔法：记忆互通但不污染格式！给跨模式的记忆加上【时空标注】
-                if (typeof currentMode !== 'undefined') {
-                    if (currentMode === 'chat' && m.mode === 'novel') {
-                        content = `[刚才线下见面的回忆]：${content}`;
-                    } else if (currentMode === 'novel' && m.mode !== 'novel') {
-                        content = `[之前微信聊天的记录]：${content}`;
-                    }
-                }
+                let status = m.isReceived ? ' (已领取)' : (m.isRefunded ? ' (已退回)' : '');
+                messages.push({role: role, content: `[系统提示：${role==='user'?'我':'你'} 发送了微信红包${status}]`}); 
+            } else {
+                let content = m.content;
+                // 记忆互通且不污染格式
+                if (reqMode === 'chat' && m.mode === 'novel') content = `[刚才线下见面时的举动/回忆]：${content}`;
+                else if (reqMode === 'novel' && m.mode !== 'novel') content = `[之前微信聊天的记录]：${content}`;
 
                 if (s.type === 'group' && m.senderName && m.side !== 'me') content = `${m.senderName}: ${content}`;
-                
-                                   // 告诉 AI 这是一条语音，增强真实感
-                    if (m.type === 'voice') content = `[发送了一条语音：${content}]`;
+                if (m.type === 'voice') content = `[发送了一条语音：${content}]`;
 
-                    messages.push({role: role, content: content.replace(/<[^>]+>/g, '')});
-                }
-            });
+                messages.push({role: role, content: content.replace(/<[^>]+>/g, '')});
+            }
+        });
 
-                    // 🔥 强力物理阻断：直接在末尾贴脸警告 AI
-        if (typeof currentMode !== 'undefined' && currentMode === 'chat') {
+        // 强力物理阻断
+        if (reqMode === 'chat') {
             messages.push({role: 'system', content: '【系统强制阻断】：你们现在已经分开了，目前不在一起！正在使用手机微信打字网聊！请立刻切换回短平快的聊天模式，绝对禁止再发任何动作描写！'});
         }
         
         if (injectedContent) messages.push({role: 'user', content: injectedContent});
 
-        // 🔥 原码终极修复：把世界书和文风警告直接追加到 User 消息末尾，绝不破坏对话轮次导致大模型发疯！
-        if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+        if (reqMode === 'novel') {
             const place = s.scene?.place || "未知地点";
             const styleBooks = JSON.parse(localStorage.getItem('panda_style_books') || '[]');
             const boundStyles = (s.scene?.boundStyleIds || []).map(id => styleBooks[id]?.content).join("\n");
@@ -9108,36 +9084,28 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             if (contextStr) threat += `强制世界观：${contextStr}。\n`;
             threat += `请立刻停止模仿前面的微信网聊短句！你的回复必须是由第三人称动作/环境/神态描写”和“开口说的话”交织组成的长文！绝对禁止发语音提示或表情符号！`;
             
-            // 巧妙融合：如果最后一条是玩家说的话，直接拼在后面；否则强行补一条
             let lastMsg = messages[messages.length - 1];
-            if (lastMsg && lastMsg.role === 'user') {
-                lastMsg.content += threat;
-            } else {
-                messages.push({role: 'user', content: threat});
-            }
+            if (lastMsg && lastMsg.role === 'user') lastMsg.content += threat;
+            else messages.push({role: 'user', content: threat});
         }
-
-      
-
 
         let imgSet = JSON.parse(localStorage.getItem('panda_img_settings')||'{}');
         let ttsSet = JSON.parse(localStorage.getItem('panda_tts_settings')||'{}');
-        
         let injectCmd = "";
-             if(imgSet.toggle) injectCmd += `\n【照片指令】想发照片加 \`[IMAGE: 1boy/1girl, 纯英文外貌与画面描述]\`。警告：必须在最开头明确写出性别是 1boy 还是 1girl，并带上你的发色瞳色等核心外貌特征，否则系统会画错人！`;
+        if(imgSet.toggle) injectCmd += `\n【照片指令】想发照片加 \`[IMAGE: 1boy/1girl, 纯英文外貌与画面描述]\`。警告：必须在最开头明确写出性别是 1boy 还是 1girl，并带上你的发色瞳色等核心外貌特征，否则系统会画错人！`;
 
         if(ttsSet.toggle) injectCmd += `\n想发语音加 \`[VOICE: 语音内容]\`。`;
         injectCmd += `\n想发表情加 \`[STICKER]\`。想给玩家打钱加 \`[微信转账: 金额]\`。如果玩家给你发转账，同意收下加 \`[ACCEPT]\`，拒绝加 \`[REFUND]\`。`;
 
-        if (typeof currentMode !== 'undefined' && currentMode === 'chat') {
+        if (reqMode === 'chat') {
             messages[0].content += `\n\n【🚨线上规则】${injectCmd}\n1. 我们现在是在手机微信上打字聊天！你们不在一起！\n2. 【最严红线】绝对禁止用括号描写任何动作、心理和神态！只能输出你发在屏幕上的字！(但系统赋予的 [ACCEPT] 或 [IMAGE:xxx] 等功能标签除外，这些必须要带上)\n3. 必须连发多条短消息，每句一行！\n4. 像真实网聊一样，每句话结尾绝对不准加逗号和句号！\n5. ！！！【警告】！！！严禁自己在对话里打出“[语音]”、“[语音X秒]”这种假装语音的文字，想发语音必须用 [VOICE] 标签！`;
-        } else if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+        } else if (reqMode === 'novel') {
             if (imgSet.toggle) {
                 messages[0].content += `\n\n【线下动态CG引擎启动】：你必须在每次回复的最末尾，另起一行加上 \`[IMAGE: 纯英文画面描述]\`！提示词要精准描绘你此刻的动作、神态和背景环境，呈现出韩漫或乙女游戏高级CG般的画质。绝对不能漏掉这个标签！`;
             }
         }
 
-        if (typeof currentMode !== 'undefined' && currentMode !== 'call' && document.querySelector('.wx-header span')) {
+        if (reqMode !== 'call' && document.querySelector('.wx-header span')) {
             document.querySelector('.wx-header span').innerText = hasImage ? "正在看图..." : "对方正在输入...";
         }
 
@@ -9152,42 +9120,32 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error.message);
-                        let replyText = data.choices[0].message.content;
+            let replyText = data.choices[0].message.content;
 
             if (!replyText || !replyText.trim()) return;
 
-                                  // ⚡ 终极顺序拦截法 (解决语音乱序与翻译重叠问题)
             let currentSpeakerForVoice = s.type === 'group' ? s.name : undefined;
 
-            // 1. 强力格式清洗：把大模型乱写的符号标准化，绝不误伤普通的圆括号！
             replyText = replyText.replace(/(?:【|<|\(|（)\s*(VOICE|语音|录音|译|CARD|IMAGE)\s*[:：]/gi, '[$1:');
             replyText = replyText.replace(/\[\s*(VOICE|语音|录音|译|CARD|IMAGE)\s*[:：]/gi, '[$1:');
             replyText = replyText.replace(/】/g, ']');
 
-            // 💥 终极防切碎：如果大模型把 `]` 写到了下一行，强行把它拉回上一行！
             replyText = replyText.replace(/\[([^\]]*?)\n([^\]]*?)\]/g, '[$1 $2]');
             replyText = replyText.replace(/\[([^\]]*?)\n([^\]]*?)\]/g, '[$1 $2]'); 
-            
-            // 物理销毁残留的孤儿右括号
             replyText = replyText.replace(/^\s*\]\s*$/gm, '');
 
-
             let specialBlocks = [];
-            // 注意：这里的正则去掉了 VOICE，因为上面已经提前把它抽走了！
-            // 🛡️ 修复：把“译”加入无敌护盾，绝不让它被换行或句号切碎！
-                        replyText = replyText.replace(/\[(GAME|HTML|VOICE|语音|录音|译|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
-
+            replyText = replyText.replace(/\[(GAME|HTML|VOICE|语音|录音|译|CARD|IMAGE|微信转账|GIFT)[:：\s]*[\s\S]*?(?:\]|$)/gi, match => {
                 if (!match.endsWith(']')) match += ']';
                 specialBlocks.push(match); return "\n||SPECIAL_BLOCK_" + (specialBlocks.length - 1) + "||\n";
             });
 
             let rawLines = [];
-            if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+            if (reqMode === 'novel') {
                 rawLines = [replyText]; 
             } else if (s.type === 'group') {
                 let cleanText = replyText;
                 
-                // 🗡️ 收集当前群里所有角色的真名
                 let groupNames = (s.members || []).map(mid => {
                     let member = (window.sessions || []).find(x => x.id === mid);
                     return member ? member.name : null;
@@ -9202,14 +9160,12 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 }
                 groupNames.push(myNameForGroup, "我", "系统");
 
-                // 🗡️ 核弹级精准切分：只要前面不是换行，但紧紧连着群员名字+冒号，直接一刀劈开！
                 groupNames.forEach(gn => {
                     let safeName = gn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     let reg = new RegExp(`([^\\n])\\s*(${safeName})[:：]`, 'g');
                     cleanText = cleanText.replace(reg, "$1\n$2:");
                 });
 
-                // 🗡️ 兜底清洗，处理未登记名字的散兵游勇或标点粘连
                 cleanText = cleanText.replace(/([。？！.?!~～”"’'」】\]]+)\s*([^:：\n]{1,8})[:：]/g, "$1\n$2:");
                 cleanText = cleanText.replace(/([^:：\n]{1,8})[:：]\s*\1[:：]/g, "$1:");
 
@@ -9223,7 +9179,6 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                     if (line.includes('||SPECIAL_BLOCK_') || line.includes('[译')) {
                         rawLines.push(line);
                     } else {
-                        // 物理斩杀会导致分割出错的符号，然后按句子切分
                         let splitLine = line.replace(/([。？！.?!~～]+[”"’'」】\]]?)/g, "$1|SPLIT|");
                         let segs = splitLine.split('|SPLIT|');
                         for (let seg of segs) {
@@ -9243,7 +9198,6 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 line = line.replace(/\|\|SPECIAL_BLOCK_(\d+)\|\|/g, (m, p1) => specialBlocks[p1]);
 
                 let textContent = line;
-                
                 if (s.type === 'group') {
                     const match = line.match(/^([^:：]{1,10})[:：](.*)/);
                     if (match) {
@@ -9254,14 +9208,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
                 if (!textContent) continue;
 
-                
-                // --- 核心提取功能标签 (按说话顺序依次解析，谁也不准插队) ---
                 let voiceMatch = textContent.match(/\[(?:VOICE|语音|录音)[:：\s]*([\s\S]*?)(?:\]|$)/i);
                 if (voiceMatch) {
                     let voiceText = voiceMatch[1].trim();
                     textContent = textContent.replace(voiceMatch[0], '').trim();
                     
-                    // 顺带看看这句语音后面有没有跟着字幕翻译
                     let transMatch = textContent.match(/\[译[:：]\s*([\s\S]*?)(?:\]|$)/i) || textContent.match(/\[译[:：]\s*([^\n]*)/i);
                     let trans = null;
                     if (transMatch) {
@@ -9271,7 +9222,6 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                     
                     let spk = s.type === 'group' ? currentSpeaker : undefined; 
                     if(window.generateAndSendVoice) {
-                        // 因为是排队出来的，立刻调用语音引擎，保证顺序绝对正确！
                         window.generateAndSendVoice(s, voiceText, spk, trans);
                     }
                 }
@@ -9282,12 +9232,12 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                     let spk = s.type === 'group' ? currentSpeaker : undefined; 
                     if(window.generateAndSendImage) setTimeout(() => window.generateAndSendImage(s, imgMatch[1], spk), 100);
                 }
+                
                 let gameMatch = textContent.match(/\[(GAME|HTML)[:：\s]*([\s\S]*?)(?:\]|$)/i);
                 if (gameMatch) {
                     let rawHtml = gameMatch[2].trim();
                     textContent = textContent.replace(gameMatch[0], '').trim();
                     let spk = s.type === 'group' ? currentSpeaker : undefined;
-                    // 强行包装成一个专属的 html_game 类型，送上屏幕
                     window.pushMsg({targetSessionId: s.id, side: 'other', type: 'html_game', content: rawHtml, senderName: spk});
                 }
 
@@ -9335,18 +9285,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 }
 
                 if(textContent) {
-                    if (typeof currentMode !== 'undefined' && currentMode === 'chat') {
+                    if (reqMode === 'chat') {
                         textContent = textContent.replace(/[。，,.\s]+$/g, '');
                     }
-                    // 终极拦截：就算漏网了，单独的括号也绝对上不了屏幕！
                     if (textContent === ']' || textContent === '】') continue;
                     
-                    if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+                    if (reqMode === 'novel') {
                         window.pushMsg({side: 'other', type: 'text', content: textContent, mode: 'novel'});
                     } 
-                    else if (typeof currentMode !== 'undefined' && currentMode === 'call') {
+                    else if (reqMode === 'call') {
                         if(typeof window.showCaption === 'function') window.showCaption(s.name, textContent);
-                        window.pushMsg({targetSessionId: s.id, side: 'other', type: 'text', content: textContent});
+                        window.pushMsg({targetSessionId: s.id, side: 'other', type: 'text', content: textContent, mode: 'call'});
                     } 
                     else {
                         window.pushMsg({
@@ -9354,24 +9303,25 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                             side: 'other', 
                             type: 'text', 
                             content: textContent, 
-                            senderName: s.type === 'group' ? currentSpeaker : undefined
+                            senderName: s.type === 'group' ? currentSpeaker : undefined,
+                            mode: reqMode
                         });
                     }
                 }
                 await new Promise(r => setTimeout(r, 600)); 
             }
 
-
         } catch(e) { 
             console.error(e);
-            window.pushMsg({targetSessionId: s.id, side:'other', type:'text', content: `(连接中断: ${e.message})`, fail:true}); 
+            window.pushMsg({targetSessionId: s.id, side:'other', type:'text', content: `(连接中断: ${e.message})`, fail:true, mode: reqMode}); 
         } finally {
-            if(typeof currentMode !== 'undefined' && currentMode !== 'call' && document.querySelector('.wx-header span')) {
+            if(reqMode !== 'call' && document.querySelector('.wx-header span')) {
                 document.querySelector('.wx-header span').innerText = s.name;
             }
         }
     };
 })();
+
 </script>
 
 <!-- ================== ⚡ 聊天性能保底：无限瀑布流分页渲染补丁 (已去病灶修复版) ================== -->
@@ -9665,12 +9615,13 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         req.onerror = () => res(null);
     });
 
-    const OS_KEYS = [
+        const OS_KEYS = [
         'panda_pin_code_v17', 'panda_me', 'panda_api_settings', 'panda_api_presets',
         'panda_img_settings', 'panda_tts_settings', 'panda_wb', 'panda_persona',
         'memo', 'panda_forum_posts', 'ai_penalty', 'panda_style_books', 'panda_theme_settings',
-        'panda_sessions'
+        'panda_sessions', 'panda_pet_multi_v18', 'panda_pet_v18'
     ];
+
 // 🔥 强制从底层硬盘中永久抹除旧版小组件残留数据，防止导入备份后污染新版UI
 (async function() {
     try {
@@ -12035,9 +11986,17 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     // 给系统自带的顶部状态栏绑定点击事件
     setTimeout(() => {
         const statusBar = document.querySelector('.status-bar');
+        const clockWidget = document.querySelector('.clock-widget'); // 👉 新增：获取时钟
+        
         if(statusBar) {
             statusBar.style.cursor = 'pointer';
             statusBar.addEventListener('click', window.toggleControlCenter);
+        }
+        
+        // 👉 新增：让桌面大时钟也能呼出灵动岛
+        if(clockWidget) { 
+            clockWidget.style.cursor = 'pointer';
+            clockWidget.addEventListener('click', window.toggleControlCenter);
         }
     }, 1000);
 
@@ -16508,7 +16467,7 @@ ${npcListStr}
         
         // 自动把“底部操作栏”塞进屏幕下方 (这个必须保留)
         if (!document.getElementById('batchActionBar')) {
-            document.body.insertAdjacentHTML('beforeend', `<div id="batchActionBar" class="batch-action-bar"><span style="color:#576b95; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.cancelBatchDelete()">取消</span><div style="font-size:13px; color:#999;">请勾选要删除的消息</div><span style="color:#FF5252; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.confirmBatchDelete()">🗑️ 删除 (<span id="batchCount">0</span>)</span></div>`);
+            document.body.insertAdjacentHTML('beforeend', `<div id="batchActionBar" class="batch-action-bar"><span style="color:#576b95; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.cancelBatchDelete()">取消</span><div style="font-size:13px; color:#999;">请勾选要删除的消息</div><span style="color:#FF5252; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.confirmBatchDelete()">删除 (<span id="batchCount">0</span>)</span></div>`);
         }
         document.body.classList.remove('is-select-mode');
     };
@@ -17378,108 +17337,123 @@ ${npcListStr}
     body.dark-mode .tut-feedback-title { color: #D1C4E9; border-bottom-color: #311B92; }
 </style>
 
+<<!-- ================== 📖 时空 OS 新手保姆级食用指南 ================== -->
 <div class="tut-overlay" id="pandaTutorialModal">
     <div class="tut-sheet" onclick="event.stopPropagation()">
         <div class="tut-header">
-            <div class="tut-title">✨ 时空 OS 使用指南</div>
+            <div class="tut-title">✨ 时空 OS 终极食用指南</div>
             <div class="tut-close" onclick="document.getElementById('pandaTutorialModal').classList.remove('active')">关闭</div>
         </div>
         <div class="tut-body">
 
-            <!-- 🚨 免责声明 -->
+            <!-- 🚨 免责声明与护肝警告 -->
             <div class="tut-alert-card">
-                <div class="tut-alert-title">🔞 严正声明与使用规范</div>
+                <div class="tut-alert-title">⚠️ 必读：数据安全与防丢指南</div>
                 <div style="font-size:13px; color:#D32F2F; line-height:1.6; text-align:justify;">
-                    <strong>1. 未成年人严禁游玩：</strong>本系统支持高自由度的 AI 角色扮演，可能触发成人化/情感向互动，未成年人请立即退出！<br>
-                    <strong>2. 拒绝二传与盗用：</strong>本系统仅供个人本地私藏、圈地自萌。坚决严禁任何形式的群分享、二次发布或商业化！请务必保管好自己的 API Key。
+                    <strong>1. 数据全本地存储：</strong>本系统的所有聊天记录、立绘、设置都保存在你当前手机浏览器的缓存里！<strong>清理浏览器缓存 = 删号重置！</strong><br>
+                    <strong>2. 养成备份习惯：</strong>请经常去【设置 App】里点击<span class="tut-hl">【导出备份数据】</span>，把存档存在手机文件里，换手机或浏览器清空时可以随时导入恢复！<br>
+                    <strong>3. 拒绝二传盗用：</strong>系统仅供个人本地私藏、圈地自萌，严禁任何形式的商业化及大范围传播。
                 </div>
             </div>
 
-            <!-- 1. 基础操作与灵动岛 -->
+            <!-- 1. 萌新第一步 -->
             <details class="tut-details" open>
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">📱 基础操作：全局马甲与灵动岛</div>
+                    <div class="tut-sum-text">🔑 萌新第一步：点亮 AI 灵魂 (必看)</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    • <span class="tut-key">全局返回键：</span>屏幕最底端那条<span class="tut-hl">粗粗的灰色横线</span>就是返回键！卡在哪个 App 都可以点它回桌面。<br>
-                    • <span class="tut-key">呼出灵动岛 (控制中心)：</span>在任何界面，点击屏幕<span class="tut-hl">最顶部的时间栏/电量栏区域</span>，可拉下控制中心。可开启夜间模式、粒子特效（樱花/下雨）。<br>
-                    • <span class="tut-key">切换微信分身 (全局马甲)：</span>在【马甲 App】里捏好不同身份后，在灵动岛底部点击头像即可<span class="tut-hl">一键切换账号</span>。你当前是哪个马甲，看到的微信通讯录、朋友圈、甚至偶遇的 NPC 都完全独立！
+                    刚进入系统，NPC 是不会说话的。你需要给他们装上“大脑”：<br>
+                    <div class="tut-sub-title">1. 配置文字大脑 (聊天必需)</div>
+                    进入桌面右下角的【设置 App】，填入大模型 API 的 <span class="tut-hl">地址(Url)</span> 和 <span class="tut-hl">密钥(Key)</span>（如 DeepSeek、Kimi、硅基流动等）。点击“测试连接”，选好模型后保存。此时你的微信就可以正常聊天了！<br>
+                    <div class="tut-sub-title">2. 配置视觉引擎 (看图/拍照必需)</div>
+                    在设置页下方开启“全局视觉生图引擎”，填入画图 API（如 NovelAI 或 DALL-E）。打通后，NPC 就能给你发绝美自拍，【穿搭图鉴】、【万界穿梭】等功能也会解锁动态 CG 画面！<br>
+                    <div class="tut-sub-title">3. 配置语音引擎 (打电话必需)</div>
+                    填入 TTS 接口（如 MiniMax、OpenAI）。开启后，不仅能收到真人语音条，打电话时还会自动朗读，名师讲课也能出声！
                 </div>
             </details>
 
-            <!-- 2. API 灵魂配置 -->
+            <!-- 2. 马甲与灵动岛 -->
             <details class="tut-details">
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">🧠 核心设置：让世界活过来 (API)</div>
+                    <div class="tut-sum-text">🎭 核心神技：多开马甲与灵动岛</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    进入【设置 App】填入以下配置：<br><br>
-                    • <span class="tut-key">聊天大脑(必填)：</span>填入大模型API (如 DeepSeek、Kimi 等) 的 Url 和 Key，测试成功后 NPC 才能说话。<br>
-                    • <span class="tut-key">视觉生图引擎：</span>填入生图 API。打通后，NPC 会给你发自拍，后续的“穿搭图鉴”、“万界穿梭”、“线下偶遇”将全部解锁动态 CG 配图功能！<br>
-                    • <span class="tut-key">拟真语音引擎：</span>填入 TTS 接口。开启后，不仅能收到真人语音条，打语音电话时还会自动把字幕转成真人朗读，甚至名师讲课也会发声！
+                    • <span class="tut-key">全局返回键：</span>屏幕最底端那条<span class="tut-hl">灰色横条</span>就是返回键！卡在哪个 App 都可以点它回桌面。<br>
+                    • <span class="tut-key">呼出灵动岛 (控制中心)：</span>在任何界面，点击屏幕<span class="tut-hl">最顶部的时间栏区域</span>（或者桌面那个巨大时钟），可拉下控制中心。在这里可以开夜间模式、开关粒子特效。<br>
+                    • <span class="tut-key">“微信分身”玩法：</span>先去【马甲 App】里捏几个不同身份（比如：霸道女总裁、清纯男大）。然后在灵动岛底部<span class="tut-hl">点击头像一键切换</span>！<br>
+                    <strong>💡 注意：</strong>马甲之间是<span class="tut-hl">绝对物理隔离</span>的！你切到马甲A，看到的微信好友、朋友圈只有A的；切回“本体”，A的好友会全部隐藏。绝不串号！
                 </div>
             </details>
 
-            <!-- 3. 微信社交神技 -->
+            <!-- 3. 聊天室高阶操作 -->
             <details class="tut-details">
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">💬 微信高阶社交：聊天、查岗与朋友圈</div>
+                    <div class="tut-sum-text">💬 微信高阶社交：隐藏彩蛋与群聊</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    • <span class="tut-key">基础聊天神技：</span>聊天里双击头像可“拍一拍”（支持自定义后缀）；点 ➕ 号可塞【红包转账】或商城买【礼物】；点击【心声】能偷看对方嘴硬背后的真实想法。<br>
-                    • <span class="tut-key">群聊修罗场：</span>把几个 NPC 拉进群，不仅可以【发群红包】让他们抢，还可以发【聚会游戏】（真心话大冒险/摇骰子）让他们当众互相吃醋社死。<br>
-                    • <span class="tut-key">朋友圈神仙打架：</span>点底部的“发现”，发朋友圈时可设置“分组可见”屏蔽某人。点右上角 ✨ 魔法棒，AI 水军会为你刷动态，如果有共同好友，他们还会在评论区吵起来。<br>
-                    • <span class="tut-key">薛定谔的红点 (反向查岗)：</span>如果你在线却几个小时没理他，或者直接离线消失，高占有欲的 NPC 有概率直接黑进你手机“反向查岗”，并给你打夺命连环 Call！
+                    • <span class="tut-key">双击拍一拍：</span>在聊天界面双击对方的头像，会触发“拍了拍”（可在“我”的页面自定义后缀），AI 会根据性格做出傲娇或发火的反应。<br>
+                    • <span class="tut-key">偷听心声与送礼：</span>点输入框右侧的 <span class="tut-hl">⊕</span> 展开面板。点【心声】能偷看 TA 嘴硬背后的真实想法；点【送礼】可以买杯奶茶或跑车发过去。<br>
+                    • <span class="tut-key">群聊修罗场：</span>把几个互不认识的 NPC 拉进群。你可以发【拼手气红包】，大家会抢钱并起哄；也可以发【聚会游戏】（摇骰子），输的人接受惩罚，引发神仙打架！<br>
+                    • <span class="tut-key">消息后悔药：</span>点击任何一条气泡，会弹出【编辑/撤回/多选删除】。你如果秒撤回消息，高敏感的 NPC 会立马发微信追问你“撤回了什么？”。
                 </div>
             </details>
 
-            <!-- 4. 桌面第一屏：核心应用 -->
+            <!-- 4. 朋友圈与论坛 -->
             <details class="tut-details">
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">🎡 桌面第一屏：核心生态 App 玩法</div>
+                    <div class="tut-sum-text">🌍 朋友圈大戏 & 匿名论坛八卦</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    • <span class="tut-key">🗺️ 地图：</span>在各个地点闲逛有概率偶遇联系人，开启“橙光视觉小说模式”（第三人称动作+对话）。如果撞车了，还会触发抢你的高能修罗场！<br>
-                    • <span class="tut-key">💕 邂逅：</span>盲盒抽卡或灵魂定制。输入具体的 XP 要求（如：傲娇霸总），AI 会自动捏造长达几千字的人设卡并画出绝美立绘。还支持点击微信右上角➕号【导入酒馆 PNG 角色卡】！<br>
-                    • <span class="tut-key">🕵️ 查岗 (SpyOS)：</span>黑进对方的手机，看 TA 的相册、支付宝天价账单、小红书私密号、备忘录和定位。你甚至可以直接从TA的支付宝里强行划钱给你自己！<br>
-                    • <span class="tut-key">🔮 占星屋：</span>每日抽取 3D 塔罗牌，或向拥有百万粉丝的 AI 占星师询问具体的感情与事业。<br>
-                    • <span class="tut-key">📚 书城：</span>文荒神器。搜索脑洞，AI秒写大纲连载。支持随时修改文风，支持全本 TXT 导出。<br>
-                    • <span class="tut-key">🌐 论坛：</span>匿名社区。可以发配图的长贴，可以点 ✨ 按钮召唤水军刷帖，还能跟路人或者 NPC 私信对骂。
+                    • <span class="tut-key">分组可见与屏蔽：</span>发朋友圈时可设置“部分可见”或“不给谁看”。<br>
+                    <strong>🚨 高能彩蛋：</strong>如果你屏蔽了某个带有“病娇/黑客/占有欲”设定的角色，TA 有极大几率强行突破防火墙偷看到动态，并立刻发微信贴脸质问你！<br>
+                    • <span class="tut-key">召唤水军神仙打架：</span>点朋友圈右上角 ✨ 魔法棒，AI 会为你刷动态；如果他们互相发动态，还会在评论区底下吵起来。<br>
+                    • <span class="tut-key">星光匿名论坛：</span>你可以去闲聊区发帖。如果你披着“匿名网友”的皮发帖，极度了解你的 NPC 有概率一眼认出是你，并私信扒掉你的马甲！还能把有趣的帖子<span class="tut-hl">一键转发给微信好友</span>一起吃瓜。
                 </div>
             </details>
 
-            <!-- 5. 桌面第二屏：陪伴应用 -->
+            <!-- 5. 沉浸式场景与大地图 -->
             <details class="tut-details">
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">🌙 桌面第二屏：深度陪伴与沉浸应用</div>
+                    <div class="tut-sum-text">🗺️ 线下相见：大地图与沉浸式场景</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    在桌面往左滑，进入第二屏（所有图标皆可点击）：<br><br>
-                    • <span class="tut-key">🎓 自习室：</span>包含番茄钟与白噪音。更绝的是【名师讲堂】：你可以捏一个毒舌高数教授，并花钱买门票进入【沉浸式公开课】，和通讯录里的好友一起坐在教室听老师讲课和提问抢答！<br>
-                    • <span class="tut-key">🏡 熊猫家园：</span>体力不够了去【休眠】，没钱了去【打工】。你可以邀请 NPC 去游乐场坐摩天轮、抓娃娃，或者花钱潜入 TA 的私人宅邸！<br>
-                    • <span class="tut-key">🌌 万界穿梭：</span>带联系人穿越“霍格沃茨”或“修仙界”！你作为世界意志下达指令，系统自动掷骰判定，还能带回各种世界神器。<br>
-                    • <span class="tut-key">📖 羁绊手账：</span>一键总结最近的浪漫记录，系统会以 TA 的视角写一篇酸臭味十足的专属日记；亲密度高了还能解锁【专属称呼】特权。<br>
-                    • <span class="tut-key">👗 穿搭图鉴：</span>提议换装拍摄。如果抽到了绝美照片，还能一键【设为头像】，并且 NPC 会立刻发现你换了 TA 的头像并发微信撩你。<br>
-                    • <span class="tut-key">🍸 深夜居酒屋：</span>经营一家酒馆，听落魄影帝或女杀手等随机陌生人的故事。亲手 QTE 调酒，调得好他们就会微醺并吐露深藏心底的秘密。<br>
-                    • <span class="tut-key">🐾 桌面悬浮宠：</span>桌面右下角的小白猫。长按随意拖拽，点击可戳。你可以【绑定灵魂】把它变成某人的分身，还能派它去挂机打工赚金币！
+                    线上聊腻了？在功能面板点击<span class="tut-hl">【线下】</span>按钮，你们的对话将瞬间从“网聊”转为“现实面对面”。<br>
+                    • <span class="tut-key">大地图偶遇：</span>去咖啡厅或天台转转，可能会撞见一两个熟人，触发修罗场争夺战。<br>
+                    • <span class="tut-key">午夜影院：</span>花 25 体力请 TA 约会看电影，在黑暗的影厅里悄悄牵手，大银幕还会实时生成电影画面。<br>
+                    • <span class="tut-key">深夜居酒屋：</span>你来当调酒师（需玩 QTE 小游戏）。调得好，陌生的客人喝下后会微醺，并吐露深藏心底的秘密。<br>
+                    • <span class="tut-key">时空机 (Chronos)：</span>输入坐标（如：回到TA的8岁童年），系统会重置TA的人设并生成回忆画面。结束时可将这段残影作为“梦境”倒灌回现世 TA 的大脑！
                 </div>
             </details>
 
-            <!-- 6. 导演模式 -->
+            <!-- 6. 家园与养成玩法 -->
             <details class="tut-details">
                 <summary class="tut-summary">
-                    <div class="tut-sum-text">🎬 终极权限：导演模式控制台</div>
+                    <div class="tut-sum-text">🏡 养成玩法：家园、宠物与穿搭</div>
                     <div class="tut-sum-icon">+</div>
                 </summary>
                 <div class="tut-content">
-                    进入【设置】的最下方，你会找到【导演模式控制台】。<br>
-                    在这里，你可以直接修改系统的“底层宇宙法则”。无论是想玩【丧尸末日求生】、【理发店模拟器】还是【古代宫斗】，只需一键让 AI 生成剧本，全系统的聊天、朋友圈、线下见面规则都会随之改变！<br>
-                    你还可以将写好的神仙剧本【存为预设】，随时在下拉菜单中无缝切换不同的世界线！
+                    在桌面左滑进入第二屏（原生极简风）：<br>
+                    • <span class="tut-key">自习室：</span>开启番茄钟赚取金币，或者花钱捏一个“高冷私教”给你上网课，TA 甚至会语音朗读英语单词。<br>
+                    • <span class="tut-key">熊猫家园：</span>你可以花钱买豪车大平层，或者强行去对方家里做客（还能偷偷关灯捣乱）。<br>
+                    • <span class="tut-key">悬浮灵魂宠：</span>桌面右下角的小白猫。长按它，可以把它<span class="tut-hl">绑定成某个联系人的分身</span>，它会继承那个人的性格，你戳它会被骂或被撩。还能派它出门打工赚金币！<br>
+                    • <span class="tut-key">穿搭图鉴 (OOTD)：</span>命令角色换衣服拍照（如：穿黑色西装怼脸特写）。拍到绝美照片后，点击【设为形象】，TA 的微信头像会变，且 TA 会立马发微信发现你换了头像！
+                </div>
+            </details>
+
+            <!-- 7. 导演模式与世界书 -->
+            <details class="tut-details">
+                <summary class="tut-summary">
+                    <div class="tut-sum-text">🎬 终极权限：导演模式 & 世界书</div>
+                    <div class="tut-sum-icon">+</div>
+                </summary>
+                <div class="tut-content">
+                    • <span class="tut-key">世界书：</span>如果你们在玩原神、霍格沃茨等特定背景，去【世界书 App】里把名词解释写进去，然后在角色资料里挂载。这样 AI 就绝对不会吃书！<br>
+                    • <span class="tut-key">导演模式控制台：</span>在【设置】最下方，你可以彻底篡改整个宇宙的底层法则！只需一句“我想玩丧尸生存游戏”，AI 会重写所有线上网聊、线下见面、发朋友圈的底层 Prompt。你可以把它存为预设，随时在日常恋爱和末日求生之间反复横跳！
                 </div>
             </details>
 
@@ -17490,8 +17464,8 @@ ${npcListStr}
                     遇到 Bug？缺陷与建议收集
                 </div>
                 <div class="tut-content tut-feedback-text" style="padding:0; color:#4A148C; text-align:left;">
-                    由于系统功能极其庞大，如果在使用中遇到：代码报错、排版错位、某个剧情卡死，或者你有什么绝妙的新功能点子...<br>
-                    <span style="font-weight:bold; color:#6A1B9A;">欢迎直接向作者发送反馈邮件！</span>
+                    系统功能极其庞大，如果在使用中遇到：卡死、白屏、剧情断层，或者你有什么绝妙的新功能点子...<br>
+                    <span style="font-weight:bold; color:#6A1B9A;">欢迎向作者发送反馈邮件！</span>
                     
                     <button onclick="window.sendBugReport()" style="width: 100%; margin-top: 15px; background: linear-gradient(135deg, #7E57C2, #512DA8); color: #fff; border: none; padding: 14px; border-radius: 14px; font-size: 15px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 15px rgba(106,27,154,0.3); transition: 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -17504,10 +17478,11 @@ ${npcListStr}
         </div>
     </div>
 </div>
+<!-- ================== 指南结束 ================== -->
 
-<script>
+<script id="panda-tutorial-logic">
 (function() {
-    // 拉起邮箱发送 Bug 报告
+    // 1. 拉起邮箱发送 Bug 报告
     window.sendBugReport = function() {
         const email = "2271648007@qq.com";
         const subject = encodeURIComponent("【时空OS Bug 与体验反馈】");
@@ -17515,26 +17490,38 @@ ${npcListStr}
         window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     };
 
-    // 自动侦测：进入设置页面自动挂载入口 (更高级的 UI)
-    const observer = new MutationObserver(() => {
-        const setContainer = document.querySelector('.settings-container');
-        if (setContainer && !document.getElementById('tutorial-card-btn')) {
-            const tutorialBtnHtml = `
-            <div class="set-card" id="tutorial-card-btn" style="background: linear-gradient(135deg, #F8FAFC, #EDF2F7); border: 1px solid #CBD5E1; cursor:pointer; margin-bottom: 15px; padding: 15px 20px;" onclick="document.getElementById('pandaTutorialModal').classList.add('active')">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight:900; color:#334155; font-size:16px;">✨ 新手食用指南！(必看)</div>
-                    <div style="background:#475569; color:#fff; padding:6px 14px; border-radius:15px; font-size:12px; font-weight:bold; box-shadow: 0 2px 8px rgba(71,85,105,0.3); flex-shrink:0;">点击阅读</div>
-                </div>
-                <div style="font-size:12px; color:#64748B; margin-top:8px; line-height: 1.5;">包含：如何一键切换全局马甲、所有内置生态 App 隐藏玩法详解、防崩溃指南，以及 Bug 反馈渠道。</div>
-            </div>`;
-            setContainer.insertAdjacentHTML('afterbegin', tutorialBtnHtml);
-        }
-    });
-    observer.observe(document.getElementById('appView'), { childList: true, subtree: true });
+    // 2. 自动侦测：进入设置页面自动挂载入口 (极简高级 UI)
+    const initTutorialObserver = function() {
+        const appView = document.getElementById('appView');
+        if (!appView) return;
+        
+        const observer = new MutationObserver(() => {
+            const setContainer = document.querySelector('.settings-container');
+            if (setContainer && !document.getElementById('tutorial-card-btn')) {
+                const tutorialBtnHtml = `
+                <div class="set-card" id="tutorial-card-btn" style="background: linear-gradient(135deg, #F8FAFC, #EDF2F7); border: 1px solid #CBD5E1; cursor:pointer; margin-bottom: 15px; padding: 15px 20px;" onclick="document.getElementById('pandaTutorialModal').classList.add('active')">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight:900; color:#334155; font-size:16px;">✨ 新手食用指南！(必看)</div>
+                        <div style="background:#475569; color:#fff; padding:6px 14px; border-radius:15px; font-size:12px; font-weight:bold; box-shadow: 0 2px 8px rgba(71,85,105,0.3); flex-shrink:0;">点击阅读</div>
+                    </div>
+                    <div style="font-size:12px; color:#64748B; margin-top:8px; line-height: 1.5;">包含：如何一键切换全局马甲、所有内置生态 App 隐藏玩法详解、防崩溃指南，以及 Bug 反馈渠道。</div>
+                </div>`;
+                // 把指南按钮强行塞到设置页面的最上方
+                setContainer.insertAdjacentHTML('afterbegin', tutorialBtnHtml);
+            }
+        });
+        
+        observer.observe(appView, { childList: true, subtree: true });
+    };
+
+    // 确保 DOM 加载完毕后启动监视器
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTutorialObserver);
+    } else {
+        initTutorialObserver();
+    }
 })();
 </script>
-<!-- ================== 新手食用指南结束 ================== -->
-
 
 <!-- ================== 👑 Panda OS 群聊管理员与禁言系统 ================== -->
 <script id="panda-group-admin-patch">
@@ -19030,28 +19017,24 @@ ${npcListStr}
     /* =================================================================
        🆘 第一部分：找回被误删的【加好友、收消息、接电话】功能
     ================================================================= */
-        window.addContact = function() {
-        const name = prompt("请输入新朋友的名字：");
+                window.addContact = async function() {
+        const name = window.pandaPrompt ? await window.pandaPrompt("请输入新朋友的名字：") : prompt("请输入新朋友的名字：");
         if (!name) return;
         const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
         const newContact = { 
-            id: Date.now().toString(), 
-            type: 'single', 
-            name: name, 
-            avatar: avatar, 
+            id: Date.now().toString(), type: 'single', name: name, avatar: avatar, 
             history: [{sys: "你们已经成功添加为好友，现在可以开始聊天了。"}],
             userPersonaId: window.mySettings?.activePersonaId || null 
         };
-        
         let globalSessions = typeof sessions !== 'undefined' ? sessions : (window.sessions || []);
         globalSessions.push(newContact);
-        
         if (typeof window.saveSessions === 'function') window.saveSessions();
         if (typeof window.renderWeChatMain === 'function') window.renderWeChatMain(); 
-        
-        alert(`✅ 已添加新朋友：${name}\n快去点开TA的资料，捏一个详细人设吧！`);
+        if (window.pandaAlert) window.pandaAlert(`✅ 已添加新朋友：${name}\n快去点开TA的资料，捏一个详细人设吧！`);
+        else alert(`已添加新朋友：${name}`);
         const menu = document.getElementById('plusMenu'); if (menu) menu.classList.remove('show');
     };
+
 
     window.simulateProactive = function() {
         const menu = document.getElementById('plusMenu'); if (menu) menu.classList.remove('show');
@@ -20909,22 +20892,17 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
     });
 })();
 </script>
-<!-- ================== 🩹 Panda OS V25 马甲白屏修复 & 多马甲独立桌宠补丁 ================== -->
+<!-- ================== 🩹 Panda OS V25 马甲白屏修复 & 多马甲独立桌宠补丁 (源码直连精简版) ================== -->
 <script id="panda-v25-persona-pet-patch">
 (function() {
-    console.log("🛠️ 正在加载：马甲白屏终极修复 & 多马甲独立桌宠系统...");
+    console.log("🛠️ 正在加载：马甲白屏终极修复 & 多马甲独立桌宠系统 (直连底层硬盘)...");
 
     // ================= 1. 修复：彻底解决退回桌面白屏的 Bug =================
-    // 原因：旧版代码把长达几 MB 的 Base64 头像字符串，直接塞进了 HTML 的 onclick 属性里。
-    // 这会导致手机浏览器的 DOM 解析器直接崩溃内存溢出，从而引发白屏！
     window.renderCCPersonas = function() {
         if(!window.mySettings) window.mySettings = JSON.parse(localStorage.getItem('panda_me')||'{}');
         const ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
         
-        let html = ''; // 已彻底隐藏“本我”
-
-        // 💥 修复核心：onclick 只传 idx 数字，绝不传巨型图片字符串！
-        html += ps.map((p, idx) => `
+        let html = ps.map((p, idx) => `
             <div class="cc-persona-item ${window.mySettings.activePersonaId === String(idx) ? 'active' : ''}" onclick="window.ccSwitchPersona(${idx})">
                 <img class="cc-persona-avt" src="${p.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed='+encodeURIComponent(p.name)}">
                 <div style="font-size:10px; font-weight:bold; color:var(--text-dark); white-space:nowrap; max-width:54px; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
@@ -20958,27 +20936,22 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         localStorage.setItem('panda_me', JSON.stringify(window.mySettings));
         window.renderCCPersonas();
         
-        // 🐾 新增升级：切换马甲时，同步切换读取当前的专属桌宠！
+        // 切换马甲时，同步切换读取当前的专属桌宠！
         if(window.loadPetForCurrentPersona) window.loadPetForCurrentPersona();
 
         if (typeof window.renderWeChatMain === 'function' && document.getElementById('appView').innerHTML.includes('微信')) {
             window.renderWeChatMain();
         }
-        
         if(navigator.vibrate) navigator.vibrate(50);
     };
 
     // ================= 2. 升级：每个马甲拥有独立的桌宠记忆 =================
-    // 拦截并改写桌宠数据的读写逻辑，让它支持字典映射（以 PersonaID 为 Key）
     window.loadPetForCurrentPersona = function() {
         let pid = window.mySettings?.activePersonaId || 'default_me';
         let allPets = JSON.parse(localStorage.getItem('panda_pet_multi_v18') || '{}');
         
         if (!allPets[pid]) {
-            // 如果这个马甲还没有专属宠物，初始化一个空的
             allPets[pid] = {"boundId":null, "name":"未绑定", "lines":["（歪了歪头看着你）", "点我干嘛？", "快去长按我绑定主人！"], "feedLines":["好吃。"]};
-            
-            // 兼容老玩家：如果主账号有宠物，将旧档顺延给主账号
             if (pid === 'default_me') {
                 try {
                     let oldGlobal = JSON.parse(localStorage.getItem('panda_pet_v18'));
@@ -20988,26 +20961,21 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         }
         
         window.petDataV2 = allPets[pid];
-        
-        // 更新 UI 菜单名字
         const menuName = document.getElementById('petMenuName');
-        if(menuName) {
-            menuName.innerText = window.petDataV2.name === '未绑定' ? '幻兽宠管理' : `🐾 ${window.petDataV2.name} 的分身`;
-        }
+        if(menuName) menuName.innerText = window.petDataV2.name === '未绑定' ? '幻兽宠管理' : `🐾 ${window.petDataV2.name} 的分身`;
     };
 
-    // 覆盖原版的保存逻辑
-    const savePetMulti = function() {
+    window.savePetMulti = function() {
         let pid = window.mySettings?.activePersonaId || 'default_me';
         let allPets = JSON.parse(localStorage.getItem('panda_pet_multi_v18') || '{}');
         allPets[pid] = window.petDataV2;
-        localStorage.setItem('panda_pet_multi_v18', JSON.stringify(allPets));
         
-        // 留一个档给旧代码兜底防报错
+        // 因为已经在 OS_KEYS 里注册，这里的 setItem 会被底层 IndexedDB 直接拦截并永久写入硬盘！
+        localStorage.setItem('panda_pet_multi_v18', JSON.stringify(allPets));
         localStorage.setItem('panda_pet_v18', JSON.stringify(window.petDataV2));
     };
 
-    // 重写确认绑定，使其使用新的多马甲存储
+    // 重写确认绑定
     const _origConfirmBind = window.pet_confirmBind;
     if (_origConfirmBind) {
         window.pet_confirmBind = function(targetId) {
@@ -21016,7 +20984,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
             window.petDataV2.boundId = s.id;
             window.petDataV2.name = s.name;
             
-            savePetMulti(); // ⚡️ 使用新版保存
+            window.savePetMulti();
 
             const modal = document.getElementById('petBindModal');
             if (modal) modal.remove();
@@ -21029,44 +20997,32 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         };
     }
 
-                  // 重写注入灵魂结束后的保存动作
-        const _origUpdateSoul = window.pet_updateSoul;
-        if (_origUpdateSoul) {
-            window.pet_updateSoul = async function(manualCall) {
-                // 拦截底层的 localStorage.setItem，强行导流到新版存储
-                const _origSetItem = localStorage.setItem;
-                localStorage.setItem = function(key, val) {
-                    if (key === 'panda_pet_v18') {
-                        // 🚨 修复死循环爆炸：直接用底层原生方法存，别调外部函数套娃了！
-                        let pid = window.mySettings?.activePersonaId || 'default_me';
-                        let allPets = JSON.parse(localStorage.getItem('panda_pet_multi_v18') || '{}');
-                        allPets[pid] = window.petDataV2;
-                        _origSetItem.call(localStorage, 'panda_pet_multi_v18', JSON.stringify(allPets));
-                        _origSetItem.call(localStorage, 'panda_pet_v18', JSON.stringify(window.petDataV2));
-                    } else {
-                        // 🛡️ 核心修复 1：强制绑定 localStorage 上下文，彻底消灭 Illegal invocation 报错！
-                        _origSetItem.apply(localStorage, arguments);
-                    }
-                };
-
-                // 🛡️ 核心修复 2：套上绝对领域的 try-finally 护盾
-                try {
-                    await _origUpdateSoul.apply(this, arguments);
-                } finally {
-                    // 无论网络断开还是大模型发疯报错，都绝对保证能把系统的存储引擎还回去！
-                    localStorage.setItem = _origSetItem;
+    // 💥 源码修正核心：拦截 updateSoul 最后的保存动作，转交给我们强大的硬盘通道
+    const _origUpdateSoul = window.pet_updateSoul;
+    if (_origUpdateSoul) {
+        window.pet_updateSoul = async function(manualCall) {
+            const _rawSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, val) {
+                if (key === 'panda_pet_v18') {
+                    window.savePetMulti(); // 拦截原生存储，转交 OS_KEYS
+                } else {
+                    _rawSetItem.apply(localStorage, arguments);
                 }
             };
-        }
+            
+            try {
+                await _origUpdateSoul.apply(this, arguments);
+            } finally {
+                localStorage.setItem = _rawSetItem; // 完璧归赵，绝对防崩溃
+            }
+        };
+    }
 
-
-    // 页面加载完成后，立刻为当前马甲读取专属桌宠
-    setTimeout(() => {
-        window.loadPetForCurrentPersona();
-    }, 1500);
+    setTimeout(() => { window.loadPetForCurrentPersona(); }, 1500);
 
 })();
 </script>
+
 <!-- ================== 🩹 修复横幅通知永久消失的补丁 ================== -->
 <style>
     /* 强行提权，无视内联样式，只要触发 show 就必须出现在屏幕上！ */
@@ -21430,50 +21386,178 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
     };
 
 })();
+window.openPresetManager = function() {
+    const list = document.getElementById('presetList');
+    if (!list) return;
+    
+    if (!apiPresets || apiPresets.length === 0) {
+        list.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; color:#999; opacity:0.8;">
+                <svg viewBox="0 0 24 24" width="60" height="60" stroke="#ccc" fill="none" stroke-width="1.5" style="margin-bottom:15px;"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+                <div style="font-size:15px; font-weight:bold; color:#888;">暂无预设配置</div>
+                <div style="font-size:12px; margin-top:6px; color:#aaa;">请先在设置面板下方点击【存为预设】</div>
+            </div>`;
+    } else {
+        list.innerHTML = apiPresets.map((p, i) => `
+            <div class="preset-card" style="background:#fff; border-radius:20px; padding:20px; box-shadow:0 8px 25px rgba(0,0,0,0.04); border:1px solid #EAEAEA; position:relative; overflow:hidden; transition:transform 0.2s;" onclick="loadPreset(${i})">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; position:relative; z-index:1;">
+                    <div class="preset-card-name" style="font-weight:900; font-size:18px; color:#111; display:flex; align-items:center; gap:8px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        ${p.name}
+                    </div>
+                    <div style="color:#FF3B30; font-size:12px; font-weight:bold; background:rgba(255,59,48,0.08); padding:6px 14px; border-radius:12px; cursor:pointer; z-index:10; border:1px solid rgba(255,59,48,0.15);" onclick="event.stopPropagation(); delPreset(${i})">删除</div>
+                </div>
+                
+                <div class="preset-card-bg" style="background:#F7F8FA; border-radius:14px; padding:15px; margin-bottom:18px; border:1px solid #F0F0F0; position:relative; z-index:1; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="font-size:12px; font-weight:bold; color:#888; width:45px; flex-shrink:0;">模型</span>
+                        <span class="preset-card-val" style="font-size:14px; font-weight:900; color:#333; flex:1; word-break:break-all;">${p.model}</span>
+                    </div>
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="font-size:12px; font-weight:bold; color:#888; width:45px; flex-shrink:0;">URL</span>
+                        <span style="font-size:13px; font-weight:bold; color:#007AFF; flex:1; word-break:break-all; line-height:1.4;">${p.url}</span>
+                    </div>
+                </div>
+                
+                <button style="width:100%; background:linear-gradient(135deg, #007AFF, #00C6FF); color:#fff; border:none; padding:15px; border-radius:16px; font-weight:900; font-size:15px; cursor:pointer; box-shadow:0 6px 20px rgba(0,122,255,0.25); transition:0.2s; position:relative; z-index:1; letter-spacing:1px;">
+                    载入此配置
+                </button>
+            </div>
+        `).join('');
+    }
+    
+    const modal = document.getElementById('presetModal');
+    if(modal) modal.classList.add('active');
+};
+
 </script>
-<!-- ================== 📱 终极桌面防吃字 + 完美黄金比例排版补丁 ================== -->
 <style id="panda-desktop-perfect-fix">
-    /* 1. 彻底解决普通浏览器底部 Dock 栏被吞没的问题，把 App 锁死在真实可见区域 */
+    /* 1. 彻底锁死浏览器可视区域，粉碎苹果 100vh 带来的高度溢出！ */
     body, html, #app {
-        height: 100% !important;
+        height: 100dvh !important; 
+        min-height: -webkit-fill-available !important; 
         position: fixed !important; 
         top: 0; left: 0; right: 0; bottom: 0;
         overflow: hidden !important;
         touch-action: none; 
     }
 
-    /* 2. 让桌面不仅能均匀排列，在屏幕太矮时还能丝滑滑动，绝不硬性裁切 */
+    /* 2. 强行给苹果刘海留出尊严，防止时钟被状态栏“吞噬”！ */
+    .status-bar {
+        /* 苹果在微信里有时读不到 safe-area，强行保底 45px 避开刘海！ */
+        height: max(45px, env(safe-area-inset-top)) !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* 3. 释放滑动容器，使其自动充满剩余空间，平滑过渡不乱挤 */
     .swiper-slide {
         display: flex !important;
         flex-direction: column !important;
-        justify-content: flex-start !important; 
+        justify-content: space-between !important; /* 关键：上下撑开，均匀分布！ */
         height: 100% !important;
         overflow-y: auto !important; 
-        padding-bottom: 10px !important;
-        gap: 15px !important; /* 恢复优雅的组件间距 */
+        padding-bottom: 5px !important;
+        gap: 12px !important;
         -webkit-overflow-scrolling: touch;
     }
 
-    /* 3. 修复白框：像海绵一样填满底部空白，且死死守住最小高度，绝不吃字！ */
+    /* 4. 修复白色底座卡片：弹性拉伸，但不无脑死守导致溢出 */
     .app-group-card {
-        flex-grow: 1 !important;        /* 屏幕高时，自动拉伸填满那块难看的空白！ */
-        min-height: 200px !important;   /* 屏幕矮时，死守底线，保证“美化”名字绝对完整！ */
-        max-height: none !important;    /* 打破原版限制 */
+        flex-grow: 1 !important;        
+        min-height: 160px !important; /* 降低底线，防止挤爆苹果小屏 */
+        max-height: 250px !important; /* 限制上限，避免下方空荡荡 */
         display: flex !important;
         align-items: center !important; 
         justify-content: center !important;
         margin: 0 !important;
     }
 
-    /* 4. 针对非全屏（如自带浏览器、有导航栏）的极限压榨优化，自动缩小上面组件给 App 让路 */
-    @media (max-height: 750px) {
-        .clock-widget { margin-top: 0 !important; transform: scale(0.85); transform-origin: top center; margin-bottom: -15px !important; }
-        .bento-grid { height: 120px !important; }
-        .music-row { height: 75px !important; }
-        .app-group-card { min-height: 180px !important; padding: 10px !important; }
-        .dock-container { height: 85px !important; padding-bottom: 15px !important; }
+    /* 5. 修复 Dock 栏底部悬空问题 */
+    .dock-container {
+        height: auto !important;
+        min-height: 95px !important;
+        /* 利用安全区让黑条乖乖待在底部，别把 Dock 顶太高 */
+        padding: 5px 20px max(15px, env(safe-area-inset-bottom)) 20px !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* 6. 小屏或苹果底栏存在时的极限压榨自适应 */
+    @media (max-height: 800px) {
+        .status-bar { height: max(35px, env(safe-area-inset-top)) !important; }
+        .clock-widget { margin-top: -5px !important; transform: scale(0.85); transform-origin: top center; margin-bottom: -15px !important; }
+        .bento-grid { height: 110px !important; gap: 10px !important; }
+        .music-row { height: 70px !important; gap: 10px !important; }
+        .app-group-card { min-height: 160px !important; padding: 10px !important; }
     }
 </style>
+
+<!-- ================== 🩹 Panda OS 马甲联系人防丢失与迁移补丁 ================== -->
+<script>
+(function() {
+    console.log("🛠️ 正在加载：马甲联系人防丢失与本体恢复补丁...");
+    
+    // 修复 1：在控制中心恢复“本体”马甲选项，防止早期（未建马甲时）添加的联系人彻底失联
+    const _origRenderCC = window.renderCCPersonas;
+    if (_origRenderCC) {
+        window.renderCCPersonas = function() {
+            if(!window.mySettings) window.mySettings = JSON.parse(localStorage.getItem('panda_me')||'{}');
+            const ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
+
+            // 💥 重新加回本体选项，彻底解决早期联系人“消失”的死锁
+            let html = `
+                <div class="cc-persona-item ${!window.mySettings.activePersonaId ? 'active' : ''}" onclick="window.ccSwitchPersona(null)">
+                    <img class="cc-persona-avt" src="${window.mySettings.originalAvatar || window.mySettings.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Me'}">
+                    <div style="font-size:10px; font-weight:bold; color:var(--text-dark); white-space:nowrap; max-width:54px; overflow:hidden; text-overflow:ellipsis;">${window.mySettings.originalName || window.mySettings.name || '本体'}</div>
+                </div>
+            `;
+
+            html += ps.map((p, idx) => `
+                <div class="cc-persona-item ${window.mySettings.activePersonaId === String(idx) ? 'active' : ''}" onclick="window.ccSwitchPersona(${idx})">
+                    <img class="cc-persona-avt" src="${p.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed='+encodeURIComponent(p.name)}">
+                    <div style="font-size:10px; font-weight:bold; color:var(--text-dark); white-space:nowrap; max-width:54px; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                </div>
+            `).join('');
+
+            const listEl = document.getElementById('ccPersonaList');
+            if(listEl) listEl.innerHTML = html;
+        };
+    }
+    
+    // 修复 2：如果玩家第一次创建马甲，自动将原本“本体”下的孤儿联系人全部迁移到新马甲下！
+    const _origSaveP = window.saveP;
+    if (_origSaveP) {
+        window.saveP = function(i) {
+            const ps = JSON.parse(localStorage.getItem('panda_persona')||'[]');
+            const isFirstPersona = (ps.length === 0 && i < 0); // 判定是不是全宇宙第一个马甲
+            
+            // 先执行原有的保存逻辑
+            _origSaveP.apply(this, arguments);
+            
+            // 如果这是全宇宙第一个被创建的马甲，且当前活跃的是“本体”
+            if (isFirstPersona && (!window.mySettings || !window.mySettings.activePersonaId)) {
+                let migratedCount = 0;
+                if (window.sessions && window.sessions.length > 0) {
+                    window.sessions.forEach(s => {
+                        if (s.type === 'single' && s.id !== 'bot' && (s.userPersonaId === null || s.userPersonaId === undefined)) {
+                            s.userPersonaId = "0"; // 自动绑定给刚才创建的第一个马甲
+                            migratedCount++;
+                        }
+                    });
+                    if (migratedCount > 0 && typeof window.saveSessions === 'function') {
+                        window.saveSessions();
+                        console.log(`✅ 已自动将 ${migratedCount} 个早期联系人无缝迁移至 1 号马甲！`);
+                    }
+                }
+                
+                // 自动切到新马甲，完美过渡
+                if (typeof window.ccSwitchPersona === 'function') {
+                    setTimeout(() => window.ccSwitchPersona(0), 100);
+                }
+            }
+        };
+    }
+})();
+</script>
 
 </body>
 </html>
