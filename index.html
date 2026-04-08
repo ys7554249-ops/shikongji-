@@ -2332,7 +2332,8 @@ function jsStringArg(str) {
                 
                 <!-- 🔥 修复：把 height:100% 改成 Flex 布局，把 absolute 去掉，这样键盘弹出时输入框会被乖乖顶上去 -->
 <div class="novel-container" style="${bgStyle} position:relative; height:100%; display:flex; flex-direction:column; overflow:hidden;">
-    <div class="novel-scroll" id="novelBox" style="padding: 100px 20px 20px 20px; flex:1; overflow-y:auto; scroll-behavior: smooth;"></div>
+    <div class="novel-scroll" id="novelBox" style="padding: calc(110px + env(safe-area-inset-top)) 20px 20px 20px; flex:1; overflow-y:auto; scroll-behavior: smooth;"></div>
+
     
     <div class="novel-input-bar" style="flex-shrink:0; width:100%; z-index:200; padding:10px 15px calc(15px + env(safe-area-inset-bottom)) 15px; background:linear-gradient(to top, rgba(250,249,245,1) 40%, rgba(250,249,245,0)); display:flex; justify-content:center; pointer-events:none;">
 
@@ -9745,7 +9746,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         if(tip && tip.innerText.includes('初始化')) tip.innerText = window.currentPin ? "输入密码" : "设置新密码 (4位)";
     }, 100);
     
-    // 🚀 真·全宇宙打包引擎
+        // 🚀 真·全宇宙打包引擎 (原生内置 iOS 通行证)
     window.exportData = async function() {
         const btn = document.querySelector('.btn-pink');
         if(btn) btn.innerHTML = '正在深层打包全系统数据...';
@@ -9784,13 +9785,27 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const dataStr = JSON.stringify(backup);
         const blob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(blob);
+        
+        // 🍎 iOS 核心放行机制
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `PandaOS_全宇宙备份_${Date.now()}.json`;
+        document.body.appendChild(a); 
         a.click();
         
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 800);
+        
         if(btn) btn.innerHTML = '<svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 导出备份数据';
-        alert("✅ 全系统数据打包成功！");
+        
+        if(window.pandaAlert) {
+            window.pandaAlert("✅ 全系统数据打包成功！<br><br>请在弹出的系统菜单中选择【存储到“文件”】妥善保管！", "备份成功");
+        } else {
+            alert("✅ 全系统数据打包成功！请存储到文件。");
+        }
     };
 
     // 🚀 神级创世恢复引擎 (完全绕过 Alert 拦截 + 解决双脑同步 Bug)
@@ -20383,7 +20398,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         }
     };
 
-    // ================= 5. 底层强力拦截器 =================
+        // ================= 5. 底层强力拦截器 =================
     const _nativeFetchForDirector = window.fetch;
     
     window.fetch = async function(url, options) {
@@ -20394,9 +20409,8 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
                     let ds = window.directorSettings;
                     let sysStr = JSON.stringify(bodyObj.messages);
                     
-                    if (sysStr.includes('微信聊天') || sysStr.includes('微信屏幕')) {
-                        bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】(无视上方一切冲突规则)：\n${ds.chatRule}` });
-                    } else if (sysStr.includes('长篇互动小说')) {
+                    // 💥 终极精准识别修复：废弃模糊的关键字匹配，直接读取当前真实的系统运行模式 currentMode！
+                    if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.novelRule}` });
                     } else if (sysStr.includes('<post>')) {
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.momentsRule}` });
@@ -20406,6 +20420,8 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.cinemaRule}` });
                     } else if (sysStr.includes('黑进了玩家的手机') || sysStr.includes('反向查岗')) {
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.hackRule}` });
+                    } else if (typeof currentMode !== 'undefined' && currentMode === 'chat') {
+                        bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】(无视上方一切冲突规则)：\n${ds.chatRule}` });
                     }
                     options.body = JSON.stringify(bodyObj);
                 }
@@ -20440,6 +20456,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
         
         return response;
     };
+
 
 })();
 </script>
@@ -21558,6 +21575,51 @@ window.openPresetManager = function() {
     }
 })();
 </script>
+<!-- ================== 🩹 紧急抢救：横幅卡死 & 线下标点丢失修复 ================== -->
+<style>
+    /* 1. 修复横幅被超长文本撑爆卡死的 Bug，强制单行省略 */
+    .os-notify-banner {
+        max-height: 70px !important;
+        overflow: hidden !important;
+    }
+    .os-notify-banner:not(.show) {
+        top: -300px !important; 
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    .os-notify-text {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        max-width: 100% !important;
+    }
+</style>
+
+<script>
+(function() {
+    // 2. 主动出击，把当前卡在屏幕上的幽灵弹窗强行洗掉
+    const banner = document.getElementById('osNotificationBanner');
+    if (banner && !banner.classList.contains('show')) {
+        banner.style.top = '-300px';
+    }
+
+    // 3. 拦截底层的“微信去标点”引擎，保护线下模式的句号不被误伤！
+    const _originalStringReplace = String.prototype.replace;
+    String.prototype.replace = function(searchValue, replaceValue) {
+        if (searchValue instanceof RegExp) {
+            // 精准锁定导致标点丢失的那个错误正则
+            if (searchValue.source.includes('[。，,.]+') && searchValue.source.includes('(?=\\n|$)')) {
+                return String(this); // 直接拦截拦截，原封不动地保留所有标点符号！
+            }
+        }
+        return _originalStringReplace.call(this, searchValue, replaceValue);
+    };
+    console.log("✅ 横幅卡死与标点丢失修复补丁已完美生效！");
+})();
+</script>
+<!-- ========================================================== -->
+
 
 </body>
 </html>
