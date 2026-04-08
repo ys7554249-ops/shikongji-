@@ -21715,9 +21715,76 @@ window.openPresetManager = function() {
     };
 })();
 </script>
-<!-- ========================================================== -->
+<!-- ================== 🩹 全系统丑弹窗歼灭补丁 V2 (含删除修复) ================== -->
+<script>
+(function() {
+    // 1. 编辑消息
+    const _origMenuAction = window.menuAction;
+    window.menuAction = async function(type) {
+        if (type === 'edit') {
+            const s = (window.sessions || []).find(x => String(x.id) === String(currentSessionId));
+            if (!s || selectedMsgIndex === -1) return;
+            const oldMsg = s.history[selectedMsgIndex];
+            const oldText = (oldMsg.content || oldMsg.text || '').replace(/<[^>]*>/g, '');
+            const newText = window.pandaPrompt ? await window.pandaPrompt("编辑消息:", oldText) : prompt("编辑消息:", oldText);
+            if (newText !== null) {
+                if (oldMsg.type === 'voice') { oldMsg.text = newText; oldMsg.content = newText; }
+                else { oldMsg.content = newText; }
+            }
+            saveSessions();
+            if (currentMode === 'novel') renderNovelContent(); else renderChatRoom();
+            document.getElementById('msgMenu').classList.remove('active');
+            return;
+        }
+        if (type === 'del') {
+            const ok = window.pandaConfirm ? await window.pandaConfirm("确定删除这条消息吗？") : confirm("删除?");
+            if (!ok) return;
+            const s = (window.sessions || []).find(x => String(x.id) === String(currentSessionId));
+            if (s) { s.history.splice(selectedMsgIndex, 1); saveSessions(); }
+            if (currentMode === 'novel') renderNovelContent(); else renderChatRoom();
+            document.getElementById('msgMenu').classList.remove('active');
+            return;
+        }
+        if (_origMenuAction) _origMenuAction.apply(this, arguments);
+    };
 
+    // 2. 编辑昵称
+    window.editMyName = async function() {
+        const n = window.pandaPrompt ? await window.pandaPrompt("修改昵称：", mySettings.name) : prompt("修改昵称", mySettings.name);
+        if (n) { mySettings.name = n; saveMe(); renderWeChatMain(); }
+    };
 
+    // 3. 恢复出厂
+    window.nuclearFactoryReset = async function() {
+        if (!(window.pandaConfirm ? await window.pandaConfirm("⚠️ 将永久清空所有数据！\n确定恢复出厂吗？","危险操作") : confirm("确定?"))) return;
+        if (!(window.pandaConfirm ? await window.pandaConfirm("🚨 最终确认：无法找回！\n请确保已导出备份！","最终确认") : confirm("最终确认?"))) return;
+        document.body.innerHTML='<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#ff3b30;font-size:16px;font-weight:bold;flex-direction:column;">💥 正在格式化...</div>';
+        setTimeout(()=>{localStorage.clear();try{['Panda_Native_Drive','PandaOS_V7_Final','PandaOS_Core_DB','Panda_Moments_Unlimited_DB','Panda_Sticker_DB','AI_Books_DB'].forEach(n=>{try{indexedDB.deleteDatabase(n)}catch(e){}});}catch(e){}setTimeout(()=>{alert("✅ 重置完毕");window.location.href=window.location.href.split('?')[0];},1500);},100);
+    };
+
+    // 4. 世界书删除
+    window.delW = async function(i) {
+        if (!(window.pandaConfirm ? await window.pandaConfirm("确定删除这个条目吗？") : confirm("删除?"))) return;
+        const d = JSON.parse(localStorage.getItem('panda_wb')||'[]'); d.splice(i,1); localStorage.setItem('panda_wb',JSON.stringify(d)); renderWorldBook();
+    };
+
+    // 5. 马甲删除
+    window.delP = async function(i) {
+        if (!(window.pandaConfirm ? await window.pandaConfirm("确定删除这个马甲吗？") : confirm("删除?"))) return;
+        const d = JSON.parse(localStorage.getItem('panda_persona')||'[]'); d.splice(i,1); localStorage.setItem('panda_persona',JSON.stringify(d)); renderPersona();
+    };
+
+    // 6. 多选删除确认
+    window.confirmBatchDelete = async function() {
+        if(window.batchSelectedMsgs.length===0) return window.cancelBatchDelete();
+        const ok = window.pandaConfirm ? await window.pandaConfirm("确定删除选中的 "+window.batchSelectedMsgs.length+" 条消息吗？","批量删除") : confirm("删除?");
+        if(!ok) return;
+        const s=(window.sessions||[]).find(x=>String(x.id)===String(currentSessionId));
+        if(s&&s.history){window.batchSelectedMsgs.sort((a,b)=>b-a).forEach(idx=>s.history.splice(idx,1));saveSessions();}
+        window.cancelBatchDelete(); renderChatRoom();
+    };
+})();
+</script>
 
 
 </body>
