@@ -21618,7 +21618,106 @@ window.openPresetManager = function() {
     console.log("✅ 横幅卡死与标点丢失修复补丁已完美生效！");
 })();
 </script>
+<!-- ================== 🍎 苹果手机导出修复（精简版） ================== -->
+<script>
+(function() {
+    // 检测是否为苹果设备
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isIOS) return; // 安卓不需要修补，直接退出
+    
+    console.log("🍎 检测到苹果设备，注入导出修复...");
+
+    // 重写导出函数
+    const _origExport = window.exportData;
+    
+    window.exportData = async function() {
+        // 第一步：正常打包数据
+        const backup = {};
+        const readIDB = (dbName, storeName, key, isAll) => new Promise(res => {
+            try {
+                const req = indexedDB.open(dbName, 1);
+                req.onsuccess = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(storeName)) { db.close(); return res(null); }
+                    const tx = db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const g = isAll ? store.getAll() : store.get(key);
+                    g.onsuccess = ev => { db.close(); res(ev.target.result); };
+                    g.onerror = () => { db.close(); res(null); };
+                };
+                req.onerror = () => res(null);
+            } catch(e) { res(null); }
+        });
+
+        const KEYS = [
+            'panda_pin_code_v17','panda_me','panda_api_settings','panda_api_presets',
+            'panda_img_settings','panda_tts_settings','panda_wb','panda_persona',
+            'memo','panda_forum_posts','ai_penalty','panda_style_books','panda_theme_settings',
+            'panda_sessions','panda_pet_multi_v18','panda_pet_v18'
+        ];
+        for (let k of KEYS) {
+            let v = await readIDB('Panda_Native_Drive','disk',k);
+            if (!v) v = localStorage.getItem(k);
+            if (v) backup[k] = v;
+        }
+        let m = await readIDB('Panda_Moments_Unlimited_DB','moments_data','my_moments');
+        if (m) backup['panda_moments'] = m;
+        let s = await readIDB('Panda_Sticker_DB','stickers','my_stickers');
+        if (s) backup['panda_stickers'] = s;
+        let b = await readIDB('AI_Books_DB','books',null,true);
+        if (b) backup['ai_books'] = b;
+
+        const json = JSON.stringify(backup);
+
+        // 第二步：苹果专属 - 弹出一个面板，让用户"亲手点击"触发下载
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:-apple-system,sans-serif;';
+        ov.innerHTML = `
+            <div style="font-size:50px;margin-bottom:15px;">📦</div>
+            <div style="font-size:18px;font-weight:900;margin-bottom:8px;">数据打包完成！</div>
+            <div style="font-size:12px;color:#999;margin-bottom:30px;text-align:center;line-height:1.6;">
+                苹果系统要求您手动点击按钮保存
+            </div>
+            <a id="ios-save-btn" style="background:#07C160;color:#fff;padding:16px 50px;border-radius:25px;font-weight:900;text-decoration:none;font-size:16px;cursor:pointer;">
+                📥 点击保存文件
+            </a>
+            <div style="margin-top:25px;font-size:11px;color:#666;text-align:center;line-height:1.6;max-width:280px;">
+                点击后如果弹出菜单，请选择<br>「存储到"文件"」或「下载」
+            </div>
+            <div style="margin-top:30px;color:#888;font-size:14px;cursor:pointer;text-decoration:underline;" id="ios-close-btn">关闭</div>
+        `;
+        document.body.appendChild(ov);
+
+        // 关键！在用户点击的瞬间同步创建 blob 并触发下载
+        document.getElementById('ios-save-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 方案A：尝试 share API（Safari 15+ 支持文件分享）
+            try {
+                const file = new File([json], `PandaOS_Backup_${Date.now()}.json`, {type:'application/json'});
+                if (navigator.canShare && navigator.canShare({files:[file]})) {
+                    navigator.share({files:[file]}).then(() => ov.remove()).catch(() => {});
+                    return;
+                }
+            } catch(e) {}
+            
+            // 方案B：直接用 <a download> 在用户点击事件内同步触发
+            const blob = new Blob([json], {type:'application/octet-stream'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PandaOS_Backup_${Date.now()}.json`;
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); ov.remove(); }, 1500);
+        });
+
+        document.getElementById('ios-close-btn').onclick = () => ov.remove();
+    };
+})();
+</script>
 <!-- ========================================================== -->
+
+
 
 
 </body>
