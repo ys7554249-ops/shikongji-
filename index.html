@@ -4518,69 +4518,90 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
 <!-- ================== 📦 表情包仓库 (原生数据库突破存储限制版) ================== -->
 <script>
 (function() {
-    // 1. 构建底层 IndexedDB 数据库引擎 (突破 5MB 限制，理论可存上千张图)
+    // 1. 构建底层 IndexedDB 数据库引擎 (突破 5MB 限制，双保险防丢版)
     const stickerDB = {
         db: null,
         init: function() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open('Panda_Sticker_DB', 1);
-                req.onupgradeneeded = e => { e.target.result.createObjectStore('stickers'); };
-                req.onsuccess = e => { this.db = e.target.result; resolve(); };
-                req.onerror = e => reject(e);
+            return new Promise((resolve) => {
+                if (this.db) return resolve();
+                try {
+                    const req = indexedDB.open('Panda_Sticker_DB', 1);
+                    req.onupgradeneeded = e => { e.target.result.createObjectStore('stickers'); };
+                    req.onsuccess = e => { this.db = e.target.result; resolve(); };
+                    req.onerror = e => resolve(); // 无论失败与否都放行，绝不卡死
+                } catch(e) { resolve(); }
             });
         },
-        save: function(dataStr) {
-            return new Promise((resolve) => {
+        save: async function(dataStr) {
+            try { localStorage.setItem('panda_stickers', dataStr); } catch(e) {} // 🔥 核心防丢：强制兜底保存到缓存，哪怕数据库炸了也不会丢！
+            return new Promise(async (resolve) => {
+                await this.init();
                 if(!this.db) return resolve();
-                const tx = this.db.transaction('stickers', 'readwrite');
-                tx.objectStore('stickers').put(dataStr, 'my_stickers');
-                tx.oncomplete = resolve;
+                try {
+                    const tx = this.db.transaction('stickers', 'readwrite');
+                    tx.objectStore('stickers').put(dataStr, 'my_stickers');
+                    tx.oncomplete = resolve;
+                    tx.onerror = resolve;
+                } catch(e) { resolve(); }
             });
         },
-        get: function() {
-            return new Promise((resolve) => {
-                if(!this.db) return resolve(null);
-                const tx = this.db.transaction('stickers', 'readonly');
-                const req = tx.objectStore('stickers').get('my_stickers');
-                req.onsuccess = e => resolve(e.target.result);
-                req.onerror = () => resolve(null);
+        get: async function() {
+            return new Promise(async (resolve) => {
+                await this.init();
+                let fallback = localStorage.getItem('panda_stickers');
+                if(!this.db) return resolve(fallback);
+                try {
+                    const tx = this.db.transaction('stickers', 'readonly');
+                    const req = tx.objectStore('stickers').get('my_stickers');
+                    req.onsuccess = e => resolve(e.target.result || fallback);
+                    req.onerror = () => resolve(fallback);
+                } catch(e) { resolve(fallback); }
             });
         }
     };
 
     window.savedStickers = [];
 
-    // 💥 升级：支持解析含义，让 AI 能看懂表情包！
+    // 💥 升级：支持解析含义，并且自带强力污垢清理！
     window.addStickerByUrl = async function() {
-        const input = prompt("请输入【表情含义】和【图片链接】（中间用空格或冒号隔开）：\n\n例如：大哭 https://sm.ms/1.jpg\n\n（加上含义后，AI 就能彻底看懂你发的表情了！）");
+        const input = window.pandaPrompt ? await window.pandaPrompt("请输入【表情含义】和【图片链接】（中间用空格或冒号隔开）：\n\n例如：大哭 https://sm.ms/1.jpg\n\n（加上含义后，AI 就能彻底看懂你发的表情了！）") : prompt("请输入【表情含义】和【图片链接】...");
         if (!input || input.trim() === '') return;
         
+        let cleanInput = input.trim();
         let meaning = "";
-        let url = input.trim();
+        let url = cleanInput;
         
         // 自动切分前面的含义和后面的链接 (支持空格或冒号分隔)
-        if (input.includes(' http')) {
-            let parts = input.split(' http');
+        if (cleanInput.includes(' http')) {
+            let parts = cleanInput.split(' http');
             meaning = parts[0].trim();
             url = 'http' + parts[1].trim();
-        } else if (input.includes(':http')) {
-            let parts = input.split(':http');
+        } else if (cleanInput.includes(':http')) {
+            let parts = cleanInput.split(':http');
             meaning = parts[0].trim();
             url = 'http' + parts[1].trim();
-        } else if (!input.startsWith('http')) {
-            return alert("格式错误！未检测到纯粹的 http/https 链接。");
+        } else if (!url.startsWith('http')) {
+            // 🔥 无情剥离：如果你只是不小心多复制了前面的换行符，我帮你砍掉再验证一次
+            let finalMatch = url.match(/(http[^\s]+)/);
+            if (finalMatch) {
+                url = finalMatch[1];
+            } else {
+                let errMsg = "格式错误！未检测到纯粹的 http/https 链接。\n(请确认链接前后没有多余的换行或乱码)";
+                if(window.pandaAlert) return window.pandaAlert(errMsg);
+                return alert(errMsg);
+            }
         }
         
         // 组装成底层的特殊暗号格式: [含义]链接
         const finalData = meaning ? `[${meaning}]${url}` : url;
         
-        window.savedStickers.push(finalData);
+        window.savedStickers.unshift(finalData); // 🔥 优化：新添加的表情包直接排在最前面，不用翻到最底下去找！
         try {
             await stickerDB.save(JSON.stringify(window.savedStickers));
             if(window.renderStickers) window.renderStickers();
         } catch(err) {
-            alert("保存失败，请重试！");
-            window.savedStickers.pop();
+            if(window.pandaAlert) window.pandaAlert("保存失败，可能是手机存储空间不足。");
+            window.savedStickers.shift();
         }
     };
 
@@ -4593,10 +4614,10 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     const dummy = document.createElement('div');
     dummy.id = 'stickerInput';
     dummy.style.display = 'none';
-    dummy.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.openStickerModal(); 
-    });
+    // 终极兼容黑科技：直接重写 DOM 的 click 方法，无视苹果的事件拦截，且完全兼容安卓！
+    dummy.click = function() {
+        if(window.openStickerModal) window.openStickerModal();
+    };
     document.body.appendChild(dummy);
 
     // 4. 打开仓库与初始化数据加载
@@ -4604,22 +4625,28 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         const p = document.getElementById('funcPanel');
         if(p) p.classList.remove('show'); 
         
-        // 确保数据已从底层数据库加载
-        await stickerDB.init();
-        let dbData = await stickerDB.get();
-        if(dbData) {
-            window.savedStickers = JSON.parse(dbData);
-        } else {
-            // 如果旧版缓存里有数据，自动无缝迁移到高级数据库里
-            const oldData = localStorage.getItem('panda_stickers');
-            if(oldData) {
-                window.savedStickers = JSON.parse(oldData);
-                await stickerDB.save(oldData);
+        // 加入 try-catch 护盾，防止部分手机本地数据库报错导致页面卡死没反应
+        try {
+            await stickerDB.init();
+            let dbData = await stickerDB.get();
+            if(dbData) {
+                window.savedStickers = JSON.parse(dbData);
+            } else {
+                const oldData = localStorage.getItem('panda_stickers');
+                if(oldData) {
+                    window.savedStickers = JSON.parse(oldData);
+                    await stickerDB.save(oldData);
+                }
             }
+        } catch (e) {
+            console.warn("表情数据库请求被拦截，启动降级保护...", e);
+            const oldData = localStorage.getItem('panda_stickers');
+            if(oldData) window.savedStickers = JSON.parse(oldData);
         }
         
-        window.renderStickers();
-        document.getElementById('stickerModal').classList.add('active');
+        if(typeof window.renderStickers === 'function') window.renderStickers();
+        const modal = document.getElementById('stickerModal');
+        if(modal) modal.classList.add('active');
     };
 
        // ================== 📦 表情包核心逻辑 (打包修复版) ==================
@@ -4644,31 +4671,22 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     };
 
     // 6. 发送表情 (附带给AI塞含义的神奇操作)
-    window.sendSavedSticker = function(i) {
+        window.sendSavedSticker = function(i) {
         const s = window.savedStickers[i];
         if(!s) return;
-        
         let meaning = "";
         let imgUrl = s;
-        
         if (typeof s === 'string' && s.startsWith('[')) {
             const match = s.match(/^\[(.*?)\](.*)/);
-            if (match) {
-                meaning = match[1];
-                imgUrl = match[2];
-            }
+            // 🔥 核心修复：用 .trim() 无情清理链接前后的所有空格换行，防止图片裂开！
+            if (match) { meaning = match[1].trim(); imgUrl = match[2].trim(); }
         }
-        
-        // 发送图片并关闭弹窗
-        if(typeof pushMsg === 'function') pushMsg({side:'me', type:'img', content:imgUrl});
-        if(typeof closeModal === 'function') closeModal('stickerModal');
-        
-        // 悄悄通知 AI
-        const aiPrompt = meaning ? `[发送了一个表情，含义是：${meaning}]` : '[发送了一个表情]';
-        if(typeof triggerCharReply === 'function') {
-            setTimeout(() => triggerCharReply(false, aiPrompt), 800);
-        }
+        pushMsg({side:'me', type:'img', content: imgUrl.trim()});
+        closeModal('stickerModal');
+        const aiPrompt = meaning ? '[发送了一个表情，含义是：' + meaning + ']' : '[发送了一个表情]';
+        setTimeout(() => triggerCharReply(false, aiPrompt), 800);
     };
+
 
     // 7. 删除表情
     window.deleteSticker = async function(i, e) {
@@ -4718,20 +4736,22 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         }
     };
 
-    window.sendSavedSticker = function(i) {
+        window.sendSavedSticker = function(i) {
         const s = window.savedStickers[i];
         if(!s) return;
         let meaning = "";
         let imgUrl = s;
         if (typeof s === 'string' && s.startsWith('[')) {
             const match = s.match(/^\[(.*?)\](.*)/);
-            if (match) { meaning = match[1]; imgUrl = match[2]; }
+            // 🔥 核心修复：用 .trim() 无情清理链接前后的所有空格换行，防止图片裂开！
+            if (match) { meaning = match[1].trim(); imgUrl = match[2].trim(); }
         }
-        pushMsg({side:'me', type:'img', content: imgUrl});
+        pushMsg({side:'me', type:'img', content: imgUrl.trim()});
         closeModal('stickerModal');
         const aiPrompt = meaning ? '[发送了一个表情，含义是：' + meaning + ']' : '[发送了一个表情]';
         setTimeout(() => triggerCharReply(false, aiPrompt), 800);
     };
+
 
     // 2. 彻底重写 AI 的大脑引擎，接入 OpenAI Vision 格式的视觉协议
     window.triggerCharReply = async function(isProactive = false, injectedContent = null) {
@@ -4794,7 +4814,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
             hasImage = true;
         }
 
-        recentMsgs.forEach(m => {
+                recentMsgs.forEach(m => {
             if (m.type === 'mind') return; 
             let role = m.side === 'me' ? 'user' : 'assistant';
 
@@ -4810,10 +4830,17 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                 });
             } else {
                 let content = m.content;
+                // 记忆互通且不污染格式
+                if (reqMode === 'chat' && m.mode === 'novel') content = `[刚才线下见面时的举动/回忆]：${content}`;
+                else if (reqMode === 'novel' && m.mode !== 'novel') content = `[之前微信聊天的记录]：${content}`;
+
                 if (s.type === 'group' && m.senderName && m.side !== 'me') content = `${m.senderName}: ${content}`;
-                messages.push({role: role, content: content || '...'});
+                if (m.type === 'voice') content = `[发送了一条语音：${content}]`;
+
+                messages.push({role: role, content: content.replace(/<[^>]+>/g, '')});
             }
         });
+
         
         if (injectedContent) messages.push({role: 'user', content: injectedContent});
 
@@ -9044,13 +9071,12 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         recentMsgs.forEach(m => {
             if (m.type === 'mind') return; 
             let role = m.side === 'me' ? 'user' : 'assistant';
+
             if (m.type === 'img') {
+                // 🔥 强力降级：直接将图片转为纯文本提示，彻底解决 Claude 等严格模型的 image_url 过敏报错
                 messages.push({
                     role: role,
-                    content: [
-                        { type: "text", text: (role === 'user' ? "[我发送了一张图片，请仔细看图并作出反应]" : "[发送了一张图片]") },
-                        { type: "image_url", image_url: { url: m.content } }
-                    ]
+                    content: role === 'user' ? "[我发送了一张图片/表情包]" : "[发送了一张图片]"
                 });
             } else if (m.type === 'redpacket' || m.type === 'group_rp') { 
                 let status = m.isReceived ? ' (已领取)' : (m.isRefunded ? ' (已退回)' : '');
@@ -9064,7 +9090,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                 if (s.type === 'group' && m.senderName && m.side !== 'me') content = `${m.senderName}: ${content}`;
                 if (m.type === 'voice') content = `[发送了一条语音：${content}]`;
 
-                messages.push({role: role, content: content.replace(/<[^>]+>/g, '')});
+                // 🔥 终极防空弹：如果消息被清洗 HTML 代码后变成空白，强行塞入兜底文字，绝不给模型发空消息！
+                let finalContent = content.replace(/<[^>]+>/g, '').trim();
+                if (!finalContent) finalContent = "[特殊卡片/表情互动]";
+                
+                messages.push({role: role, content: finalContent});
             }
         });
 
@@ -16554,20 +16584,20 @@ ${npcListStr}
     .panda-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999999; display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s ease; }
     .panda-dialog-overlay.active { display: flex; opacity: 1; }
     
-    /* 弹窗主体 */
-    .panda-dialog-box { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); width: 85%; max-width: 320px; border-radius: 24px; padding: 25px 20px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: scale(0.9); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid rgba(255,255,255,0.8); }
+    /* 弹窗主体 (加了 max-height 防溢出) */
+    .panda-dialog-box { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); width: 85%; max-width: 320px; border-radius: 24px; padding: 25px 20px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: scale(0.9); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; border: 1px solid rgba(255,255,255,0.8); display: flex; flex-direction: column; max-height: 80vh; }
     .panda-dialog-overlay.active .panda-dialog-box { transform: scale(1); }
     
     /* 标题与内容 */
-    .panda-dialog-title { font-size: 18px; font-weight: 900; color: #111; margin-bottom: 10px; letter-spacing: 0.5px; }
-    .panda-dialog-msg { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; }
+    .panda-dialog-title { font-size: 18px; font-weight: 900; color: #111; margin-bottom: 10px; letter-spacing: 0.5px; flex-shrink: 0; }
+    .panda-dialog-msg { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; flex-shrink: 0; }
     
-    /* 输入框 (Prompt专属) */
-    .panda-dialog-input { width: 100%; background: #F4F5F7; border: 1px solid #EAEAEA; border-radius: 12px; padding: 12px 15px; font-size: 15px; color: #111; outline: none; margin-bottom: 20px; display: none; text-align: center; }
-    .panda-dialog-input:focus { border-color: #007AFF; background: #fff; }
+    /* 🔥 升级：超大多行文本输入框 (Prompt专属) */
+    .panda-dialog-input { width: 100%; background: #F4F5F7; border: 1px solid #EAEAEA; border-radius: 12px; padding: 15px; font-size: 15px; color: #111; outline: none; margin-bottom: 20px; display: none; text-align: left; box-sizing: border-box; min-height: 120px; max-height: 40vh; overflow-y: auto; resize: none; line-height: 1.5; font-family: inherit; }
+    .panda-dialog-input:focus { border-color: #007AFF; background: #fff; box-shadow: 0 4px 15px rgba(0,122,255,0.08); }
     
     /* 按钮组 */
-    .panda-dialog-btns { display: flex; gap: 10px; }
+    .panda-dialog-btns { display: flex; gap: 10px; flex-shrink: 0; }
     .panda-dialog-btn { flex: 1; padding: 12px; border-radius: 14px; font-size: 15px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
     .panda-dialog-btn:active { transform: scale(0.95); }
     .btn-cancel { background: #F4F5F7; color: #666; }
@@ -16586,7 +16616,8 @@ ${npcListStr}
     <div class="panda-dialog-box">
         <div class="panda-dialog-title" id="pdTitle">系统提示</div>
         <div class="panda-dialog-msg" id="pdMsg">提示内容</div>
-        <input type="text" class="panda-dialog-input" id="pdInput" placeholder="请输入...">
+        <!-- 🔥 将 input 改成了高度自适应的 textarea -->
+        <textarea class="panda-dialog-input" id="pdInput" placeholder="请输入..."></textarea>
         <div class="panda-dialog-btns">
             <button class="panda-dialog-btn btn-cancel" id="pdBtnCancel">取消</button>
             <button class="panda-dialog-btn btn-confirm" id="pdBtnConfirm">确定</button>
@@ -17510,30 +17541,7 @@ ${npcListStr}
         const appView = document.getElementById('appView');
         if (!appView) return;
         
-        const observer = new MutationObserver(() => {
-            const setContainer = document.querySelector('.settings-container');
-            if (setContainer && !document.getElementById('tutorial-card-btn')) {
-                const tutorialBtnHtml = `
-                <div class="set-card" id="tutorial-card-btn" style="background: linear-gradient(135deg, #F8FAFC, #EDF2F7); border: 1px solid #CBD5E1; cursor:pointer; margin-bottom: 15px; padding: 15px 20px;" onclick="document.getElementById('pandaTutorialModal').classList.add('active')">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="font-weight:900; color:#334155; font-size:16px;">✨ 新手食用指南！(必看)</div>
-                        <div style="background:#475569; color:#fff; padding:6px 14px; border-radius:15px; font-size:12px; font-weight:bold; box-shadow: 0 2px 8px rgba(71,85,105,0.3); flex-shrink:0;">点击阅读</div>
-                    </div>
-                    <div style="font-size:12px; color:#64748B; margin-top:8px; line-height: 1.5;">包含：如何一键切换全局马甲、所有内置生态 App 隐藏玩法详解、防崩溃指南，以及 Bug 反馈渠道。</div>
-                </div>`;
-                // 把指南按钮强行塞到设置页面的最上方
-                setContainer.insertAdjacentHTML('afterbegin', tutorialBtnHtml);
-            }
-        });
         
-        observer.observe(appView, { childList: true, subtree: true });
-    };
-
-    // 确保 DOM 加载完毕后启动监视器
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initTutorialObserver);
-    } else {
-        initTutorialObserver();
     }
 })();
 </script>
@@ -20485,17 +20493,6 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
 (function(){var _0x={a:[80,65,78,68,65,95,79,83,95,85,76,84,73,77,65,84,69,95,83,69,67,82,69,84,95,50,48,50,54,95,80,82,79,95,77,65,88]};var _s='';for(var _i=0;_i<_0x.a.length;_i++)_s+=String.fromCharCode(_0x.a[_i]);window['_$c']=function(_d){var _c=_d.toUpperCase()+_s;var _h=0;for(var _j=0;_j<_c.length;_j++){_h=((_h<<5)-_h)+_c.charCodeAt(_j);_h|=0;}return Math.abs(_h).toString(36).toUpperCase().padStart(8,'A').substring(0,8);};window.calculateActivationCode=window['_$c'];})();
 
     // ================= 2. 玩家端：菜单注入与验证拦截 =================
-    const plusObserver = new MutationObserver(() => {
-        const plusMenu = document.getElementById('plusMenu');
-        if (plusMenu && !document.getElementById('btnImportTavern')) {
-            plusMenu.insertAdjacentHTML('beforeend', `
-                <div class="pop-item" id="btnImportTavern" onclick="window.triggerCardImport()" style="color:#00E5FF; font-weight:bold; border-top:1px dashed #555;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1.2em;height:1.2em;margin-right:4px;vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 导入角色卡 (PNG)
-                </div>
-            `);
-        }
-    });
-    plusObserver.observe(document.body, { childList: true, subtree: true });
 
     window.triggerCardImport = async function() {
         // 关闭右上角菜单
@@ -20547,30 +20544,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
     };
 
     // ================= 3. 作者端：注入【算号器】到导演模式 =================
-    const directorObserver = new MutationObserver(() => {
-        const directorCard = document.getElementById('director-mode-panel');
-        if (directorCard && !document.getElementById('keygen-module')) {
-            const keygenHtml = `
-            <div id="keygen-module" class="keygen-box">
-                <div class="keygen-title">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 
-                    终端发卡后台 (作者专用算号器)
-                </div>
-                <div style="font-size:11px; color:#aaa; margin-bottom:15px; line-height:1.5;">当玩家需要导入功能时，让他把【机器码】发给你。你在这里输入机器码，即可生成他的专属【激活码】。</div>
-                <input class="keygen-input" id="keygenInput" placeholder="输入玩家的 6 位机器码">
-                <button class="keygen-btn" onclick="window.runKeygen()">⚡ 运算专属激活码</button>
-                <div id="keygenResult" class="keygen-result">
-                    <div style="font-size:11px; color:#aaa;">请将以下激活码发给该玩家：</div>
-                    <div id="keygenOutputText" class="keygen-result-text"></div>
-                </div>
-            </div>`;
-            
-            // 插入到导演模式面板的最下方
-            const saveBtn = directorCard.querySelector('.director-save-btn');
-            if (saveBtn) saveBtn.insertAdjacentHTML('beforebegin', keygenHtml);
-        }
-    });
-    directorObserver.observe(document.body, { childList: true, subtree: true });
+
 
    window.runKeygen = function() {
     const inputVal = document.getElementById('keygenInput').value.trim();
@@ -21782,6 +21756,166 @@ window.openPresetManager = function() {
         const s=(window.sessions||[]).find(x=>String(x.id)===String(currentSessionId));
         if(s&&s.history){window.batchSelectedMsgs.sort((a,b)=>b-a).forEach(idx=>s.history.splice(idx,1));saveSessions();}
         window.cancelBatchDelete(); renderChatRoom();
+    };
+})();
+</script>
+<!-- ================== ⚡ Panda OS 性能恢复与全局美化包 ================== -->
+<script id="panda-performance-core">
+(function() {
+    console.log("⚡ 性能核心已接管，已摧毁所有发热监控器！");
+
+    // 1. 零损耗：在打开加号菜单时，动态插入“导入角色卡”，而不是一天24小时监控屏幕！
+    const _origTogglePopMenu = window.togglePopMenu;
+    window.togglePopMenu = function(e) {
+        if(e) e.stopPropagation();
+        const m = document.getElementById('plusMenu');
+        if(m) {
+            if (!document.getElementById('btnImportTavern')) {
+                m.insertAdjacentHTML('beforeend', `<div class="pop-item" id="btnImportTavern" onclick="window.triggerCardImport()" style="color:#00E5FF; font-weight:bold; border-top:1px dashed #555;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1.2em;height:1.2em;margin-right:4px;vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 导入角色卡 (PNG)</div>`);
+            }
+            m.classList.toggle('show');
+        }
+    };
+
+    // 2. 零损耗：只有打开设置页面时，才单次插入指南和算号器！
+    const _origRenderSettings = window.renderSettings;
+    window.renderSettings = function() {
+        _origRenderSettings.apply(this, arguments);
+        const setContainer = document.querySelector('.settings-container');
+        if (setContainer) {
+            // 插入新手指南
+            if (!document.getElementById('tutorial-card-btn')) {
+                setContainer.insertAdjacentHTML('afterbegin', `<div class="set-card" id="tutorial-card-btn" style="background: linear-gradient(135deg, #F8FAFC, #EDF2F7); border: 1px solid #CBD5E1; cursor:pointer; margin-bottom: 15px; padding: 15px 20px;" onclick="document.getElementById('pandaTutorialModal').classList.add('active')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-weight:900; color:#334155; font-size:16px;">✨ 新手食用指南！(必看)</div><div style="background:#475569; color:#fff; padding:6px 14px; border-radius:15px; font-size:12px; font-weight:bold; box-shadow: 0 2px 8px rgba(71,85,105,0.3); flex-shrink:0;">点击阅读</div></div><div style="font-size:12px; color:#64748B; margin-top:8px; line-height: 1.5;">包含：马甲切换、生态玩法、防崩溃指南等。</div></div>`);
+            }
+            // 插入算号器后台
+            setTimeout(() => {
+                const directorCard = document.getElementById('director-mode-panel');
+                if (directorCard && !document.getElementById('keygen-module')) {
+                    const saveBtn = directorCard.querySelector('.director-save-btn');
+                    if (saveBtn) saveBtn.insertAdjacentHTML('beforebegin', `<div id="keygen-module" class="keygen-box"><div class="keygen-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 终端发卡后台 (算号器)</div><input class="keygen-input" id="keygenInput" placeholder="输入玩家的 6 位机器码"><button class="keygen-btn" onclick="window.runKeygen()">⚡ 运算专属激活码</button><div id="keygenResult" class="keygen-result"><div style="font-size:11px; color:#aaa;">激活码：</div><div id="keygenOutputText" class="keygen-result-text"></div></div></div>`);
+                }
+            }, 300);
+        }
+    };
+
+    // 3. 彻底剿灭原生的丑陋弹窗 (Alert / Prompt / Confirm 全接管)
+    window.autoGenFont = async function() {
+        const req = await window.pandaPrompt("你想换什么字体？", "", "例如：可爱手写体 / 像素风 / 飘逸书法");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return window.pandaAlert("请先配置 API Key！");
+        const btn = document.getElementById('aiGenFontBtn'); const oldText = btn.innerText;
+        btn.innerText = "正在寻找支持中文的神仙字体..."; btn.style.pointerEvents = "none";
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: `你是一个UI设计师。用户需求：“${req}”。从 Google Fonts 中挑选一款最符合的（推荐中文字体：Noto Serif SC, ZCOOL KuaiLe, Ma Shan Zheng, Zhi Mang Xing, Long Cang）。【重要】：务必将 fonts.googleapis.com 替换为国内镜像 fonts.loli.net。严格返回单行无换行的 JSON 格式：{"importCss": "@import url('...');","fontName": "'Font Name', serif"}`}], temperature: 0.7 }) });
+            const data = await res.json();
+            let clean = data.choices[0].message.content.replace(/```json|```css|```/gi, '').trim();
+            let s1 = clean.indexOf('{'); let e1 = clean.lastIndexOf('}');
+            if (s1 !== -1 && e1 !== -1) clean = clean.substring(s1, e1 + 1);
+            let resJson = JSON.parse(clean.replace(/\n/g, '\\n'));
+            const box = document.getElementById('themeCustomCss');
+            let newCss = resJson.importCss + `\nhtml body * { font-family: ${resJson.fontName}, sans-serif !important; }`;
+            box.value = newCss + "\n\n" + box.value;
+            window.updateThemeValue('customCSS', box.value); window.updateThemeValue('globalFont', resJson.fontName);
+            window.pandaAlert("✨ 字体已强制覆盖所有角落！");
+        } catch(e) { window.pandaAlert("获取字体失败：" + e.message); } finally { btn.innerText = oldText; btn.style.pointerEvents = "auto"; }
+    };
+
+    window.autoGenBubbleCss = async function() {
+        const req = await window.pandaPrompt("请描述你想要的气泡样式？", "", "例如：赛博朋克霓虹发光 / 梦幻粉色渐变");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return window.pandaAlert("请先配置 API Key！");
+        const btn = document.getElementById('aiGenBubbleBtn'); const oldText = btn ? btn.innerText : '';
+        if(btn) { btn.innerText = "AI 正在爆肝敲代码..."; btn.style.pointerEvents = "none"; }
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: `编写聊天气泡CSS。“${req}”。\n【重要】只需用这2个选择器：body .ts-me-bubble 和 body .ts-other-bubble。\n要求：所有CSS属性后加上 !important。直接输出纯 CSS 代码！绝对不要输出解释文字！`}], temperature: 0.8 }) });
+            const data = await res.json();
+            let cssCode = data.choices[0].message.content.replace(/```css|```/gi, '').trim();
+            const box = document.getElementById('themeBubbleCss'); if(box) box.value = cssCode;
+            window.updateThemeValue('customBubbleCSS', cssCode); 
+            window.pandaAlert("✨ 气泡特效已生成并自动生效！");
+        } catch(e) { window.pandaAlert("失败，请重试！(" + e.message + ")"); } finally { if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } }
+    };
+
+    window.autoGenGlobalCss = async function() {
+        const req = await window.pandaPrompt("请描述你想要的全系统界面样式？", "", "例如：极光紫渐变透明风格");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return window.pandaAlert("请先配置 API Key！");
+        const btn = document.getElementById('aiGenGlobalBtn'); const oldText = btn ? btn.innerText : '';
+        if(btn) { btn.innerText = "AI 正在深度改造全系统..."; btn.style.pointerEvents = "none"; }
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: `你是一位顶级的OS架构师。用户要求：“${req}”。请对全系统的背景、导航栏、弹窗、卡片、按钮等进行统一覆盖。必须在所有属性后加 !important。直接输出纯CSS代码，不要废话。`}], temperature: 0.8 }) });
+            const data = await res.json();
+            let cssCode = data.choices[0].message.content.replace(/```css|```/gi, '').trim();
+            const box = document.getElementById('themeCustomCss');
+            if(box) { box.value = box.value + "\n\n/* AI 全域 UI 覆写 */\n" + cssCode; window.updateThemeValue('customCSS', box.value); }
+            window.pandaAlert("✨ 全宇宙 UI 注入成功！快去看看界面的变化吧！");
+        } catch(e) { window.pandaAlert("失败，请重试！(" + e.message + ")"); } finally { if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } }
+    };
+
+    window.autoGenDirectorScript = async function() {
+        const req = await window.pandaPrompt("你想玩什么类型的剧本或游戏？", "", "例如：丧尸末日求生 / 规则怪谈");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return window.pandaAlert("请先配置 API Key！");
+        const btn = document.getElementById('aiGenDirectorBtn'); const oldText = btn.innerHTML;
+        btn.innerHTML = "⏳ AI 导演正在疯狂构思剧本..."; btn.style.pointerEvents = "none";
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: `你是一位顶级的RPG游戏架构师。用户提供的剧本是：“${req}”。请为6个模块(chatRule, novelRule, momentsRule, hackRule, multiverseRule, cinemaRule)编写NPC行为准则。不要寒暄！严格使用方括号标题输出，把规则写在标题下方，如 [chatRule]\n规则...`}], temperature: 0.8 }) });
+            const data = await res.json(); const rawText = data.choices[0].message.content;
+            const extractSection = (cur, nxt) => { const r = new RegExp(`\\[?${cur}\\]?[:：]?\\*?\\*?([\\s\\S]*?)(?=\\[?${nxt}\\]?[:：]?\\*?\\*?|$)`, 'i'); const m = rawText.match(r); return m ? m[1].trim() : ""; };
+            if(extractSection('chatRule', 'novelRule')) document.getElementById('dmChat').value = extractSection('chatRule', 'novelRule');
+            if(extractSection('novelRule', 'momentsRule')) document.getElementById('dmNovel').value = extractSection('novelRule', 'momentsRule');
+            if(extractSection('momentsRule', 'hackRule')) document.getElementById('dmMoments').value = extractSection('momentsRule', 'hackRule');
+            if(extractSection('hackRule', 'multiverseRule')) document.getElementById('dmHack').value = extractSection('hackRule', 'multiverseRule');
+            if(extractSection('multiverseRule', 'cinemaRule')) document.getElementById('dmMultiverse').value = extractSection('multiverseRule', 'cinemaRule');
+            if(extractSection('cinemaRule', 'END_OF_PROMPT')) document.getElementById('dmCinema').value = extractSection('cinemaRule', 'END_OF_PROMPT');
+            window.currentDirectorPreset = 'default'; document.getElementById('directorPresetSelect').value = 'default';
+            window.saveDirectorSettings(true);
+            window.pandaAlert(`✨ 剧本生成成功并在全宇宙生效！`);
+        } catch(e) { window.pandaAlert("生成失败：\n" + e.message); } finally { if(btn) { btn.innerHTML = oldText; btn.style.pointerEvents = "auto"; } }
+    };
+
+    window.menuAction = async function(type) {
+        if (type === 'edit') {
+            const s = (window.sessions || []).find(x => String(x.id) === String(currentSessionId));
+            if (!s || selectedMsgIndex === -1) return;
+            const oldMsg = s.history[selectedMsgIndex];
+            const oldText = (oldMsg.content || oldMsg.text || '').replace(/<[^>]*>/g, '');
+            const newText = await window.pandaPrompt("编辑消息:", oldText);
+            if (newText !== null) {
+                if (oldMsg.type === 'voice') { oldMsg.text = newText; oldMsg.content = newText; }
+                else { oldMsg.content = newText; }
+                saveSessions();
+                if (currentMode === 'novel') renderNovelContent(); else renderChatRoom();
+            }
+            document.getElementById('msgMenu').classList.remove('active');
+        } else if (type === 'del') {
+            const ok = await window.pandaConfirm("确定彻底删除这条消息吗？");
+            if (ok) {
+                const s = (window.sessions || []).find(x => String(x.id) === String(currentSessionId));
+                if (s) { s.history.splice(selectedMsgIndex, 1); saveSessions(); }
+                if (currentMode === 'novel') renderNovelContent(); else renderChatRoom();
+            }
+            document.getElementById('msgMenu').classList.remove('active');
+        } else if (type === 'revoke') {
+            const s = (window.sessions || []).find(x => String(x.id) === String(currentSessionId));
+            if (!s || selectedMsgIndex === -1) return;
+            s.history[selectedMsgIndex] = { sys: '你撤回了一条消息' };
+            saveSessions();
+            if (currentMode === 'novel') renderNovelContent(); else renderChatRoom();
+            document.getElementById('msgMenu').classList.remove('active');
+        }
     };
 })();
 </script>
