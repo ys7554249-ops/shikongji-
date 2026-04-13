@@ -13888,36 +13888,6 @@ body.dark-mode .msg-bubble.mind-bubble {
 }
 
 
-    const originalGenBond = window.genBondMemory;
-    if (originalGenBond) {
-                window.genBondMemory = async function() {
-            // 临时重写全局 fetch，专门为了在这一刻抢救手账的返回数据
-            const _rawFetch = window.fetch;
-            window.fetch = async function(url, options) {
-                const res = await _rawFetch(url, options);
-                if (url.includes('chat/completions') && options.body && options.body.includes('提取出一个高光时刻')) {
-                    const clone = res.clone();
-                    try {
-                        const data = await clone.json();
-                        let aiText = data.choices[0].message.content;
-                        let pureJson = JSON.stringify(robustJSONParse(aiText));
-                        data.choices[0].message.content = pureJson;
-                        return new Response(JSON.stringify(data), { status: res.status, headers: res.headers });
-                    } catch(e) {
-                        console.warn("手账数据净化失败，交给原逻辑处理", e);
-                    }
-                }
-                return res;
-            };
-            
-            // 💥 修复：加入 try-finally 护盾，就算报错也能保证网络引擎恢复原状，绝不卡死微信！
-            try {
-                await originalGenBond(); 
-            } finally {
-                window.fetch = _rawFetch; 
-            }
-        };
-    }
 })();
 </script>
     
