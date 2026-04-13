@@ -9713,6 +9713,14 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
             let replyText = data.choices[0].message.content;
 
             if (!replyText || !replyText.trim()) return;
+            // 💥 强力清洗器：洗刷大模型照猫画虎模仿的历史记录标签，转化为标准指令
+            replyText = replyText.replace(/\[刚才线下见面时的举动\/回忆\][:：]?/g, '');
+            replyText = replyText.replace(/\[之前微信聊天的记录\][:：]?/g, '');
+            // 将发癫的心声格式强行掰成系统能读懂的 [状态心声]
+            replyText = replyText.replace(/\[你此时的物理动作与内心状态[:：\s]*([\s\S]*?)\]/g, '[状态心声: $1]');
+            // 将伪造的语音格式强行掰成触发真实配音的 [VOICE]
+            replyText = replyText.replace(/\[发送了一条语音[:：\s]*([\s\S]*?)\]/g, '[VOICE: $1]');
+            replyText = replyText.replace(/\[发送了一张图片\]/g, '');
 
             let currentSpeakerForVoice = s.type === 'group' ? s.name : undefined;
 
@@ -21159,7 +21167,10 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
                     let sysStr = JSON.stringify(bodyObj.messages);
                     
                     // 💥 终极精准识别修复：废弃模糊的关键字匹配，直接读取当前真实的系统运行模式 currentMode！
-                    if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+                    // 加入这一行，如果 prompt 里包含记忆库重构的暗号，则直接放行，不注入乱七八糟的聊天规则
+                    if (sysStr.includes('极密指令：记忆库重构')) {
+                        // 什么都不做，放行
+                    } else if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.novelRule}` });
                     } else if (sysStr.includes('<post>')) {
                         bodyObj.messages.push({ role: 'system', content: `【👑造物主绝对真理指令】：\n${ds.momentsRule}` });
