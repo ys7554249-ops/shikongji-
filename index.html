@@ -4300,7 +4300,8 @@ window.deleteStyleBook = function(index) {
 .msg-bubble:has(input[type="radio"][hidden]),
 .msg-bubble:has(input[type="radio"] + .interface),
 .msg-bubble:has(input[type="radio"] + div > .tabs),
-.msg-bubble:has(> div[class$="-box"]:only-child) {
+
+.msg-bubble:has(> div[class$="-box"]:not(.msg-quote-box):only-child) {
     background: transparent !important;
     background-color: transparent !important;
     border: none !important;
@@ -13117,7 +13118,7 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
 
 <!-- ================== 🩹 紧急修复：心声 UI 紧凑精美版 ================== -->
 <style>
-/* ============ ☁️ 极简轻盈心声 (去油腻版) ============ */
+/* ============ ☁️ 电影感高级心声 (高对比度清晰版) ============ */
 /* 1. 隐藏多余元素，保持居中 */
 .msg-row:has(.mind-bubble) .msg-ava,
 .msg-row:has(.mind-bubble) .chat-item-name,
@@ -13127,7 +13128,7 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
 .msg-row:has(.mind-bubble) {
     justify-content: center !important;
     width: 100% !important;
-    margin: 15px 0 !important; /* 缩小上下间距，不显得突兀 */
+    margin: 20px 0 !important; /* 上下留出充足的呼吸感 */
     padding: 0 15px !important;
 }
 .msg-row:has(.mind-bubble) > div {
@@ -13136,31 +13137,25 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
     width: 100% !important;
 }
 
-/* 2. 极简毛玻璃，取消一切花里胡哨 */
+/* 2. 深黑半透明底 + 纯白文字，任何背景下都极度清晰醒目 */
 .msg-bubble.mind-bubble {
-    /* 更透明，让底部的绿色背景完全透出来 */
-    background: rgba(255, 255, 255, 0.4) !important; 
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important; /* 极弱的阴影，去除厚重感 */
-    border-radius: 12px !important; /* 改成小圆角，不再是个大方块 */
-    
-    /* 核心修复：大幅压缩上下边距，让它变成扁平的长条形 */
-    padding: 8px 16px !important; 
-    
-    /* 字体回归正常，不搞斜体了 */
+    background: rgba(0, 0, 0, 0.6) !important; /* 深黑半透明，极度清晰 */
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 14px !important; 
+    padding: 10px 18px !important; 
     font-size: 13px !important; 
-    color: #8A939B !important; /* 极简的高级灰蓝调 */
-    font-style: normal !important; 
-    line-height: 1.5 !important;
+    color: #ffffff !important; /* 纯白文字，永不瞎眼 */
+    line-height: 1.6 !important;
     text-align: center !important;
-    
-    /* 核心修复：让它紧贴文字，不要瞎拉长 */
     max-width: 90% !important;
     width: auto !important; 
     display: inline-block !important;
     margin: 0 !important;
+    font-style: normal !important;
+    letter-spacing: 0.5px !important;
 }
 
 /* 3. 斩立决：彻底杀掉该死的双引号和多余伪元素 */
@@ -13170,12 +13165,13 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
     display: none !important;
 }
 
-/* 4. 夜间模式自适应 */
+/* 4. 夜间模式适配 */
 body.dark-mode .msg-bubble.mind-bubble {
-    background: rgba(50, 50, 50, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #999 !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #eee !important;
 }
+
 
 </style>
 <!-- ================== 心声 UI 补丁结束 ================== -->
@@ -18917,16 +18913,19 @@ ${npcListStr}
             let hour = _now.getHours();
             let timePhase = hour < 6 ? "凌晨/深夜" : hour < 9 ? "清晨" : hour < 12 ? "上午" : hour < 14 ? "中午" : hour < 19 ? "下午/傍晚" : hour < 23 ? "晚上" : "深夜";
             sysContent += `\n\n⏰【系统时钟与剧情法则】：
-1. 当前时间是 ${_now.getMonth()+1}月${_now.getDate()}日 ${_days[_now.getDay()]} ${String(hour).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}（${timePhase}）。
-2. 🚨如果玩家回复中带有明显的时间推进（如“几天后”），必须无条件代入玩家设定的时间！`;
+1. 当前的时间段是 ${_now.getMonth()+1}月${_now.getDate()}日 ${timePhase}。
+2. 🚨如果玩家回复中带有明显的时间推进（如“几天后”），必须无条件代入玩家设定的时间！
+3. 🚨【最高红线】：绝对禁止在动作、环境旁白或对话中直接报出具体的几点几分！你只需要根据当前的时间段（如清晨、黄昏、深夜）渲染对应的光影氛围即可！`;
 
             sysContent += `\n\n🚨【反嘴硬与记忆遵循红线】：你的【详细人设】、【核心记忆】和【世界观资料】是绝对真理！绝不反驳！`;
 
             // [模块1] 🛑 防发癫与防散财
-            if (recentContext.includes('微信红包') || recentContext.includes('微信转账')) {
-                sysContent += `\n🚨【防散财警告】：你最近已经给过玩家钱了！暂时禁止再次输出 [微信转账] 标签！`;
-            } else {
-                sysContent += `\n💡【打钱指令】：如果要给玩家打钱，在末尾写 \`[微信转账: 520]\`。`;
+            if (typeof currentMode === 'undefined' || currentMode !== 'novel') {
+                if (recentContext.includes('微信红包') || recentContext.includes('微信转账')) {
+                    sysContent += `\n🚨【防散财警告】：你最近已经给过玩家钱了！暂时禁止再次输出 [微信转账] 标签！`;
+                } else {
+                    sysContent += `\n💡【打钱指令】：如果要给玩家打钱，在末尾写 \`[微信转账: 520]\`。`;
+                }
             }
             if (s && s.history) {
                 let pendingRp = s.history.slice(-10).find(m => m.type === 'redpacket' && m.side === 'me' && !m.isReceived && !m.isRefunded);
@@ -18950,7 +18949,7 @@ ${npcListStr}
                 sysContent += `\n\n🚨【群社交法则】：群成员默认互相不认识！\n【召唤指令】：末尾加 \`[INVITE: 名字]\`。\n🚫【群聊禁令】：严禁使用单聊送礼标签！\n🧧【发群红包】：\`[GROUP_RP: 金额, 个数, 封面]\` 或 \`[EXCLUSIVE_RP: 金额, 对方名字, 封面]\`。`;
             } else if (s && s.type === 'single') {
                 if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
-                    sysContent += `\n\n🚨【红线警告】：你们现在是面对面的线下互动！绝对禁止使用网络聊天的送礼功能（严禁输出 [GIFT: xxx] 标签）！`;
+                    sysContent += `\n\n🚨【红线警告】：你们现在是面对面的线下互动！绝对禁止使用网络聊天的送礼和转账功能（严禁输出 [GIFT: xxx] 或 [微信转账: xxx] 等标签）！如果要砸钱，请用括号描写掏出黑卡递给玩家的动作！`;
                 } else {
                     sysContent += `\n\n【申请进群指令】：想进群在末尾加 \`[APPLY_JOIN]\`！\n【主动送礼互动】：想给玩家制造惊喜或回礼，另起一行写 \`[GIFT: 礼物名称]\`！\n【分享论坛八卦】：如果你在潜水时看到有趣的帖子想八卦，另起一行写 \`[SHARE: 帖子内容摘要]\`！`;
                 }
@@ -19984,7 +19983,7 @@ window.tempCallMemory = [];
 window.currentMode = 'chat';
 if(typeof currentMode !== 'undefined') currentMode = 'chat';
         
-        if (window.callSeconds <= 3) {
+        if (window.callSeconds < 2) {
 
             if(window.pushMsg) window.pushMsg({sys: `已取消`});
             // 触发秒挂抓包联动！
