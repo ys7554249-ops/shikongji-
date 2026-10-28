@@ -9,6 +9,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#E0F2E9">
+    <meta name="apple-mobile-web-app-title" content="时空机">
+    <link rel="apple-touch-icon" href="https://api.dicebear.com/7.x/bottts/png?seed=Panda&size=180">
 <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
@@ -1102,7 +1104,7 @@ button, input, textarea, select, label, a,
     <input type="file" id="charAvatarInput" accept="image/*" style="display:none" onchange="handleImg(this)">
     <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="handleBg(this)">
     <input type="file" id="novelBgInput" accept="image/*" style="display:none" onchange="handleNovelBg(this)">
-    <input type="file" id="stickerInput" accept="image/*" multiple style="display:none" onchange="sendStickers(this.files)">
+    <input type="file" id="stickerInput" accept="image/*,.json,.txt,.csv,.md" multiple style="display:none" onchange="sendStickers(this.files)">
     <input type="file" id="musicInput" multiple accept="audio/*" style="display: none;" onchange="handleMusicFiles(this.files)">
     <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="window.processAvatar(this.files)">
     <script>
@@ -3605,14 +3607,22 @@ window.autoCompressMemory = async function(sessionId) {
         return `${speaker}: ${text}`;
     }).filter(t => t).join('\n');
 
-    // 3. 构建无废话的提取 Prompt
-    const prompt = `你是一个强大的潜意识整理中枢。请根据以下【已有记忆】和【新增历史对话】，提取最重要的剧情进展、玩家状态变化、感情发展及核心伏笔。
-【已有记忆】：${s.memory || '无'}
-【新增历史对话】：\n${cleanHistory}\n
+    // 3. 构建无废话的提取 Prompt：覆盖式整合，防止记忆无限堆叠
+    const prompt = `你是潜意识记忆整理中枢。请把【已有记忆】和【新增对话】合并成一份新的潜意识备忘录，覆盖式整合，绝不要简单拼接，也绝不要遗漏关键信息。
+【已有记忆】：
+${s.memory || '无'}
+【新增对话】：
+${cleanHistory}
+
 要求：
-1. 用精练的客观视角，整合为一段不超过 300 字的潜意识备忘录。
-2. 剔除废话和日常水贴，只保留对后续剧情有影响的干货。
-3. 直接输出文本，绝对不要加 Markdown 或“好的”等任何废话。`;
+1. 只保留对后续剧情有影响的干货：剧情进展、玩家状态变化、感情发展、核心伏笔、未完成的约定与冲突。
+2. 用客观第三人称，整份备忘录不超过 500 字。
+3. 必须严格按以下4行输出，行首固定标签，不能少行也不能多行：
+【剧情】...
+【关系】...
+【伏笔】...
+【待办】...
+4. 直接输出正文，不要 Markdown、不要解释、不要“好的”。`;
 
     try {
         let endpoint = api.url.trim().replace(/\/+$/, '');
@@ -3624,7 +3634,7 @@ window.autoCompressMemory = async function(sessionId) {
             body: JSON.stringify({
                 model: api.model,
                 messages: [{role: "user", content: prompt}],
-                temperature: 0.7
+                temperature: 0.4
             })
         });
         
@@ -3632,15 +3642,8 @@ window.autoCompressMemory = async function(sessionId) {
         if(json.error) throw new Error(json.error.message);
         const summary = json.choices[0].message.content.trim();
         
-        // 👇👇 核心修复：追加记忆，绝不能覆盖旧记忆！
-        if (s.memory) {
-            // 防止重复堆叠冗余的标题
-            let cleanSummary = summary.replace(/^\[早期记忆总结\]：/g, '');
-            s.memory = s.memory + '\n[早期记忆总结]：' + cleanSummary;
-        } else {
-            s.memory = '[早期记忆总结]：' + summary;
-        }
-        // 👆👆 修复结束
+        // 👇 覆盖式更新：用整合后的新备忘录替换旧记忆，记忆永不无限膨胀
+        s.memory = summary.slice(0, 1200);
 
         s.history = s.history.slice(-KEEP_LATEST); 
 
@@ -4748,6 +4751,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     window.compressImage = function(file, callback) { if (!file) return; const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function(e) { const img = new Image(); img.src = e.target.result; img.onload = function() { const canvas = document.createElement('canvas'); let width = img.width; let height = img.height; const maxSize = 800; if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); callback(canvas.toDataURL('image/jpeg', 0.7)); }; }; };
 
     window.handleImg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const s=sessions.find(x=>x.id==currentSessionId);s.avatar=b;saveSessions();renderChatRoom();});}};
+    window.handleImgRef = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{ const data=document.getElementById('imgRefData'); if(data) data.value=b; const prev=document.getElementById('imgRefPrev'); if(prev){ prev.src=b; prev.style.display='block'; } if(typeof window.saveAllEngines==='function') window.saveAllEngines(); }); }};
+    window.handleCharRefImg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{ const data=document.getElementById('charRefImgData'); if(data) data.value=b; const prev=document.getElementById('charRefImgPrev'); if(prev){ prev.src=b; prev.style.display='block'; } }); }};
     window.handleGrpImg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const el=document.getElementById('grpAvaPrev');const tip=document.getElementById('grpAvaTip');if(el){el.src=b;el.style.display='block';}if(tip)tip.style.display='none';tempGrpAvatar=b;});}};
     window.handleBg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const s=sessions.find(x=>x.id==currentSessionId);s.chatBg=b;saveSessions();alert("背景已设置");renderChatRoom();});}};
     window.handleNovelBg = function(inpt) { if(inpt.files[0]){ window.compressImage(inpt.files[0], (b)=>{const s=sessions.find(x=>x.id==currentSessionId);s.novelBg=b;saveSessions();alert("剧情背景已设置");});}};
@@ -6514,7 +6519,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         window.bs_closeAllDrawer();
         window.bs_renderCatList();
         if (b.chapters.length) window.bs_renderContent(b.chapters.length - 1);
-        else window.bs_openBook(window.bs_curId);
+        else window.bs_readBook(window.bs_curId, 0);
         window.bs_toast('已删除');
     };
 
@@ -7138,6 +7143,37 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     };
 
     window.savedStickers = [];
+    window.currentStickerGroup = null;
+
+    // ========== 分组工具：把老数据(扁平数组)自动迁移成分组结构 ==========
+    window.ensureStickerGroups = function() {
+        if (!Array.isArray(window.savedStickers)) window.savedStickers = [];
+        if (window.savedStickers.length > 0 && typeof window.savedStickers[0] === 'string') {
+            window.savedStickers = [{ id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: '默认表情包', items: window.savedStickers }];
+        }
+        window.savedStickers = window.savedStickers.filter(g => g && Array.isArray(g.items));
+        if (!window.savedStickers.length) {
+            window.savedStickers = [{ id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: '默认表情包', items: [] }];
+        }
+        if (!window.savedStickers.find(g => g.id === window.currentStickerGroup)) {
+            window.currentStickerGroup = window.savedStickers[0].id;
+        }
+        return window.savedStickers;
+    };
+    window.getStickerGroup = function(id) {
+        const groups = window.ensureStickerGroups();
+        return groups.find(g => g.id === (id || window.currentStickerGroup)) || groups[0];
+    };
+    window.allStickerItems = function() {
+        const out = [];
+        window.ensureStickerGroups().forEach(g => { if (g.items) out.push(...g.items); });
+        return out;
+    };
+    window.switchStickerGroup = function(id) {
+        window.currentStickerGroup = id;
+        window.renderStickers();
+    };
+    const escHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     // 💥 升级：支持解析含义，并且自带强力污垢清理！
     window.addStickerByUrl = async function() {
@@ -7172,13 +7208,17 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         // 组装成底层的特殊暗号格式: [含义]链接
         const finalData = meaning ? `[${meaning}]${url}` : url;
         
-        window.savedStickers.unshift(finalData); // 🔥 优化：新添加的表情包直接排在最前面，不用翻到最底下去找！
+        const groups = window.ensureStickerGroups();
+        let g = groups.find(x => x.name === '手动添加');
+        if (!g) { g = { id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: '手动添加', items: [] }; groups.push(g); }
+        g.items.unshift(finalData);
+        window.currentStickerGroup = g.id;
         try {
             await stickerDB.save(JSON.stringify(window.savedStickers));
             if(window.renderStickers) window.renderStickers();
         } catch(err) {
             if(window.pandaAlert) window.pandaAlert("保存失败，可能是手机存储空间不足。");
-            window.savedStickers.shift();
+            g.items.shift();
         }
     };
 
@@ -7221,6 +7261,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
             if(oldData) window.savedStickers = JSON.parse(oldData);
         }
         
+        window.ensureStickerGroups();
         if(typeof window.renderStickers === 'function') window.renderStickers();
         const modal = document.getElementById('stickerModal');
         if(modal) modal.classList.add('active');
@@ -7228,20 +7269,29 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
 
        // ================== 📦 表情包核心逻辑 (打包修复版) ==================
     
-    // 5. 渲染仓库 (剥离含义，完美显示图片)
+    // 5. 渲染仓库 (分组标签 + 剥离含义，完美显示图片)
     window.renderStickers = function() {
         const grid = document.getElementById('stickerGrid');
         if (!grid) return;
-        grid.innerHTML = (window.savedStickers || []).map((s, i) => {
+        const tabsEl = document.getElementById('stickerGroupTabs');
+        const groups = window.ensureStickerGroups();
+        if (tabsEl) {
+            tabsEl.innerHTML = groups.map(g => {
+                const active = g.id === window.currentStickerGroup;
+                return `<div onclick="window.switchStickerGroup('${g.id}')" style="flex-shrink:0; padding:6px 12px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer; white-space:nowrap; ${active ? 'background:#3D7EFF; color:#fff;' : 'background:#F0F1F3; color:#555;'}">${escHtml(g.name)} (${(g.items || []).length})</div>`;
+            }).join('');
+        }
+        const group = window.getStickerGroup();
+        grid.innerHTML = (group.items || []).map((s, i) => {
             let imgUrl = s;
             if (typeof s === 'string' && s.startsWith('[')) {
                 const match = s.match(/^\[(.*?)\](.*)/);
                 if (match) imgUrl = match[2];
             }
             return `
-            <div style="position:relative; width:100%; aspect-ratio:1; border-radius:10px; border:1px solid #eee; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                <img src="${imgUrl}" style="max-width:90%; max-height:90%; object-fit:contain; border-radius:6px;" onclick="window.sendSavedSticker(${i})">
-                <div onclick="window.deleteSticker(${i}, event)" style="position:absolute; top:-6px; right:-6px; width:24px; height:24px; background:rgba(255,59,48,0.9); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1; font-weight:bold; border:2px solid #fff; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">×</div>
+            <div style="position:relative; width:100%; aspect-ratio:1; border-radius:8px; border:1px solid #eee; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                <img src="${imgUrl}" style="max-width:80%; max-height:80%; object-fit:contain; border-radius:5px;" onclick="window.sendSavedSticker(${i})">
+                <div onclick="window.deleteSticker(${i}, event)" style="position:absolute; top:-5px; right:-5px; width:18px; height:18px; background:rgba(255,59,48,0.9); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; font-weight:bold; border:2px solid #fff; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">×</div>
             </div>
             `;
         }).join("");
@@ -7249,7 +7299,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
 
     // 6. 发送表情 (附带给AI塞含义的神奇操作)
         window.sendSavedSticker = function(i) {
-        const s = window.savedStickers[i];
+        const group = window.getStickerGroup();
+        const s = group.items && group.items[i];
         if(!s) return;
         let meaning = "";
         let imgUrl = s;
@@ -7269,7 +7320,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     // 7. 删除表情
     window.deleteSticker = async function(i, e) {
         e.stopPropagation(); // 防止误触发送
-        window.savedStickers.splice(i, 1);
+        const group = window.getStickerGroup();
+        group.items.splice(i, 1);
         if (typeof stickerDB !== 'undefined') {
             await stickerDB.save(JSON.stringify(window.savedStickers));
         }
@@ -7277,26 +7329,158 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     };
     // =================================================================
 
-    // 8. 上传并存入高级数据库
-    window.sendStickers = function(files) {
-        let loadedCount = 0;
-        for(let f of files) {
-            window.compressImage(f, async (b) => {
-                window.savedStickers.push(b);
-                loadedCount++;
-                if (loadedCount === files.length) {
-                    try { 
-                        // 将几十上百张表情瞬间写入底层数据库，突破限制！
-                        await stickerDB.save(JSON.stringify(window.savedStickers));
-                        window.renderStickers(); 
-                    } catch(err) {
-                        alert("图片太大了或者写入出错，稍微删几张旧的试试！");
-                        window.savedStickers.pop();
-                        window.renderStickers();
-                    }
-                }
-            });
+    // 8. 上传并存入高级数据库 (支持图片 + JSON/TXT 表情包文件，一次导入自动成为一组)
+    window.sendStickers = async function(files) {
+        const list = Array.from(files || []);
+        if (!list.length) return;
+        // 先加载已有表情包，防止导入时覆盖丢数据
+        if (!Array.isArray(window.savedStickers) || window.savedStickers.length === 0) {
+            try {
+                let dbData = await stickerDB.get();
+                if (dbData) window.savedStickers = JSON.parse(dbData);
+            } catch(e) {}
         }
+        if (!Array.isArray(window.savedStickers) || window.savedStickers.length === 0) {
+            try {
+                const raw = JSON.parse(localStorage.getItem('panda_stickers') || '[]');
+                if (Array.isArray(raw) && raw.length) window.savedStickers = raw;
+            } catch(e){}
+        }
+        let added = 0;
+        let pending = list.length;
+        const groups = window.ensureStickerGroups();
+
+        const uniqueName = (base) => {
+            const nm = base || '未命名分组';
+            let i = 2;
+            while (groups.some(g => g.name === nm)) {
+                const cand = `${base || '未命名分组'}(${i++})`;
+                if (!groups.some(g => g.name === cand)) return cand;
+            }
+            return nm;
+        };
+        const makeGroup = (base) => {
+            const g = { id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: uniqueName(base), items: [] };
+            groups.push(g);
+            return g;
+        };
+        const makeEntry = (meaning, url) => {
+            const u = String(url || '').trim();
+            const m = String(meaning || '').trim();
+            if (!u) return null;
+            return m ? `[${m}]${u}` : u;
+        };
+
+        let target = null;
+        let lastTarget = null;
+        let batchImgGroup = null;
+        const acceptEntry = (meaning, url) => {
+            if (!target) target = makeGroup('手动上传');
+            const e = makeEntry(meaning, url);
+            if (!e) return;
+            if (target.items.includes(e)) return;
+            target.items.push(e);
+            added++;
+        };
+        const parseLine = (line) => {
+            const s = String(line == null ? '' : line).trim();
+            if (!s || s.startsWith('#') || s.startsWith('//')) return;
+            let m = s.match(/^\[([^\]]*)\]\s*(.+)$/);
+            if (m) return acceptEntry(m[1], m[2]);
+            m = s.match(/^(.*?)\s*[|,，:：;；\t]\s*(https?:\/\/\S+|data:image\/\S+)$/i);
+            if (m) return acceptEntry(m[1], m[2]);
+            m = s.match(/^(.*?)\s+(https?:\/\/\S+|data:image\/\S+)$/i);
+            if (m) return acceptEntry(m[1], m[2]);
+            m = s.match(/(https?:\/\/\S+|data:image\/\S+)/i);
+            if (m) return acceptEntry('', m[1]);
+        };
+        const acceptRaw = (entry) => {
+            if (entry == null) return;
+            if (typeof entry === 'string') {
+                const t = entry.trim();
+                if (!t) return;
+                if (t.startsWith('{') || t.startsWith('[')) {
+                    try { return extractJson(JSON.parse(t)); } catch(e) {}
+                }
+                return parseLine(t);
+            }
+            if (Array.isArray(entry)) { entry.forEach(acceptRaw); return; }
+            if (typeof entry === 'object') {
+                const meaning = entry.meaning || entry.name || entry.title || entry.label || entry.text || entry.emoji || '';
+                const url = entry.url || entry.src || entry.link || entry.image || entry.img || entry.pic || entry.path || entry.file || '';
+                if (url) return acceptEntry(meaning, url);
+                Object.keys(entry).forEach(k => {
+                    const v = entry[k];
+                    if (typeof v === 'string' && /^(https?:\/\/|data:image)/i.test(v)) acceptEntry(k, v);
+                    else if (Array.isArray(v)) v.forEach(acceptRaw);
+                });
+            }
+        };
+        const extractJson = (data) => {
+            if (Array.isArray(data)) return data.forEach(acceptRaw);
+            if (typeof data === 'string') { data.split(/\r?\n/).forEach(parseLine); return; }
+            if (typeof data === 'object' && data) {
+                const arr = data.stickers || data.list || data.data || data.items || data.emojis || data.emoticons || data.pack || data.files || null;
+                if (Array.isArray(arr)) return arr.forEach(acceptRaw);
+                acceptRaw(data);
+            }
+        };
+
+        const finish = async () => {
+            if (pending > 0) return;
+            try {
+                await stickerDB.save(JSON.stringify(window.savedStickers));
+                if (lastTarget && added > 0) window.currentStickerGroup = lastTarget.id;
+                window.renderStickers();
+                const msg = added > 0
+                    ? `成功导入 ${added} 个表情到分组「${lastTarget ? lastTarget.name : ''}」！`
+                    : "没有识别到可用的表情（请确认文件里包含图片链接或标准表情包格式）。";
+                if (window.pandaAlert) window.pandaAlert(msg); else alert(msg);
+            } catch (err) {
+                const msg = "写入失败，表情包可能太大了，删几张旧的试试！";
+                if (window.pandaAlert) window.pandaAlert(msg); else alert(msg);
+            }
+        };
+
+        list.forEach(f => {
+            const name = (f.name || '').toLowerCase();
+            const base = String(f.name || '').replace(/\.[^.]+$/, '') || '';
+            const isJson = /\.json$/i.test(name);
+            const isText = /\.(txt|csv|md|log)$/i.test(name);
+            const isImg = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(name) || (f.type && f.type.startsWith('image/'));
+            if (isJson || isText) {
+                target = makeGroup(base || (isJson ? 'JSON表情包' : '文本表情包'));
+                lastTarget = target;
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const text = String(reader.result || '');
+                        if (isJson) {
+                            let data;
+                            try { data = JSON.parse(text); } catch(e) { data = text; }
+                            extractJson(data);
+                        } else {
+                            text.split(/\r?\n/).forEach(parseLine);
+                        }
+                    } catch(e) { console.warn("表情包解析失败", e); }
+                    pending--;
+                    await finish();
+                };
+                reader.onerror = () => { pending--; finish(); };
+                reader.readAsText(f);
+            } else if (isImg) {
+                if (!batchImgGroup) { batchImgGroup = makeGroup('手动上传'); lastTarget = batchImgGroup; }
+                target = batchImgGroup;
+                window.compressImage(f, async (b) => {
+                    if (b && !target.items.includes(b)) { target.items.push(b); added++; }
+                    pending--;
+                    await finish();
+                });
+            } else {
+                pending--;
+                finish();
+            }
+        });
     };
 })();
 </script>
@@ -7601,7 +7785,7 @@ window.renderMomentImgPreviews = function() {
 
 <!-- 🎨 视觉与语音双引擎 (千人千面：专属颜值与声带版) 开始 -->
 <style>
-    .msg-bubble > img { max-width: 200px !important; max-height: 300px !important; width: auto !important; height: auto !important; object-fit: contain !important; border-radius: 8px !important; cursor: pointer; transition: 0.2s; }
+    .msg-bubble > img { max-width: 110px !important; max-height: 170px !important; width: auto !important; height: auto !important; object-fit: contain !important; border-radius: 8px !important; cursor: pointer; transition: 0.2s; }
     .msg-bubble img:active { transform: scale(0.95); opacity: 0.8; }
     .m-pics img:first-child:last-child { width: 160px !important; height: auto !important; max-height: 250px !important; object-fit: cover !important; border-radius: 6px !important; }
     .img-dl-wrap { position: relative; display: inline-block; }
@@ -7620,7 +7804,7 @@ window.renderMomentImgPreviews = function() {
         window.imgSettings = JSON.parse(localStorage.getItem('panda_img_settings'));
         if (!window.imgSettings || typeof window.imgSettings !== 'object') throw new Error();
     } catch(e) {
-        window.imgSettings = {"toggle":false,"url":"https://api.novelai.net","key":"","model":"nai-diffusion-3","size":"832x1216","posPrompt":defaultPos,"negPrompt":defaultNeg};
+        window.imgSettings = {"toggle":false,"url":"https://api.novelai.net","key":"","model":"nai-diffusion-3","size":"832x1216","posPrompt":defaultPos,"negPrompt":defaultNeg,"imgRef":""};
     }
 
     try {
@@ -7629,6 +7813,95 @@ window.renderMomentImgPreviews = function() {
     } catch(e) {
         window.ttsSettings = {"toggle":false,"url":"https://api.openai.com","key":"","model":"minimax-tts","voice":"male-qn-badao"};
     }
+
+    try {
+        window.imgPresets = JSON.parse(localStorage.getItem('panda_img_presets'));
+        if (!Array.isArray(window.imgPresets)) throw new Error();
+    } catch(e) {
+        window.imgPresets = [];
+    }
+
+    try {
+        window.ttsPresets = JSON.parse(localStorage.getItem('panda_tts_presets'));
+        if (!Array.isArray(window.ttsPresets)) throw new Error();
+    } catch(e) {
+        window.ttsPresets = [];
+    }
+
+    window.saveImgPresets = function() { try { localStorage.setItem('panda_img_presets', JSON.stringify(window.imgPresets || [])); } catch(e) { alert('预设图片数据太大，保存失败，请清除参考图后再试'); } };
+    window.saveTtsPresets = function() { try { localStorage.setItem('panda_tts_presets', JSON.stringify(window.ttsPresets || [])); } catch(e) { alert('预设保存失败'); } };
+
+    window.saveImgPreset = async function() {
+        if (typeof window.saveAllEngines === 'function') window.saveAllEngines();
+        if (!window.imgSettings.url || !window.imgSettings.key) return alert('请先填好生图 API 地址和密钥！');
+        const name = window.pandaPrompt ? await window.pandaPrompt('给这个生图预设起个名字：', '生图预设 ' + (window.imgPresets.length + 1)) : prompt('给这个生图预设起个名字：', '生图预设 ' + (window.imgPresets.length + 1));
+        if (!name) return;
+        window.imgPresets.push({ name: name, ...JSON.parse(JSON.stringify(window.imgSettings)) });
+        window.saveImgPresets();
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert('生图预设已保存！');
+    };
+
+    window.loadImgPreset = function(i) {
+        const idx = parseInt(i, 10);
+        const p = window.imgPresets[idx];
+        if (!p) return;
+        window.imgSettings = JSON.parse(JSON.stringify(p));
+        delete window.imgSettings.name;
+        try { localStorage.setItem('panda_img_settings', JSON.stringify(window.imgSettings)); } catch(e) {}
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert(`已载入生图预设：${p.name}`);
+    };
+
+    window.delImgPreset = async function() {
+        const sel = document.getElementById('imgPresetSel');
+        if (!sel || sel.value === '') return alert('请先选择要删除的预设');
+        const idx = parseInt(sel.value, 10);
+        const p = window.imgPresets[idx];
+        if (!p) return;
+        const isOk = window.pandaConfirm ? await window.pandaConfirm(`确定删除生图预设「${p.name}」吗？`) : confirm('确定删除这个预设吗？');
+        if (!isOk) return;
+        window.imgPresets.splice(idx, 1);
+        window.saveImgPresets();
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert('预设已删除');
+    };
+
+    window.saveTtsPreset = async function() {
+        if (typeof window.saveAllEngines === 'function') window.saveAllEngines();
+        if (!window.ttsSettings.url || !window.ttsSettings.key) return alert('请先填好语音 API 地址和密钥！');
+        const name = window.pandaPrompt ? await window.pandaPrompt('给这个语音预设起个名字：', '语音预设 ' + (window.ttsPresets.length + 1)) : prompt('给这个语音预设起个名字：', '语音预设 ' + (window.ttsPresets.length + 1));
+        if (!name) return;
+        window.ttsPresets.push({ name: name, ...JSON.parse(JSON.stringify(window.ttsSettings)) });
+        window.saveTtsPresets();
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert('语音预设已保存！');
+    };
+
+    window.loadTtsPreset = function(i) {
+        const idx = parseInt(i, 10);
+        const p = window.ttsPresets[idx];
+        if (!p) return;
+        window.ttsSettings = JSON.parse(JSON.stringify(p));
+        delete window.ttsSettings.name;
+        try { localStorage.setItem('panda_tts_settings', JSON.stringify(window.ttsSettings)); } catch(e) {}
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert(`已载入语音预设：${p.name}`);
+    };
+
+    window.delTtsPreset = async function() {
+        const sel = document.getElementById('ttsPresetSel');
+        if (!sel || sel.value === '') return alert('请先选择要删除的预设');
+        const idx = parseInt(sel.value, 10);
+        const p = window.ttsPresets[idx];
+        if (!p) return;
+        const isOk = window.pandaConfirm ? await window.pandaConfirm(`确定删除语音预设「${p.name}」吗？`) : confirm('确定删除这个预设吗？');
+        if (!isOk) return;
+        window.ttsPresets.splice(idx, 1);
+        window.saveTtsPresets();
+        if (typeof window.renderSettings === 'function') window.renderSettings();
+        alert('预设已删除');
+    };
 
     // 让整个屏幕的输入框失焦后自动保存
     document.body.addEventListener('change', function(e) {
@@ -7653,7 +7926,8 @@ window.renderMomentImgPreviews = function() {
         model: getValue('imgModelInput', ''),
         size: getValue('imgSizeSel', '832x1216'),
         posPrompt: getValue('imgPosPrompt', defaultPos),
-        negPrompt: getValue('imgNegPrompt', defaultNeg)
+        negPrompt: getValue('imgNegPrompt', defaultNeg),
+        imgRef: getValue('imgRefData', '')
     };
 
     localStorage.setItem(
@@ -7721,18 +7995,46 @@ window.renderSettings = function() {
                     全局视觉生图引擎
                 </div>
                 <div style="font-size:11px; color:#888; margin-bottom:10px;">*这里的提示词是"全局保底"。如果你在角色资料里设置了专属长相，会优先用角色的！</div>
+                <div class="set-row" style="margin-bottom:12px;">
+                    <label class="set-label">生图预设</label>
+                    <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;align-items:center;">
+                        <select id="imgPresetSel" class="set-input" style="flex:1;min-width:0;" onchange="window.loadImgPreset(this.value)">
+                            <option value="">(未选择预设)</option>
+                            ${window.imgPresets.map((p,i)=>`<option value="${i}">${p.name||('预设'+(i+1))}</option>`).join('')}
+                        </select>
+                        <button class="set-btn" style="width:auto;padding:0 10px;background:#E8F5E9;color:#2E7D32;font-size:12px;margin:0;" onclick="window.saveImgPreset()">存为预设</button>
+                        <button class="set-btn" style="width:auto;padding:0 10px;background:#FFEBEE;color:#D32F2F;font-size:12px;margin:0;" onclick="window.delImgPreset()">删除</button>
+                    </div>
+                </div>
                 <div class="set-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#E8F5E9; padding:10px; border-radius:8px;">
                     <label class="set-label" style="margin:0; font-weight:bold; color:#2E7D32;">开启全局 AI 生图 (含照片/线下/电影等)</label>
                     <input type="checkbox" id="imgToggle" ${window.imgSettings.toggle ? 'checked' : ''} style="width:24px;height:24px;accent-color:#07C160; cursor:pointer;" onchange="saveAllEngines()">
                 </div>
                 <div class="set-row"><label class="set-label">API 地址</label><input class="set-input" id="imgUrl" value="${window.imgSettings.url}"></div>
                 <div class="set-row"><label class="set-label">API 密钥</label><input class="set-input" id="imgKey" type="password" value="${window.imgSettings.key}"></div>
-                <div class="set-row"><label class="set-label">生图模型</label><input class="set-input" id="imgModelInput" value="${window.imgSettings.model}"></div>
+                <div class="set-row">
+                    <label class="set-label">生图模型</label>
+                    <div style="position:relative; display:flex; gap:10px;">
+                        <input class="set-input" id="imgModelInput" value="${window.imgSettings.model}" placeholder="手动输入或拉取..." style="flex:1;">
+                        <select class="set-input" id="imgModelSelect" style="display:none; flex:1; color:#1565C0; font-weight:bold; font-size:13px;" onchange="document.getElementById('imgModelInput').value=this.value; this.style.display='none'; document.getElementById('imgModelInput').style.display='block'; window.saveAllEngines();"></select>
+                        <button class="set-btn" style="width:auto; padding:0 15px; background:#E3F2FD; color:#1565C0; font-size:12px; margin:0;" onclick="window.fetchImgModels()">拉取</button>
+                    </div>
+                    <div style="font-size:10px; color:#999; margin-top:5px;">点击“拉取”读取中转站模型列表，带 ⭐ 的通常是生图模型。NovelAI 官方不支持拉取。</div>
+                </div>
                 <div class="set-row"><label class="set-label">画幅比例</label>
                     <select id="imgSizeSel" class="set-input">
                         <option value="832x1216" ${window.imgSettings.size==='832x1216'?'selected':''}>832x1216 (竖屏)</option>
                         <option value="1024x1024" ${window.imgSettings.size==='1024x1024'?'selected':''}>1024x1024 (正方形)</option>
                     </select>
+                </div>
+                <input type="file" id="imgRefInput" accept="image/*" style="display:none" onchange="window.handleImgRef(this)">
+                <input type="hidden" id="imgRefData" value="${window.imgSettings.imgRef || ''}">
+                <div class="set-row"><label class="set-label">参考图 (图生图)</label>
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
+                        <img id="imgRefPrev" src="${window.imgSettings.imgRef || ''}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #ddd;background:#eee;${window.imgSettings.imgRef ? '' : 'display:none;'}" onclick="document.getElementById('imgRefInput').click()">
+                        <button class="set-btn" style="width:auto;padding:0 12px;background:#E3F2FD;color:#1565C0;font-size:12px;margin:0;" onclick="document.getElementById('imgRefInput').click()">上传</button>
+                        <button class="set-btn" style="width:auto;padding:0 12px;background:#FFEBEE;color:#D32F2F;font-size:12px;margin:0;" onclick="document.getElementById('imgRefData').value='';document.getElementById('imgRefPrev').src='';document.getElementById('imgRefPrev').style.display='none';window.saveAllEngines();">清除</button>
+                    </div>
                 </div>
                 <hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">
                 <div class="set-row"><label class="set-label" style="color:#1565C0;">全局正面提示词</label><textarea class="set-input" id="imgPosPrompt" style="min-height:60px; font-size:12px;">${window.imgSettings.posPrompt || defaultPos}</textarea></div>
@@ -7747,6 +8049,17 @@ window.renderSettings = function() {
                     全局拟真语音引擎
                 </div>
                 <div style="font-size:11px; color:#888; margin-bottom:10px;">*同样，角色资料里的专属声音优先。这里设置的是默认声音。</div>
+                <div class="set-row" style="margin-bottom:12px;">
+                    <label class="set-label">语音预设</label>
+                    <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;align-items:center;">
+                        <select id="ttsPresetSel" class="set-input" style="flex:1;min-width:0;" onchange="window.loadTtsPreset(this.value)">
+                            <option value="">(未选择预设)</option>
+                            ${window.ttsPresets.map((p,i)=>`<option value="${i}">${p.name||('预设'+(i+1))}</option>`).join('')}
+                        </select>
+                        <button class="set-btn" style="width:auto;padding:0 10px;background:#EDE7F6;color:#512DA8;font-size:12px;margin:0;" onclick="window.saveTtsPreset()">存为预设</button>
+                        <button class="set-btn" style="width:auto;padding:0 10px;background:#FFEBEE;color:#D32F2F;font-size:12px;margin:0;" onclick="window.delTtsPreset()">删除</button>
+                    </div>
+                </div>
                 <div class="set-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#EDE7F6; padding:10px; border-radius:8px;">
                     <label class="set-label" style="margin:0; font-weight:bold; color:#512DA8;">允许微信发语音 & 打电话</label>
                     <input type="checkbox" id="ttsToggle" ${window.ttsSettings.toggle ? 'checked' : ''} style="width:24px;height:24px;accent-color:#5E35B1; cursor:pointer;" onchange="saveAllEngines()">
@@ -7824,17 +8137,31 @@ window.renderSettings = function() {
     };
 
     // ================= API 请求核心 =================
-    window.coreFetchImage = async function(url, key, model, size, prompt, negPrompt, statusEl) {
+    window.dataUrlToBlob = function(dataUrl) {
+        if (!dataUrl) return null;
+        try {
+            const parts = dataUrl.split(','); const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+            const bin = atob(parts[1]); const len = bin.length; const arr = new Uint8Array(len);
+            for (let i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        } catch(e) { return null; }
+    };
+
+    window.coreFetchImage = async function(url, key, model, size, prompt, negPrompt, statusEl, refImg) {
         url = (url || '').trim().replace(/\/+$/, ''); key = (key || '').trim();
         let w = parseInt(size.split('x')[0]) || 832; let h = parseInt(size.split('x')[1]) || 1216;
         let userNeg = negPrompt || "nsfw, lowres, bad anatomy";
 
         if (url.includes('novelai.net')) {
             const finalEndpoint = 'https://image.novelai.net/ai/generate-image';
-            const naiPayload = {
-                input: prompt, model: "nai-diffusion-3", action: "generate",
-                parameters: { width: w, height: h, scale: 5.0, sampler: "k_euler", steps: 28, seed: Math.floor(Math.random() * 4294967295), n_samples: 1, qualityToggle: true, ucPreset: 0, sm: false, sm_dyn: false, dynamic_thresholding: false, controlnet_strength: 1.0, legacy: false, add_original_image: false, uncond_scale: 1.0, cfg_rescale: 0.0, noise_schedule: "native", negative_prompt: userNeg }
-            };
+            const parameters = { width: w, height: h, scale: 5.0, sampler: "k_euler", steps: 28, seed: Math.floor(Math.random() * 4294967295), n_samples: 1, qualityToggle: true, ucPreset: 0, sm: false, sm_dyn: false, dynamic_thresholding: false, controlnet_strength: 1.0, legacy: false, add_original_image: false, uncond_scale: 1.0, cfg_rescale: 0.0, noise_schedule: "native", negative_prompt: userNeg };
+            if (refImg && refImg.indexOf('data:image') === 0) {
+                parameters.add_original_image = true;
+                parameters.image = refImg.split(',')[1];
+                parameters.strength = 0.7;
+                parameters.noise = 0.15;
+            }
+            const naiPayload = { input: prompt, model: model || "nai-diffusion-3", action: "generate", parameters: parameters };
             let res;
             try { res = await fetch(finalEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(naiPayload) }); } 
             catch (err) { res = await fetch('https://corsproxy.io/?' + encodeURIComponent(finalEndpoint), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(naiPayload) }); }
@@ -7844,6 +8171,26 @@ window.renderSettings = function() {
             try { const zip = await JSZip.loadAsync(arrayBuffer); const firstFilename = Object.keys(zip.files)[0]; const base64Data = await zip.files[firstFilename].async("base64"); return "data:image/png;base64," + base64Data; } 
             catch(err) { const blob = new Blob([arrayBuffer], { type: 'image/png' }); return URL.createObjectURL(blob); }
         } else {
+            if (refImg && refImg.indexOf('data:image') === 0) {
+                const blob = window.dataUrlToBlob(refImg);
+                if (blob) {
+                    let editUrl = url.endsWith('/images/generations') ? url.replace(/\/images\/generations$/, '/images/edits') : (url.endsWith('/v1') ? url + '/images/edits' : url + '/v1/images/edits');
+                    const fd = new FormData();
+                    fd.append('image', blob, 'ref.png');
+                    fd.append('prompt', prompt);
+                    fd.append('model', model || 'dall-e-2');
+                    fd.append('size', size);
+                    fd.append('n', '1');
+                    let res;
+                    try { res = await fetch(editUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}` }, body: fd }); }
+                    catch (err) { res = await fetch('https://corsproxy.io/?' + encodeURIComponent(editUrl), { method: 'POST', headers: { 'Authorization': `Bearer ${key}` }, body: fd }); }
+                    const data = await res.json(); if (data.error) throw new Error(data.error.message);
+                    let imgUrl = data.data && data.data[0] && (data.data[0].url || data.data[0].b64_json);
+                    if (!imgUrl) throw new Error('图片编辑接口未返回结果，该接口可能需要 gpt-image-1 或 dall-e-2 模型');
+                    if (imgUrl.indexOf('data:') !== 0 && !/^https?:/.test(imgUrl)) imgUrl = "data:image/png;base64," + imgUrl;
+                    return imgUrl;
+                }
+            }
             if(!url.endsWith('/images/generations')) url += url.endsWith('/v1') ? '/images/generations' : '/v1/images/generations';
             const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model: model, prompt: prompt, n: 1, size: size }) });
             const data = await res.json(); if (data.error) throw new Error(data.error.message);
@@ -7900,12 +8247,12 @@ window.renderSettings = function() {
 
     // ================= 测试组件 =================
     window.testImgGen = async function() {
-        const url = document.getElementById('imgUrl').value.trim(); const key = document.getElementById('imgKey').value.trim(); const model = document.getElementById('imgModelInput').value.trim(); const size = document.getElementById('imgSizeSel').value; const posPrompt = document.getElementById('imgPosPrompt').value.trim(); const negPrompt = document.getElementById('imgNegPrompt').value.trim();
+        const url = document.getElementById('imgUrl').value.trim(); const key = document.getElementById('imgKey').value.trim(); const model = document.getElementById('imgModelInput').value.trim(); const size = document.getElementById('imgSizeSel').value; const posPrompt = document.getElementById('imgPosPrompt').value.trim(); const negPrompt = document.getElementById('imgNegPrompt').value.trim(); const refImg = (document.getElementById('imgRefData')||{}).value || '';
         if(!key) return alert("没填密钥！");
         const btn = document.getElementById('btnTestImg'); const resBox = document.getElementById('testImgResult'); const status = document.getElementById('testImgStatus'); const preview = document.getElementById('testImgPreview');
         if (btn) { btn.innerHTML = '画图中...'; btn.disabled = true; }
         resBox.style.display = 'block'; preview.style.display = 'none'; status.innerHTML = `正在请求...`;
-        try { const imgData = await window.coreFetchImage(url, key, model, size, posPrompt, negPrompt, status); status.innerHTML = '<span style="color:#2E7D32;font-weight:bold;">✅ 出图啦！点击可下载！</span>'; preview.src = imgData; preview.style.display = 'block'; window.saveAllEngines(); } 
+        try { const imgData = await window.coreFetchImage(url, key, model, size, posPrompt, negPrompt, status, refImg); status.innerHTML = '<span style="color:#2E7D32;font-weight:bold;">✅ 出图啦！点击可下载！</span>'; preview.src = imgData; preview.style.display = 'block'; window.saveAllEngines(); } 
         catch (e) { status.innerHTML = `<span style="color:#D32F2F;">❌ 失败：${e.message}</span>`; } finally { if (btn) { btn.innerHTML = '测试画风'; btn.disabled = false; } }
     };
     // === 自动获取音色列表 ===
@@ -8020,6 +8367,70 @@ window.renderSettings = function() {
                 inp.style.display = 'none';
                 sel.style.display = 'block';
                 alert(`拉取成功！共发现 ${models.length} 个模型。\n已将疑似语音模型置顶并打星 ⭐，请在下拉框中选择。`);
+            } else {
+                alert('连接成功，但模型列表为空？请检查您的中转站。');
+            }
+        } catch(e) {
+            alert(`拉取失败: ${e.message}\n请检查地址和密钥是否正确。`);
+        } finally {
+            btn.innerText = oldTxt;
+            btn.disabled = false;
+        }
+    };
+
+    window.fetchImgModels = async function() {
+        let url = document.getElementById('imgUrl').value.trim();
+        const key = document.getElementById('imgKey').value.trim();
+        if(!url || !key) return alert('请先填写生图的 API 地址和密钥！');
+        if(url.includes('novelai.net')) return alert('NovelAI 官方没有模型列表接口，不支持拉取。\n如需拉取模型，请填写 OpenAI 兼容的中转站地址。');
+
+        const btn = document.querySelector('button[onclick="window.fetchImgModels()"]');
+        const oldTxt = btn.innerText;
+        btn.innerText = '拉取中...';
+        btn.disabled = true;
+
+        let fullUrl = url.replace(/\/+$/, '');
+        if(!fullUrl.includes('/v1') && !fullUrl.includes('/models')) fullUrl += '/v1';
+        if(!fullUrl.endsWith('/models')) fullUrl += '/models';
+
+        try {
+            const res = await fetch(fullUrl, { method: 'GET', headers: { 'Authorization': `Bearer ${key}` } });
+            if(!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            let models = [];
+            if(Array.isArray(data)) models = data; else if(data.data) models = data.data;
+
+            if(models.length > 0) {
+                models.sort((a, b) => {
+                    const aName = a.id.toLowerCase();
+                    const bName = b.id.toLowerCase();
+                    const aIsImg = /image|dall|diffus|sd|sdxl|flux|nai|paint|draw|gpt-image|mj|midjourney|画|图/.test(aName);
+                    const bIsImg = /image|dall|diffus|sd|sdxl|flux|nai|paint|draw|gpt-image|mj|midjourney|画|图/.test(bName);
+                    if(aIsImg && !bIsImg) return -1;
+                    if(!aIsImg && bIsImg) return 1;
+                    return aName.localeCompare(bName);
+                });
+
+                const sel = document.getElementById('imgModelSelect');
+                const inp = document.getElementById('imgModelInput');
+                sel.innerHTML = '<option value="" disabled selected>请选择生图模型...</option>';
+
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    const isImg = /image|dall|diffus|sd|sdxl|flux|nai|paint|draw|gpt-image|mj|midjourney|画|图/.test(m.id.toLowerCase());
+                    opt.innerText = isImg ? `⭐ ${m.id}` : m.id;
+                    sel.appendChild(opt);
+                });
+
+                const manualOpt = document.createElement('option');
+                manualOpt.value = '';
+                manualOpt.innerText = '✍️ 手动输入...';
+                sel.appendChild(manualOpt);
+
+                inp.style.display = 'none';
+                sel.style.display = 'block';
+                alert(`拉取成功！共发现 ${models.length} 个模型。\n已将疑似生图模型置顶并打星 ⭐，请在下拉框中选择。`);
             } else {
                 alert('连接成功，但模型列表为空？请检查您的中转站。');
             }
@@ -8937,6 +9348,52 @@ window.renderSettings = function() {
                 </div>`;
         }
     };
+    // 冒充目标账号发暴言（带被抓包联动）
+    window.spyForumPost = async function() {
+        if (!window.spyTarget) return alert("未锁定目标！");
+
+        const content = window.pandaPrompt
+            ? await window.pandaPrompt("🕵️ 你正在冒充 TA 的账号发帖<br>请输入要发布的暴言内容：", "", "输入暴言内容...")
+            : prompt("输入要冒充 TA 发布的暴言内容：");
+        if (!content || !String(content).trim()) return;
+        const text = String(content).trim();
+
+        const now = new Date();
+        const timeStr = `${now.getMonth()+1}-${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const post = {
+            id: Date.now(),
+            author: window.spyTarget.name,
+            avatar: window.spyTarget.avatar || '',
+            tag: '吃瓜专区',
+            content: text,
+            image: null,
+            time: timeStr,
+            comments: []
+        };
+
+        if (!Array.isArray(window.pandaForumData)) window.pandaForumData = JSON.parse(localStorage.getItem('panda_forum_posts') || '[]');
+        window.pandaForumData.unshift(post);
+        localStorage.setItem('panda_forum_posts', JSON.stringify(window.pandaForumData));
+
+        if (typeof window.renderBespokeUI === 'function') window.renderBespokeUI('forum');
+        if (typeof window.renderForumMain === 'function') window.renderForumMain();
+
+        alert("✅ 暴言已发布！\n\n⚠️ 这条帖子很快就会被全网围观...");
+
+        setTimeout(() => {
+            if (!window.spyTarget) return;
+            const targetId = window.spyTarget.id;
+            if (typeof window.pushMsg === 'function') {
+                window.pushMsg({ targetSessionId: targetId, sys: `⚠️ [隐秘操作] 你冒充 TA 的账号在论坛发布了一条暴言：“${text.substring(0, 15)}...”` });
+            }
+            const alertPrompt = `[系统最高红线警告：你刚刚刷论坛，发现你的账号竟然被人冒充，发了一条你自己绝对不可能发的暴言：“${text}”。\n你立刻猜到绝对是玩家干的！请【完全基于你的性格】立刻发一条微信质问玩家！直接输出你发脾气的台词，不要带动作前缀！]`;
+            const oldSid = (typeof currentSessionId !== 'undefined') ? currentSessionId : null;
+            window.currentSessionId = targetId;
+            if (typeof window.triggerCharReply === 'function') window.triggerCharReply(true, alertPrompt);
+            window.currentSessionId = oldSid;
+        }, 3500);
+    };
+
     // 补全缺失的备忘录篡改引擎（带被抓包联动）
     window.spyTamperNote = async function(idx) {
         if (!window.spyTempData || !window.spyTempData.notes) return;
@@ -10871,7 +11328,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
             let str = String(jsonString || '').trim();
             // 清理 markdown 代码块标记
             str = str.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-            str = str.replace(/$$CARD:/g, '').replace(/$$/g, '').trim();
+            str = str.replace(/\[CARD:\]/g, '').replace(/\[\]/g, '').trim();
 
             if (!str.startsWith('{')) {
                 return `<div class="interactive-card" style="padding:15px; background:#fff; border-radius:10px; border:1px solid #eee;">${escapeHtml(str)}</div>`;
@@ -10911,6 +11368,22 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         } catch (err) {
             return `<div style="padding:10px; color:red;"><svg class="hw-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> 卡片渲染错误</div>`;
         }
+    };
+
+    // 剧情互动卡片选项点击：把选项作为玩家消息发出去并触发 AI 回复
+    window.cardButtonClick = function(btn, evt) {
+        if (evt) { evt.stopPropagation(); evt.preventDefault(); }
+        const card = btn.closest ? btn.closest('.interactive-card') : null;
+        const choice = (btn.getAttribute && btn.getAttribute('data-choice')) || btn.textContent.trim();
+        if (!choice) return;
+        if (card) {
+            card.querySelectorAll('.card-btn').forEach(b => {
+                b.style.pointerEvents = 'none';
+                b.style.opacity = '0.5';
+            });
+        }
+        if (typeof window.pushMsg === 'function') window.pushMsg({ side: 'me', type: 'text', content: choice });
+        if (typeof window.triggerCharReply === 'function') window.triggerCharReply(false);
     };
         // ================= 网易云风：线上双人一起听引擎 =================
     // 强制注入黑胶旋转 CSS (防冲突绝对生效版)
@@ -11163,7 +11636,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         window.pushMsg({targetSessionId: session.id, id: tempMsgId, side: 'other', type: 'text', content: '(正在为你生成绝美CG画面... )', senderName: sName});
 
                 try {
-            const imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, finalPrompt, baseNeg, null);
+            const imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, finalPrompt, baseNeg, null, session.refImg || imgSet.imgRef);
             let idx = session.history.findIndex(m => m.id === tempMsgId);
             
             let targetMode = typeof currentMode !== 'undefined' ? currentMode : 'chat';
@@ -11269,8 +11742,11 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         }
 
         let stickers = [];
-        if (window.savedStickers && window.savedStickers.length > 0) stickers = window.savedStickers;
-        else {
+        if (window.ensureStickerGroups && window.allStickerItems) {
+            window.ensureStickerGroups();
+            stickers = window.allStickerItems();
+        }
+        if (stickers.length === 0) {
             try {
                 await new Promise((resolve) => {
                     const req = indexedDB.open('Panda_Sticker_DB', 1);
@@ -11279,13 +11755,25 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                         if (!db.objectStoreNames.contains('stickers')) return resolve();
                         const tx = db.transaction('stickers', 'readonly');
                         const getReq = tx.objectStore('stickers').get('my_stickers');
-                        getReq.onsuccess = (ev) => { if(ev.target.result) { stickers = JSON.parse(ev.target.result); window.savedStickers = stickers; } resolve(); };
+                        getReq.onsuccess = (ev) => {
+                            if(ev.target.result) {
+                                try { window.savedStickers = JSON.parse(ev.target.result); } catch(e) {}
+                                if (window.ensureStickerGroups) { window.ensureStickerGroups(); stickers = window.allStickerItems(); }
+                            }
+                            resolve();
+                        };
                         getReq.onerror = resolve;
                     };
                     req.onerror = resolve;
                 });
             } catch(e) {}
-            if (stickers.length === 0) try { stickers = JSON.parse(localStorage.getItem('panda_stickers') || '[]'); } catch(e){}
+            if (stickers.length === 0) {
+                try {
+                    const raw = JSON.parse(localStorage.getItem('panda_stickers') || '[]');
+                    window.savedStickers = raw;
+                    if (window.ensureStickerGroups) { window.ensureStickerGroups(); stickers = window.allStickerItems(); }
+                } catch(e){}
+            }
         }
 
         if (stickers.length > 0) {
@@ -12515,10 +13003,13 @@ ${lines}${profileCtx()}
         const nowTime = new Date();
         const realTime = `\n【当前现实时间】：${nowTime.getMonth()+1}月${nowTime.getDate()}日 ${String(nowTime.getHours()).padStart(2,'0')}:${String(nowTime.getMinutes()).padStart(2,'0')}。`;
         let wbPrompt = contextStr ? `\n\n🌍【绝对世界观与常识法则】(最高优先级，你的所有言行必须严格遵守以下设定，绝不吃书！)：${contextStr}\n` : "";
+        const memTxt = s.memory ? String(s.memory).slice(-2200) : '';
+
+        const rpRules = `\n【扮演铁律】(最高优先级)\n1. 你只扮演${s.name}本人，绝不替玩家说话、绝不描写玩家的动作或台词。\n2. 回复要像真人微信：口语化、简短（一般1~4句），符合人设口癖，该撒娇撒娇、该毒舌毒舌、该高冷高冷。\n3. 聊天正文里不要写任何括号动作描写，你的动作与内心由【状态心声】承载。\n4. 严禁客服腔(“好的”“收到”)、严禁编号、严禁“消息1:”格式。\n5. 保持人设一致，不要突然OOC，不要复述玩家刚说过的话。`;
 
         let systemInstruction = s.type === 'group' 
-            ? `玩家马甲设定: ${userPersonaInfo}\n${groupInfo}${wbPrompt}${realTime}`
-            : `你的身份: ${s.name}。\n你的详细人设: ${s.prompt || "保持人设"}\n玩家马甲设定: ${userPersonaInfo}${wbPrompt}${s.memory ? `\n【核心记忆】:\n${s.memory}\n` : ""}${realTime}`;
+            ? `玩家马甲设定: ${userPersonaInfo}\n${groupInfo}${memTxt ? `\n【核心记忆】(最高优先级，言行必须符合，若有冲突以记忆为准):\n${memTxt}\n` : ""}${wbPrompt}${realTime}`
+            : `你正在微信上扮演「${s.name}」。\n【你的详细人设】: ${s.prompt || "保持人设"}\n【玩家马甲设定】: ${userPersonaInfo}${memTxt ? `\n【核心记忆】(最高优先级，言行必须符合，若有冲突以记忆为准):\n${memTxt}\n` : ""}${wbPrompt}${realTime}${rpRules}`;
         
         if (reqMode === 'novel') {
             const place = s.scene?.place || "未知地点";
@@ -12641,7 +13132,18 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
         
         // 🧠 智能读取本地表情包库，生成菜单
         let stks = [];
-        try { stks = window.savedStickers || JSON.parse(localStorage.getItem('panda_stickers')||'[]'); } catch(e){}
+        try {
+            if (window.ensureStickerGroups && window.allStickerItems) {
+                if (!Array.isArray(window.savedStickers) || window.savedStickers.length === 0) {
+                    const raw = JSON.parse(localStorage.getItem('panda_stickers') || '[]');
+                    if (Array.isArray(raw) && raw.length) window.savedStickers = raw;
+                }
+                window.ensureStickerGroups();
+                stks = window.allStickerItems();
+            } else {
+                stks = window.savedStickers || JSON.parse(localStorage.getItem('panda_stickers')||'[]');
+            }
+        } catch(e){}
         let stkMeanings = [];
         stks.forEach(s => { if(typeof s === 'string') { let m = s.match(/^\[(.*?)\]/); if(m) stkMeanings.push(m[1]); }});
         
@@ -16481,10 +16983,18 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
             if(data.error) throw new Error(data.error.message);
             
             let cssCode = data.choices[0].message.content.replace(/```css/gi, '').replace(/```/g, '').trim();
-            const box = document.getElementById('themeBubbleCss');
-            if(box) box.value = cssCode;
-            window.updateThemeValue('customBubbleCSS', cssCode); 
-            alert("气泡特效已生成并自动生效！快退出看看吧！");
+            window.showPreview({
+                title: '气泡特效预览',
+                doc: window._pvBubbleDoc(cssCode),
+                onApply: function() {
+                    const box = document.getElementById('themeBubbleCss');
+                    if (box) box.value = cssCode;
+                    window.updateThemeValue('customBubbleCSS', cssCode);
+                    if (window.pandaAlert) window.pandaAlert('气泡特效已应用！'); else alert('气泡特效已应用！');
+                },
+                again: true,
+                onAgain: function() { window.autoGenBubbleCss(); }
+            });
         } catch(e) { 
             alert("AI 工程师罢工了，请重试！(" + e.message + ")"); 
         } finally { 
@@ -16525,16 +17035,67 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
             if(data.error) throw new Error(data.error.message);
 
             let cssCode = data.choices[0].message.content.replace(/```css/gi, '').replace(/```/g, '').trim();
-            const box = document.getElementById('themeCustomCss');
-            if(box) {
-                box.value = box.value + "\n\n/* AI 全域 UI 覆写 */\n" + cssCode;
-                window.updateThemeValue('customCSS', box.value);
-            }
-            alert("✨ 全宇宙 UI 注入成功！快去看看界面的变化吧！");
+            window.showPreview({
+                title: '全局 UI 预览',
+                doc: window._pvGlobalDoc(cssCode),
+                onApply: function() {
+                    const box = document.getElementById('themeCustomCss');
+                    if (box) {
+                        box.value = box.value + "\n\n/* AI 全域 UI 覆写 */\n" + cssCode;
+                        window.updateThemeValue('customCSS', box.value);
+                    }
+                    if (window.pandaAlert) window.pandaAlert('全局 UI 已应用！'); else alert('全局 UI 已应用！');
+                },
+                again: true,
+                onAgain: function() { window.autoGenGlobalCss(); }
+            });
         } catch(e) { 
             alert("信号微弱，请重试！(" + e.message + ")"); 
         } finally { 
             if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; } 
+        }
+    };
+
+    window.autoGenFont = async function() {
+        const req = prompt("请描述你想要的字体风格？\n(例如：复古港风手写 / 赛博科技感 / 可爱圆体 / 高级杂志感)");
+        if(!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if(!api.key) return alert("请先配置 API Key！");
+
+        const btn = document.getElementById('aiGenFontBtn');
+        const oldText = btn ? btn.innerText : '';
+        if(btn) { btn.innerText = "AI 正在翻字库..."; btn.style.pointerEvents = "none"; }
+
+        const promptText = `你是一位字体搭配专家。用户想要的字体风格是：“${req}”。
+请直接输出一行 CSS font-family 字体栈（中英文合理搭配，兼容 iOS / Android / Web），
+不要输出任何解释文字、代码块标记或引号以外的内容。`;
+
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: promptText}], temperature: 0.7 }) });
+            const data = await res.json();
+            if(data.error) throw new Error(data.error.message);
+
+            let font = data.choices[0].message.content
+                .replace(/```(css)?/gi, '').replace(/```/g, '')
+                .replace(/^['"]|['"]$/g, '').trim();
+            if(font) {
+                window.showPreview({
+                    title: '字体预览',
+                    doc: window._pvFontDoc(font),
+                    onApply: function() {
+                        window.updateThemeValue('globalFont', font);
+                        if (window.pandaAlert) window.pandaAlert('字体已切换：' + font); else alert('字体已切换：' + font);
+                    },
+                    again: true,
+                    onAgain: function() { window.autoGenFont(); }
+                });
+            }
+        } catch(e) {
+            alert("字体生成失败，请重试！(" + e.message + ")");
+        } finally {
+            if(btn) { btn.innerText = oldText; btn.style.pointerEvents = "auto"; }
         }
     };
 
@@ -16746,6 +17307,830 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
 </script>
 
 <!-- ================== 美化中心 V10 结束 ================== -->
+<!-- ================== 🧩 V12 主题高自由扩展：小组件 + 字体库 + 可视化微调 + 全局JS ================== -->
+<style id="panda-v12-ext-css">
+#customWidgetsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 2px; margin-bottom: 16px; }
+.cw-card { min-height: 104px; border-radius: 24px; padding: 14px 14px 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.cw-card.full { grid-column: span 2; }
+.cw-title { font-size: 11px; opacity: 0.65; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cw-clock { font-size: 30px; font-weight: 900; letter-spacing: 1px; line-height: 1; }
+.cw-countdown { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; line-height: 1.1; }
+.cw-sep { opacity: 0.5; font-weight: 600; font-size: 12px; margin-top: 6px; }
+.cw-note { font-size: 13px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; flex: 1; }
+.cw-img { flex: 1; border-radius: 16px; background-size: cover; background-position: center; min-height: 80px; }
+.cw-progress-num { font-size: 24px; font-weight: 900; }
+.cw-progress-bar { height: 10px; border-radius: 99px; background: rgba(0,0,0,0.12); overflow: hidden; margin-top: 8px; }
+.cw-progress-fill { height: 100%; border-radius: 99px; }
+.cw-code { flex: 1; overflow: auto; }
+.cw-code-body { min-height: 60px; }
+body.dark-mode .cw-card { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.cw-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #F7F7F9; margin-bottom: 8px; }
+body.dark-mode .cw-item { background: #26262a; }
+.cw-item-badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 8px; background: #111; color: #fff; letter-spacing: 1px; flex-shrink: 0; }
+.cw-item-btns { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+.cw-mini-btn { border: none; background: #eee; color: #333; width: 30px; height: 30px; border-radius: 9px; font-size: 13px; cursor: pointer; }
+body.dark-mode .cw-mini-btn { background: #3a3a3c; color: #eee; }
+.cw-add-btn { border: none; background: #F2F2F7; color: #111; padding: 9px 12px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; }
+body.dark-mode .cw-add-btn { background: #2c2c2e; color: #eee; }
+.cw-editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: none; align-items: flex-end; justify-content: center; }
+.cw-editor-overlay.active { display: flex; }
+.cw-editor-sheet { width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; background: #fff; border-radius: 24px 24px 0 0; padding: 20px 20px 30px; box-sizing: border-box; }
+body.dark-mode .cw-editor-sheet { background: #1c1c1e; }
+.cw-field { margin-bottom: 14px; }
+.cw-field label { font-size: 12px; font-weight: 800; color: #666; display: block; margin-bottom: 6px; }
+body.dark-mode .cw-field label { color: #aaa; }
+.cw-field input[type=text], .cw-field input[type=datetime-local], .cw-field input[type=url], .cw-field textarea, .cw-field select { width: 100%; border: 1px solid #E5E5EA; background: #F7F7F9; border-radius: 12px; padding: 10px 12px; font-size: 14px; outline: none; box-sizing: border-box; }
+body.dark-mode .cw-field input, body.dark-mode .cw-field textarea, body.dark-mode .cw-field select { background: #2c2c2e; border-color: #3a3a3c; color: #eee; }
+.cw-field input[type=color] { width: 48px; height: 36px; padding: 0; border: none; background: transparent; }
+.cw-field input[type=range] { width: 100%; padding: 0; border: none; background: transparent; }
+.cw-row2 { display: flex; gap: 10px; }
+.cw-row2 > div { flex: 1; }
+.cw-save-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; background: #111; color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; }
+.cw-del-btn { width: 100%; padding: 12px; border: 1px solid #FFCDD2; background: transparent; color: #D32F2F; border-radius: 14px; font-size: 13px; font-weight: 800; cursor: pointer; margin-top: 8px; }
+.font-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #F7F7F9; margin-bottom: 8px; }
+body.dark-mode .font-item { background: #26262a; }
+.font-item-name { font-weight: 800; font-size: 13px; }
+.font-item-family { font-size: 11px; color: #999; }
+.font-del { margin-left: auto; border: none; background: #FCE4EC; color: #C2185B; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+.ts-range-val { font-size: 12px; color: #999; font-weight: 700; min-width: 36px; text-align: right; }
+.ts-tabs { display: flex; gap: 6px; padding: 0 20px 12px; background: #fff; border-bottom: 1px solid #f0f0f0; overflow-x: auto; flex-shrink: 0; }
+body.dark-mode .ts-tabs { background: #1c1c1e; border-color: #333; }
+.ts-tab { flex-shrink: 0; padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 800; color: #999; background: #F4F5F7; cursor: pointer; }
+body.dark-mode .ts-tab { background: #2c2c2e; color: #aaa; }
+.ts-tab.active { background: #111; color: #fff; }
+body.dark-mode .ts-tab.active { background: #0a84ff; }
+.ts-panel { display: none; flex-direction: column; gap: 20px; }
+.ts-panel.active { display: flex; }
+.pv-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 18px; }
+.pv-overlay.active { display: flex; }
+.pv-box { width: 100%; max-width: 460px; max-height: 90vh; background: #fff; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,0.35); }
+body.dark-mode .pv-box { background: #1c1c1e; }
+.pv-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+body.dark-mode .pv-head { border-color: #333; }
+.pv-title { font-size: 15px; font-weight: 800; }
+.pv-close { border: none; background: #F2F2F7; color: #666; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; }
+body.dark-mode .pv-close { background: #2c2c2e; color: #ccc; }
+.pv-frame { flex: 1; min-height: 240px; border: none; width: 100%; background: #fff; }
+.pv-actions { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+body.dark-mode .pv-actions { border-color: #333; }
+.pv-btn { flex: 1; padding: 13px; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; }
+.pv-btn.apply { background: #111; color: #fff; }
+body.dark-mode .pv-btn.apply { background: #0a84ff; }
+.pv-btn.cancel { background: #F2F2F7; color: #666; }
+body.dark-mode .pv-btn.cancel { background: #2c2c2e; color: #ccc; }
+.pv-btn.again { background: transparent; border: 1px solid #E5E5EA; color: #333; flex: 0 0 auto; padding: 13px 16px; }
+body.dark-mode .pv-btn.again { border-color: #3a3a3c; color: #ccc; }
+.ts-me-bubble, .ts-other-bubble { position: relative; }
+.ts-bubble-deco { position: absolute; z-index: 5; pointer-events: none; display: flex; align-items: center; justify-content: center; line-height: 1; user-select: none; }
+.ts-bubble-deco img { width: 100%; height: 100%; object-fit: contain; }
+.ts-deco-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: #F7F7F9; margin-bottom: 8px; flex-wrap: wrap; }
+body.dark-mode .ts-deco-item { background: #26262a; }
+.ts-deco-thumb { width: 44px; height: 44px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 24px; flex-shrink: 0; box-shadow: inset 0 0 0 1px #eee; }
+.ts-deco-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.ts-deco-ctrl { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 180px; }
+.ts-deco-ctrl label { font-size: 10px; color: #999; font-weight: 700; }
+.ts-deco-ctrl input[type=range] { width: 100%; }
+.ts-deco-ctrl select { font-size: 12px; padding: 4px 6px; border-radius: 8px; border: 1px solid #E5E5EA; background: #fff; }
+body.dark-mode .ts-deco-ctrl select { background: #2c2c2e; border-color: #3a3a3c; color: #eee; }
+</style>
+<script id="panda-v12-theme-ext">
+(function() {
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    window.showPreview = function(opts) {
+        const overlay = document.createElement('div');
+        overlay.className = 'pv-overlay active';
+        overlay.innerHTML = '<div class="pv-box">' +
+            '<div class="pv-head"><div class="pv-title">' + esc(opts.title || '效果预览') + '</div><button class="pv-close" onclick="this.closest(\'.pv-overlay\').remove()">✕</button></div>' +
+            '<iframe class="pv-frame" sandbox="allow-same-origin allow-scripts"></iframe>' +
+            '<div class="pv-actions">' +
+            '<button class="pv-btn cancel" onclick="this.closest(\'.pv-overlay\').remove()">放弃</button>' +
+            (opts.again ? '<button class="pv-btn again" id="pvAgainBtn">重新生成</button>' : '') +
+            '<button class="pv-btn apply" id="pvApplyBtn">应用</button>' +
+            '</div></div>';
+        document.body.appendChild(overlay);
+        const frame = overlay.querySelector('.pv-frame');
+        frame.srcdoc = opts.doc || '<!doctype html><html><body style="font-family:sans-serif;padding:24px;">预览内容为空</body></html>';
+        overlay.querySelector('#pvApplyBtn').addEventListener('click', function() {
+            overlay.remove();
+            if (typeof opts.onApply === 'function') opts.onApply();
+        });
+        if (opts.again) {
+            overlay.querySelector('#pvAgainBtn').addEventListener('click', function() {
+                overlay.remove();
+                if (typeof opts.onAgain === 'function') opts.onAgain();
+            });
+        }
+    };
+
+    window._pvBubbleDoc = function(css) {
+        const t = window.themeSettings || {};
+        const meBg = t.bubbleMeBg && t.bubbleMeBg.length === 7 ? t.bubbleMeBg : '#95EC69';
+        const meTxt = t.bubbleMeText || '#000000';
+        const otherBg = t.bubbleOtherBg && t.bubbleOtherBg.length === 7 ? t.bubbleOtherBg : '#ffffff';
+        const otherTxt = t.bubbleOtherText || '#000000';
+        const clean = String(css || '').replace(/```[a-z]*\n?/gi, '').trim();
+        return '<!doctype html><html><head><meta charset="utf-8"><style>' +
+            'body{margin:0;padding:28px 16px;background:#EDEDED;font-family:-apple-system,sans-serif;}' +
+            '.row{display:flex;margin-bottom:14px;}.me{justify-content:flex-end;}' +
+            '.bub{max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;}' +
+            '.ts-me-bubble{background:' + meBg + ';color:' + meTxt + ';border-top-right-radius:4px;}' +
+            '.ts-other-bubble{background:' + otherBg + ';color:' + otherTxt + ';border-top-left-radius:4px;}' +
+            clean +
+            '</style></head><body>' +
+            '<div class="row me"><div class="bub ts-me-bubble">宝，今天超想你～</div></div>' +
+            '<div class="row"><div class="bub ts-other-bubble">我也是，刚忙完呢</div></div>' +
+            '<div class="row me"><div class="bub ts-me-bubble">那今晚一起打游戏？</div></div>' +
+            '</body></html>';
+    };
+
+    window._pvGlobalDoc = function(css) {
+        const clean = String(css || '').replace(/```[a-z]*\n?/gi, '').trim();
+        return '<!doctype html><html><head><meta charset="utf-8"><style>' +
+            'body{margin:0;padding:0;background:#f2f2f7;font-family:-apple-system,sans-serif;}' +
+            '.wx-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-bottom:1px solid #eee;}' +
+            '.search-box{flex:1;margin:0 12px;padding:8px 12px;border-radius:10px;background:#f2f2f7;color:#999;font-size:13px;}' +
+            '.chat-item{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff;margin:8px 12px;border-radius:14px;font-size:14px;}' +
+            '.avatar{width:40px;height:40px;border-radius:12px;background:#ddd;flex-shrink:0;}' +
+            '.func-icon-bg{width:44px;height:44px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.08);}' +
+            '.send-btn{padding:10px 18px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-size:14px;}' +
+            '.chat-input{flex:1;padding:10px;border:1px solid #eee;border-radius:10px;background:#fff;}' +
+            '.input-bar{display:flex;gap:10px;align-items:center;padding:12px;background:#fff;border-top:1px solid #eee;position:fixed;bottom:0;width:100%;box-sizing:border-box;}' +
+            '.set-card{margin:12px;padding:16px;background:#fff;border-radius:14px;font-size:14px;}' +
+            clean +
+            '</style></head><body>' +
+            '<div class="wx-header"><div>‹</div><div class="search-box">搜索</div><div>···</div></div>' +
+            '<div class="chat-item"><div class="avatar"></div><div>消息列表示例</div></div>' +
+            '<div class="chat-item"><div class="avatar"></div><div>毛玻璃卡片示例</div></div>' +
+            '<div class="set-card">设置卡片示例</div>' +
+            '<div style="display:flex;gap:12px;padding:0 12px;"><div class="func-icon-bg"></div><div class="func-icon-bg"></div><button class="send-btn">发送</button></div>' +
+            '<div style="height:80px"></div>' +
+            '<div class="input-bar"><input class="chat-input" placeholder="输入消息"><button class="send-btn">发送</button></div>' +
+            '</body></html>';
+    };
+
+    window._pvFontDoc = function(family) {
+        const fam = String(family || '').replace(/[;{}\/\\]/g, '');
+        return '<!doctype html><html><head><meta charset="utf-8"><style>' +
+            'body{margin:0;padding:40px 24px;background:#fff;font-family:' + fam + ';}' +
+            'h1{font-size:32px;font-weight:800;margin:0 0 10px;}' +
+            'p{font-size:16px;color:#666;line-height:1.7;margin:8px 0;}' +
+            '</style></head><body>' +
+            '<h1>字体预览 Panda 主题</h1>' +
+            '<p>天地玄黄 宇宙洪荒 日月盈昃 辰宿列张</p>' +
+            '<p>ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789</p>' +
+            '<p style="color:#999;">字体栈：' + esc(family) + '</p>' +
+            '</body></html>';
+    };
+
+    window._pvWidgetDoc = function(w) {
+        const js = w.js || '';
+        return '<!doctype html><html><head><meta charset="utf-8"><style>' +
+            'body{margin:0;padding:24px;background:#f2f2f7;font-family:-apple-system,sans-serif;display:flex;justify-content:center;}' +
+            '.card{width:100%;max-width:360px;background:' + (w.bg || '#ffffff') + ';color:' + (w.color || '#111111') + ';border-radius:' + (w.radius || 22) + 'px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.08);box-sizing:border-box;}' +
+            '.cw-code-body{min-height:60px;}' +
+            String(w.css || '') +
+            '</style></head><body><div class="card"><div class="cw-code-body">' + (w.html || '') + '</div></div>' +
+            '<scr' + 'ipt>try{(function(){var el=document.querySelector(".cw-code-body");' + js + '})();}catch(e){document.body.innerHTML+=\'<div style="color:#d32f2f;font-size:12px;">JS 错误: \'+e.message+\'</div>\';}</scr' + 'ipt>' +
+            '</body></html>';
+    };
+
+    // ============ A. 字体库 ============
+    window.FontDB = {
+        _db: null,
+        init() {
+            if (this._db) return Promise.resolve(this._db);
+            return new Promise((res, rej) => {
+                try {
+                    const req = indexedDB.open('panda_font_db', 1);
+                    req.onupgradeneeded = e => { const db = e.target.result; if (!db.objectStoreNames.contains('fonts')) db.createObjectStore('fonts', { keyPath: 'id' }); };
+                    req.onsuccess = e => { this._db = e.target.result; res(this._db); };
+                    req.onerror = e => rej(e);
+                } catch (e) { rej(e); }
+            });
+        },
+        async getAll() { try { const db = await this.init(); return new Promise(res => { try { const rq = db.transaction('fonts', 'readonly').objectStore('fonts').getAll(); rq.onsuccess = e => res(e.target.result || []); rq.onerror = () => res([]); } catch (e) { res([]); } }); } catch (e) { return []; } },
+        async put(f) { try { const db = await this.init(); return new Promise(res => { try { const tx = db.transaction('fonts', 'readwrite'); tx.objectStore('fonts').put(f); tx.oncomplete = res; tx.onerror = () => res(); } catch (e) { res(); } }); } catch (e) {} },
+        async del(id) { try { const db = await this.init(); return new Promise(res => { try { const tx = db.transaction('fonts', 'readwrite'); tx.objectStore('fonts').delete(id); tx.oncomplete = res; tx.onerror = () => res(); } catch (e) { res(); } }); } catch (e) {} }
+    };
+    window.fontLibrary = [];
+    setTimeout(async () => { try { window.fontLibrary = await window.FontDB.getAll() || []; } catch (e) {} try { window.applyFontLibrary(); } catch (e) {} }, 600);
+
+    window.applyFontLibrary = function() {
+        let cssEl = document.getElementById('panda-custom-fonts-css');
+        if (!cssEl) { cssEl = document.createElement('style'); cssEl.id = 'panda-custom-fonts-css'; document.head.appendChild(cssEl); }
+        const lib = window.fontLibrary || [];
+        let imports = '', faces = '';
+        for (const f of lib) {
+            if (!f) continue;
+            if (f.type === 'import') { imports += (f.src || '') + '\n'; continue; }
+            const u = f.src || '';
+            faces += '@font-face{font-family:' + JSON.stringify(f.family || '') + ';src:url(' + JSON.stringify(u) + ');font-display:swap;}\n';
+        }
+        cssEl.innerHTML = imports + '\n' + faces;
+    };
+
+    window.addFontItem = async function(f) { window.fontLibrary.push(f); await window.FontDB.put(f); window.applyFontLibrary(); window.renderFontListUI(); };
+    window.deleteFontItem = async function(id) { window.fontLibrary = window.fontLibrary.filter(x => x.id !== id); await window.FontDB.del(id); window.applyFontLibrary(); window.renderFontListUI(); };
+
+    window.renderFontListUI = function() {
+        const box = document.getElementById('cwFontList'); if (!box) return;
+        const lib = window.fontLibrary || [];
+        box.innerHTML = lib.length ? lib.map(f => '<div class="font-item"><div><div class="font-item-name">' + esc(f.name || '未命名') + '</div><div class="font-item-family">' + esc(f.type === 'import' ? 'CSS 导入' : ('font-family: ' + (f.family || ''))) + '</div></div><button class="font-del" onclick="window.deleteFontItem(\'' + escAttr(f.id) + '\')">×</button></div>').join('') : '<div style="font-size:12px;color:#999;padding:6px 0;">还没有自定义字体，点下方按钮添加</div>';
+    };
+
+    window.uploadFontFile = function() {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = '.ttf,.otf,.woff,.woff2,.eot';
+        inp.onchange = function() {
+            const file = inp.files && inp.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = async e => {
+                const name = window.pandaPrompt ? await window.pandaPrompt('给这个字体起个显示名字：', file.name.replace(/\.[^.]+$/, ''), '例如：我的可爱字体') : prompt('显示名字：', file.name);
+                if (!name) return;
+                const family = window.pandaPrompt ? await window.pandaPrompt('设置 font-family 名称（建议英文，用于引用）：', 'custom-font-' + Date.now().toString(36), '例如：myfont') : prompt('font-family 名称：', 'myfont');
+                if (!family) return;
+                await window.addFontItem({ id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: name.trim(), family: family.trim(), type: 'file', src: e.target.result });
+            };
+            r.readAsDataURL(file);
+        };
+        inp.click();
+    };
+
+    window.addFontUrl = async function() {
+        const url = window.pandaPrompt ? await window.pandaPrompt('粘贴字体文件直链（.ttf/.otf/.woff/.woff2）：', '', 'https://example.com/font.woff2') : prompt('字体链接：');
+        if (!url) return;
+        const family = window.pandaPrompt ? await window.pandaPrompt('设置 font-family 名称（建议英文）：', 'custom-font-' + Date.now().toString(36), '例如：myfont') : prompt('font-family 名称：', 'myfont');
+        if (!family) return;
+        await window.addFontItem({ id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: (url.split('/').pop() || '在线字体').slice(0, 30), family: family.trim(), type: 'url', src: url.trim() });
+    };
+
+    window.addFontImport = async function() {
+        const css = window.pandaPrompt ? await window.pandaPrompt('粘贴 CSS 代码（支持 @import 或 @font-face）：', '', '@import url(...);') : prompt('CSS 代码：');
+        if (!css) return;
+        const name = window.pandaPrompt ? await window.pandaPrompt('起个显示名字：', 'CSS 字体', '例如：谷歌字体') : prompt('显示名字：', 'CSS 字体');
+        if (!name) return;
+        await window.addFontItem({ id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: name.trim(), family: '', type: 'import', src: css.trim() });
+    };
+
+    // ============ B. 可视化变量 + 全局 JS ============
+    const _visDefaults = { radius: 20, blur: 25, opacity: 0.4, density: 1, customJS: '' };
+    Object.keys(_visDefaults).forEach(k => { if (window.themeSettings && window.themeSettings[k] === undefined) window.themeSettings[k] = _visDefaults[k]; });
+
+    window.applyVisualValue = function(key, val) {
+        window.themeSettings[key] = parseFloat(val);
+        localStorage.setItem('panda_theme_settings', JSON.stringify(window.themeSettings));
+        clearTimeout(window._visTimer);
+        window._visTimer = setTimeout(() => window.applyGlobalTheme(), 150);
+    };
+
+    const _oldApplyGlobalTheme = window.applyGlobalTheme;
+    window.applyGlobalTheme = function() {
+        try { if (_oldApplyGlobalTheme) _oldApplyGlobalTheme(); } catch (e) {}
+        const t = window.themeSettings || {};
+        const radius = (t.radius === undefined ? 20 : parseFloat(t.radius)) || 0;
+        const blur = (t.blur === undefined ? 25 : parseFloat(t.blur)) || 0;
+        const opacity = (t.opacity === undefined ? 0.4 : parseFloat(t.opacity));
+        const density = (t.density === undefined ? 1 : parseFloat(t.density)) || 1;
+        const root = document.documentElement;
+        root.style.setProperty('--ts-radius', radius + 'px');
+        root.style.setProperty('--ts-blur', blur + 'px');
+        root.style.setProperty('--ts-opacity', opacity);
+        root.style.setProperty('--ts-density', density);
+        try { window.applyFontLibrary && window.applyFontLibrary(); } catch (e) {}
+        let vis = document.getElementById('panda-visual-css');
+        if (!vis) { vis = document.createElement('style'); vis.id = 'panda-visual-css'; document.head.appendChild(vis); }
+        const darkOpacity = Math.min(1, opacity + 0.25);
+        vis.innerHTML = '.search-pill, .app-group-card, .dock-container, .app-card, .widget-container, .ts-card, .func-panel, .modal-sheet, .f-sheet, .bento-photo, .bento-dday, .cw-card { border-radius: var(--ts-radius) !important; }\n' +
+            '.search-pill, .app-group-card, .dock-container, .app-card, .widget-container { background: rgba(255,255,255,' + opacity + ') !important; backdrop-filter: blur(var(--ts-blur)) !important; -webkit-backdrop-filter: blur(var(--ts-blur)) !important; }\n' +
+            'body.dark-mode .search-pill, body.dark-mode .app-group-card, body.dark-mode .dock-container, body.dark-mode .app-card, body.dark-mode .widget-container { background: rgba(30,30,30,' + darkOpacity + ') !important; }\n' +
+            '.app-grid, #customWidgetsGrid, .grid-2-col, .music-row, .func-panel-grid { gap: calc(14px * var(--ts-density)) !important; }';
+        const oldJs = document.getElementById('panda-custom-js'); if (oldJs) oldJs.remove();
+        if ((t.customJS || '').trim()) {
+            const s = document.createElement('script');
+            s.id = 'panda-custom-js';
+            s.textContent = t.customJS;
+            try { document.body.appendChild(s); } catch (e) { console.error('自定义JS执行失败', e); }
+        }
+        try { window.applyBubbleDecos(); } catch (e) {}
+    };
+
+    // ============ B2. 气泡 DIY 贴图装饰引擎 ============
+    ['bubbleMeDecos', 'bubbleOtherDecos'].forEach(k => { if (!Array.isArray(window.themeSettings[k])) window.themeSettings[k] = []; });
+
+    window.applyBubbleDecos = function() {
+        const t = window.themeSettings || {};
+        const meList = Array.isArray(t.bubbleMeDecos) ? t.bubbleMeDecos : [];
+        const otherList = Array.isArray(t.bubbleOtherDecos) ? t.bubbleOtherDecos : [];
+        document.querySelectorAll('.ts-me-bubble, .ts-other-bubble').forEach(b => {
+            b.querySelectorAll(':scope > .ts-bubble-deco').forEach(d => d.remove());
+            const isMe = b.classList.contains('ts-me-bubble');
+            const decos = isMe ? meList : otherList;
+            decos.forEach(d => {
+                const el = document.createElement('span');
+                el.className = 'ts-bubble-deco';
+                const size = d.size || 24;
+                const pos = d.pos || 'br';
+                el.style.width = size + 'px';
+                el.style.height = size + 'px';
+                el.style.opacity = (d.opacity === undefined ? 1 : d.opacity);
+                el.style.transform = 'rotate(' + (d.rotate || 0) + 'deg)';
+                if (pos === 'tl') { el.style.left = '-8px'; el.style.top = '-8px'; }
+                else if (pos === 'tr') { el.style.right = '-8px'; el.style.top = '-8px'; }
+                else if (pos === 'bl') { el.style.left = '-8px'; el.style.bottom = '-8px'; }
+                else { el.style.right = '-8px'; el.style.bottom = '-8px'; }
+                if (d.type === 'emoji') {
+                    el.textContent = d.char || '✨';
+                    el.style.fontSize = size + 'px';
+                } else {
+                    const img = document.createElement('img');
+                    img.src = d.src;
+                    el.appendChild(img);
+                }
+                b.appendChild(el);
+            });
+        });
+    };
+    window._decoTimer = null;
+    window.scheduleBubbleDecos = function() { clearTimeout(window._decoTimer); window._decoTimer = setTimeout(window.applyBubbleDecos, 80); };
+    window._decoObservedEl = null;
+    window._ensureDecoObserver = function() {
+        const chat = document.getElementById('chatBox');
+        if (!chat) return;
+        if (window._decoObservedEl !== chat) {
+            if (window._decoObserver) window._decoObserver.disconnect();
+            window._decoObserver = new MutationObserver(function() { window.scheduleBubbleDecos(); });
+            window._decoObserver.observe(chat, { childList: true, subtree: true });
+            window._decoObservedEl = chat;
+        }
+        window.scheduleBubbleDecos();
+    };
+    window.initBubbleDecoObserver = function() { window._ensureDecoObserver(); };
+    setInterval(function() { try { window._ensureDecoObserver(); } catch (e) {} }, 2000);
+
+    window._decoTarget = 'me';
+    window.getDecoList = function() { const t = window.themeSettings || {}; return window._decoTarget === 'other' ? (t.bubbleOtherDecos || []) : (t.bubbleMeDecos || []); };
+    window.setDecoList = function(list) {
+        const t = window.themeSettings || {};
+        if (window._decoTarget === 'other') t.bubbleOtherDecos = list; else t.bubbleMeDecos = list;
+        localStorage.setItem('panda_theme_settings', JSON.stringify(t));
+        window.applyBubbleDecos();
+        window.renderDecoListUI();
+    };
+    window.setDecoTarget = function(target) { window._decoTarget = target; window.renderDecoListUI(); };
+    window.decoAddImg = function() { const inp = document.getElementById('tsDecoImgIn'); if (inp) inp.click(); };
+    window.decoAddImgFile = function(input) {
+        const f = input.files && input.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = function(e) {
+            const list = window.getDecoList();
+            list.push({ id: 'd_' + Date.now(), type: 'img', src: e.target.result, pos: 'br', size: 28, opacity: 1, rotate: 0 });
+            window.setDecoList(list);
+        };
+        r.readAsDataURL(f);
+        input.value = '';
+    };
+    window.decoAddEmoji = async function() {
+        const ch = window.pandaPrompt ? await window.pandaPrompt('输入 Emoji 或文字装饰：', '✨', '✨') : prompt('Emoji：', '✨');
+        if (!ch) return;
+        const list = window.getDecoList();
+        list.push({ id: 'd_' + Date.now(), type: 'emoji', char: String(ch).trim().slice(0, 4), pos: 'br', size: 26, opacity: 1, rotate: 0 });
+        window.setDecoList(list);
+    };
+    window.decoRemove = function(id) { window.setDecoList(window.getDecoList().filter(d => d.id !== id)); };
+    window.decoUpdate = function(id, key, val) {
+        const list = window.getDecoList().map(d => d.id === id ? { ...d, [key]: (key === 'size' || key === 'opacity' || key === 'rotate') ? parseFloat(val) : val } : d);
+        window.setDecoList(list);
+    };
+    window.renderDecoListUI = function() {
+        const box = document.getElementById('cwDecoList');
+        if (!box) return;
+        const list = window.getDecoList();
+        if (!list.length) { box.innerHTML = '<div style="font-size:12px;color:#999;padding:8px 2px;">还没有装饰，点下面按钮添加贴图或 Emoji</div>'; return; }
+        const posNames = { tl: '左上', tr: '右上', bl: '左下', br: '右下' };
+        box.innerHTML = list.map(d => {
+            const thumb = d.type === 'emoji' ? '<span style="font-size:24px;">' + esc(d.char) + '</span>' : '<img src="' + escAttr(d.src) + '">';
+            const posOpts = ['tl', 'tr', 'bl', 'br'].map(p => '<option value="' + p + '"' + (d.pos === p ? ' selected' : '') + '>' + posNames[p] + '</option>').join('');
+            return '<div class="ts-deco-item">' +
+                '<div class="ts-deco-thumb">' + thumb + '</div>' +
+                '<div class="ts-deco-ctrl">' +
+                '<select onchange="window.decoUpdate(\'' + d.id + '\',\'pos\',this.value)">' + posOpts + '</select>' +
+                '<label>大小 <span id="dcsize_' + d.id + '">' + d.size + 'px</span></label><input type="range" min="12" max="80" step="1" value="' + d.size + '" oninput="document.getElementById(\'dcsize_' + d.id + '\').textContent=this.value+\'px\';window.decoUpdate(\'' + d.id + '\',\'size\',this.value)">' +
+                '<label>旋转 <span id="dcrot_' + d.id + '">' + d.rotate + '°</span></label><input type="range" min="-90" max="90" step="5" value="' + d.rotate + '" oninput="document.getElementById(\'dcrot_' + d.id + '\').textContent=this.value+\'°\';window.decoUpdate(\'' + d.id + '\',\'rotate\',this.value)">' +
+                '<label>透明度 <span id="dcop_' + d.id + '">' + d.opacity + '</span></label><input type="range" min="0.1" max="1" step="0.05" value="' + d.opacity + '" oninput="document.getElementById(\'dcop_' + d.id + '\').textContent=this.value;window.decoUpdate(\'' + d.id + '\',\'opacity\',this.value)">' +
+                '</div>' +
+                '<button class="font-del" onclick="window.decoRemove(\'' + d.id + '\')">✕</button>' +
+                '</div>';
+        }).join('');
+    };
+
+    // ============ C. 重写美化中心：分栏标签页 ============
+    window.switchThemeTab = function(name) {
+        document.querySelectorAll('.ts-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === name));
+        document.querySelectorAll('.ts-panel').forEach(el => el.classList.toggle('active', el.id === 'tsPanel-' + name));
+        const body = document.querySelector('.ts-body'); if (body) body.scrollTop = 0;
+    };
+
+    window.renderThemeStore = function() {
+        const t = window.themeSettings || {};
+        const sysFonts = [
+            ['-apple-system, sans-serif', '系统默认'],
+            ["'KaiTi', '楷体', serif", '楷体 (复古)'],
+            ["'SimSun', '宋体', serif", '宋体 (小说)'],
+            ["'SimHei', '黑体', sans-serif", '黑体 (厚重)'],
+            ["'FangSong', '仿宋', serif", '仿宋 (手账)'],
+            ['cursive', 'Cursive (连笔)']
+        ];
+        const customFonts = (window.fontLibrary || []).filter(f => f.family);
+        const sel = function(v) { return (t.globalFont || '') === v ? 'selected' : ''; };
+        const fontOpts = sysFonts.map(s => '<option value="' + s[0] + '" ' + sel(s[0]) + '>' + s[1] + '</option>').join('') +
+            customFonts.map(f => { const v = "'" + f.family + "'"; return '<option value="' + v + '" ' + sel(v) + '>' + esc(f.name || f.family) + '（自定义）</option>'; }).join('');
+        const visRow = function(key, label, min, max, step, unit) {
+            const fallback = { radius: 20, blur: 25, opacity: 0.4, density: 1 }[key];
+            const val = (t[key] === undefined ? fallback : t[key]);
+            return '<div class="cw-field"><label>' + label + ' <span class="ts-range-val" id="cwV_' + key + '">' + val + unit + '</span></label><input type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '" oninput="document.getElementById(\'cwV_' + key + '\').textContent=this.value+\'' + unit + '\';window.applyVisualValue(\'' + key + '\',this.value)"></div>';
+        };
+        const meBg = t.bubbleMeBg && t.bubbleMeBg.length === 7 ? t.bubbleMeBg : '#95EC69';
+        const meTxt = t.bubbleMeText && t.bubbleMeText.length === 7 ? t.bubbleMeText : '#000000';
+        const otherBg = t.bubbleOtherBg && t.bubbleOtherBg.length === 7 ? t.bubbleOtherBg : '#ffffff';
+        const otherTxt = t.bubbleOtherText && t.bubbleOtherText.length === 7 ? t.bubbleOtherText : '#000000';
+        const iconColor = t.iconColor || '#555555';
+
+        document.getElementById('appView').innerHTML = `
+            <div class="ts-page">
+                <div class="ts-header">
+                    <div style="font-size:26px; color:#111; cursor:pointer; font-weight:300; line-height:1;" onclick="handleGlobalBack()">‹</div>
+                    <div class="ts-title">主题与美化中心</div>
+                    <div style="width:26px"></div>
+                </div>
+                <div class="ts-tabs">
+                    <div class="ts-tab active" data-tab="theme" onclick="window.switchThemeTab('theme')">主题</div>
+                    <div class="ts-tab" data-tab="bubble" onclick="window.switchThemeTab('bubble')">气泡</div>
+                    <div class="ts-tab" data-tab="widget" onclick="window.switchThemeTab('widget')">小组件</div>
+                    <div class="ts-tab" data-tab="font" onclick="window.switchThemeTab('font')">字体</div>
+                    <div class="ts-tab" data-tab="code" onclick="window.switchThemeTab('code')">代码</div>
+                    <div class="ts-tab" data-tab="data" onclick="window.switchThemeTab('data')">数据</div>
+                </div>
+                <div class="ts-body">
+                    <div class="ts-panel active" id="tsPanel-theme">
+                        <div class="ts-card" style="background:#FAFAFA;border:1px solid #EDEDED;">
+                            <div class="ts-card-title" style="color:#999;font-size:11px;font-weight:500;letter-spacing:2px;">QUICK STYLE</div>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+                                <button class="ts-preset-btn" style="background:#fff;color:#666;border:1px solid #E8E8E8;" onclick="window.applyPresetTheme('default')">Natural</button>
+                                <button class="ts-preset-btn" style="background:#1C1C1E;color:#fff;border:none;" onclick="window.applyPresetTheme('dark')">Midnight</button>
+                                <button class="ts-preset-btn" style="background:#FDF2F4;color:#D4919A;border:1px solid #F5D5D9;" onclick="window.applyPresetTheme('pink')">Rosé</button>
+                                <button class="ts-preset-btn" style="background:linear-gradient(135deg,#E8D5F2,#D5E5F2);color:#8B7AA0;border:none;" onclick="window.applyPresetTheme('cream')">Dreamy</button>
+                                <button class="ts-preset-btn" style="background:#F8F6F1;color:#A69B8D;border:1px solid #EBE6DD;" onclick="window.applyPresetTheme('paper')">Vintage</button>
+                            </div>
+                        </div>
+                        <div class="ts-card">
+                            <div class="ts-card-title">全局壁纸与图标</div>
+                            <div class="ts-row" onclick="document.getElementById('tsDesktopBgIn').click()"><span class="ts-label">桌面背景</span><div class="ts-val">${t.desktopBg ? '已设' : '默认'} ›</div></div>
+                            <div class="ts-row" onclick="document.getElementById('tsChatBgIn').click()"><span class="ts-label">聊天全局背景</span><div class="ts-val">${t.chatGlobalBg ? '已设' : '默认'} ›</div></div>
+                            <div style="height:1px; background:#f0f0f0; margin:10px 0;"></div>
+                            <div class="ts-row"><span class="ts-label">应用图标风格</span>
+                                <select class="ts-select" onchange="window.updateThemeValue('iconStyle', this.value)">
+                                    <option value="default" ${t.iconStyle === 'default' ? 'selected' : ''}>系统默认 (圆角)</option>
+                                    <option value="circle" ${t.iconStyle === 'circle' ? 'selected' : ''}>纯净圆形 (iOS风)</option>
+                                    <option value="glass" ${t.iconStyle === 'glass' ? 'selected' : ''}>毛玻璃 (水晶风)</option>
+                                    <option value="none" ${t.iconStyle === 'none' ? 'selected' : ''}>无底座 (极简风)</option>
+                                </select>
+                            </div>
+                            <div class="ts-row"><span class="ts-label">全局图标颜色</span><input type="color" class="ts-color-picker" value="${iconColor}" onchange="window.updateThemeValue('iconColor', this.value)"></div>
+                        </div>
+                        <div class="ts-card" style="border-color:#29B6F6;">
+                            <div class="ts-card-title" style="color:#0277BD;">🎛 可视化微调（全局布局）</div>
+                            ${visRow('radius', '全局圆角', 0, 40, 1, 'px')}
+                            ${visRow('blur', '毛玻璃强度', 0, 50, 1, 'px')}
+                            ${visRow('opacity', '卡片透明度', 0.1, 1, 0.05, '')}
+                            ${visRow('density', '布局密度', 0.8, 1.3, 0.05, '')}
+                        </div>
+                    </div>
+
+                    <div class="ts-panel" id="tsPanel-bubble">
+                        <div class="ts-card">
+                            <div class="ts-card-title">气泡底色与图片</div>
+                            <div class="ts-row"><span class="ts-label">我的底色</span><input type="color" class="ts-color-picker" value="${meBg}" onchange="window.updateThemeValue('bubbleMeBg', this.value)"></div>
+                            <div class="ts-row"><span class="ts-label">我的文字颜色</span><input type="color" class="ts-color-picker" value="${meTxt}" onchange="window.updateThemeValue('bubbleMeText', this.value)"></div>
+                            <div class="ts-row" onclick="document.getElementById('tsBubbleMeImgIn').click()"><span class="ts-label">我的图片气泡 (.9拉伸)</span><div class="ts-val">${t.bubbleMeImg ? '已设' : '未设'} ›</div></div>
+                            <div style="height:1px; background:#f0f0f0; margin:10px 0;"></div>
+                            <div class="ts-row"><span class="ts-label">TA的底色</span><input type="color" class="ts-color-picker" value="${otherBg}" onchange="window.updateThemeValue('bubbleOtherBg', this.value)"></div>
+                            <div class="ts-row"><span class="ts-label">TA的文字颜色</span><input type="color" class="ts-color-picker" value="${otherTxt}" onchange="window.updateThemeValue('bubbleOtherText', this.value)"></div>
+                            <div class="ts-row" onclick="document.getElementById('tsBubbleOtherImgIn').click()"><span class="ts-label">TA的图片气泡 (.9拉伸)</span><div class="ts-val">${t.bubbleOtherImg ? '已设' : '未设'} ›</div></div>
+                        </div>
+                        <div class="ts-card" style="border-color:#4DB6AC;">
+                            <div class="ts-card-title" style="color:#00695C;">💬 气泡特效 CSS</div>
+                            <button id="aiGenBubbleBtn" class="ts-ai-btn" style="background:linear-gradient(135deg, #E0F2F1, #B2DFDB); color:#00695C; border-color:#80CBC4;" onclick="window.autoGenBubbleCss()">✨ 让 AI 帮我写气泡发光/渐变特效</button>
+                            <textarea id="themeBubbleCss" class="ts-textarea" style="background:#263238; color:#80CBC4;" placeholder="/* 在此输入气泡 CSS 代码 */">${t.customBubbleCSS || ''}</textarea>
+                            <button class="ts-btn" style="background:#00897B; color:#fff;" onclick="window.updateThemeValue('customBubbleCSS', document.getElementById('themeBubbleCss').value); alert('💭 气泡特效代码已注入！去聊天界面看看吧！');">⚡ 注入气泡特效</button>
+                        </div>
+                        <div class="ts-card" style="border-color:#F06292;">
+                            <div class="ts-card-title" style="color:#C2185B;">🧷 气泡 DIY 贴图装饰</div>
+                            <div class="ts-row"><span class="ts-label">装饰目标</span>
+                                <select class="ts-select" onchange="window.setDecoTarget(this.value)">
+                                    <option value="me" ${window._decoTarget === 'me' ? 'selected' : ''}>我的气泡</option>
+                                    <option value="other" ${window._decoTarget === 'other' ? 'selected' : ''}>TA的气泡</option>
+                                </select>
+                            </div>
+                            <div id="cwDecoList"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="cw-add-btn" onclick="window.decoAddImg()">+ 上传贴图</button>
+                                <button class="cw-add-btn" onclick="window.decoAddEmoji()">+ 加 Emoji 装饰</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-panel" id="tsPanel-widget">
+                        <div class="ts-card" style="border-color:#26A69A;">
+                            <div class="ts-card-title" style="color:#00796B;">🧩 桌面小组件（预制 + 自由代码）</div>
+                            <button id="aiGenWidgetBtn" class="ts-ai-btn" style="background:linear-gradient(135deg,#E0F2F1,#B2DFDB); color:#00796B; border-color:#80CBC4;" onclick="window.autoGenWidget()">✨ 让 AI 帮我做一个小组件</button>
+                            <div id="cwWidgetList"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="cw-add-btn" onclick="window.widgetAdd('clock')">+ 时钟</button>
+                                <button class="cw-add-btn" onclick="window.widgetAdd('countdown')">+ 倒计时</button>
+                                <button class="cw-add-btn" onclick="window.widgetAdd('note')">+ 便签</button>
+                                <button class="cw-add-btn" onclick="window.widgetAdd('image')">+ 图片</button>
+                                <button class="cw-add-btn" onclick="window.widgetAdd('progress')">+ 进度条</button>
+                                <button class="cw-add-btn" onclick="window.widgetAdd('code')">+ 代码组件</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-panel" id="tsPanel-font">
+                        <div class="ts-card" style="border-color:#B39DDB;">
+                            <div class="ts-card-title" style="color:#5E35B1;">Aa 全局字体</div>
+                            <button id="aiGenFontBtn" class="ts-ai-btn" style="background:linear-gradient(135deg, #EDE7F6, #D1C4E9); color:#5E35B1; border-color:#B39DDB;" onclick="window.autoGenFont()">✨ 让 AI 帮我搭配云端神仙字体</button>
+                            <div class="ts-row"><span class="ts-label">当前全局字体</span>
+                                <select class="ts-select" onchange="window.updateThemeValue('globalFont', this.value)">${fontOpts}</select>
+                            </div>
+                        </div>
+                        <div class="ts-card" style="border-color:#5C6BC0;">
+                            <div class="ts-card-title" style="color:#3949AB;">Aa 自定义字体库（可导入文件 / 链接 / CSS）</div>
+                            <div id="cwFontList"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px;">
+                                <button class="cw-add-btn" onclick="window.uploadFontFile()">上传字体文件</button>
+                                <button class="cw-add-btn" onclick="window.addFontUrl()">添加字体链接</button>
+                                <button class="cw-add-btn" onclick="window.addFontImport()">粘贴 CSS @import</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-panel" id="tsPanel-code">
+                        <div class="ts-card" style="border-color:#FFCC80;">
+                            <div class="ts-card-title" style="color:#E65100;">⚡ 全局 CSS 代码</div>
+                            <button id="aiGenGlobalBtn" class="ts-ai-btn" style="background:linear-gradient(135deg, #FFF8E1, #FFECB3); color:#E65100; border-color:#FFE082;" onclick="window.autoGenGlobalCss()">✨ 让 AI 帮我写全局主题</button>
+                            <textarea id="themeCustomCss" class="ts-textarea" style="background:#2d2d2d; color:#a6e22e;" placeholder="/* 在此输入全局 CSS 代码 */">${t.customCSS || ''}</textarea>
+                            <button class="ts-btn" style="background:#FF9800; color:#fff;" onclick="window.updateThemeValue('customCSS', document.getElementById('themeCustomCss').value); alert('⚡ 全局代码已生效！');">⚡ 注入全局代码</button>
+                        </div>
+                        <div class="ts-card" style="border-color:#7E57C2;">
+                            <div class="ts-card-title" style="color:#5E35B1;">🧠 全局 JS 代码（进阶）</div>
+                            <textarea id="themeCustomJs" class="ts-textarea" style="background:#1a1a2e;color:#f8f8f2;" placeholder="// 在页面加载后运行的脚本，可自由修改 DOM">${t.customJS || ''}</textarea>
+                            <button class="ts-btn" style="background:#5E35B1;color:#fff;" onclick="window.updateThemeValue('customJS', document.getElementById('themeCustomJs').value); alert('⚡ 全局 JS 已注入并生效！');">⚡ 运行全局 JS</button>
+                        </div>
+                    </div>
+
+                    <div class="ts-panel" id="tsPanel-data">
+                        <div class="ts-card" style="border-color:#E91E63; background:#FFF0F5;">
+                            <div class="ts-card-title" style="color:#C2185B;">📦 主题数据管理</div>
+                            <div style="font-size:12px; color:#C2185B; margin-bottom:15px; font-weight:bold;">将当前调好的所有背景、颜色、全局 CSS 代码打包，方便分享或存做备份。</div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="ts-btn" style="background:#FCE4EC; color:#C2185B; border:1px solid #F8BBD0; margin-top:0;" onclick="window.exportThemeData()">📤 导出当前主题</button>
+                                <button class="ts-btn" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9; margin-top:0;" onclick="document.getElementById('tsImportThemeIn').click()">📥 导入本地主题</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align:center; margin-top:20px; color:#ccc; font-size:12px;">如果界面乱码卡死，请点击下方清理</div>
+                    <button class="ts-btn" style="background:transparent; border:1px solid #FFCDD2; color:#D32F2F;" onclick="window.nuclearResetTheme()">↺ 清空所有代码恢复默认</button>
+                </div>
+
+                <input type="file" id="tsDesktopBgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'desktopBg')">
+                <input type="file" id="tsChatBgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'chatGlobalBg')">
+                <input type="file" id="tsBubbleMeImgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'bubbleMeImg')">
+                <input type="file" id="tsBubbleOtherImgIn" accept="image/*" style="display:none" onchange="window.handleThemeUpload(this, 'bubbleOtherImg')">
+                <input type="file" id="tsImportThemeIn" accept=".json" style="display:none" onchange="window.importThemeData(this)">
+                <input type="file" id="tsDecoImgIn" accept="image/*" style="display:none" onchange="window.decoAddImgFile(this)">
+            </div>
+        `;
+        window.renderFontListUI();
+        window.renderWidgetManagerUI();
+        window.renderDecoListUI();
+    };
+
+    window.autoGenWidget = async function() {
+        const req = window.pandaPrompt ? await window.pandaPrompt('描述你想要的小组件：', '', '例如：一个显示每日运势的粉色毛玻璃卡片') : prompt('描述你想要的小组件：');
+        if (!req) return;
+        const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+        if (!api.key) return alert('请先配置 API Key！');
+        const btn = document.getElementById('aiGenWidgetBtn');
+        const oldText = btn ? btn.innerText : '';
+        if (btn) { btn.innerText = 'AI 正在搓小组件...'; btn.style.pointerEvents = 'none'; }
+        const promptText = '你是一位桌面小组件开发专家。请根据用户描述制作一个桌面小组件，输出严格 JSON（不要代码块标记和多余文字）：{"title":"小组件标题","html":"小组件HTML（内联样式，自适应宽度，不要用外部资源）","css":"小组件CSS（选择器建议加 .cw-code-body 前缀）","js":"小组件JS（可选，参数为 el 根元素）"}。用户描述：' + req;
+        try {
+            let endpoint = api.url.trim().replace(/\/+$/, '');
+            if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api.key }, body: JSON.stringify({ model: api.model, messages: [{role:'user', content: promptText}], temperature: 0.8 }) });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            let raw = data.choices[0].message.content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            let s1 = raw.indexOf('{'); let e1 = raw.lastIndexOf('}');
+            if (s1 !== -1 && e1 !== -1) raw = raw.substring(s1, e1 + 1);
+            const parsed = JSON.parse(raw);
+            const id = 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            const w = { id: id, type: 'code', title: parsed.title || 'AI 小组件', bg: '#ffffff', color: '#111111', radius: 22, html: parsed.html || '', css: parsed.css || '', js: parsed.js || '' };
+            window.showPreview({
+                title: '小组件预览',
+                doc: window._pvWidgetDoc(w),
+                onApply: function() {
+                    const list = window.getCustomWidgets(); list.push(w); window.saveCustomWidgets(list);
+                    if (window.pandaAlert) window.pandaAlert('小组件已放到桌面！'); else alert('小组件已放到桌面！');
+                },
+                again: true,
+                onAgain: function() { window.autoGenWidget(); }
+            });
+        } catch (e) {
+            alert('AI 小组件生成失败，请重试！(' + e.message + ')');
+        } finally {
+            if (btn) { btn.innerText = oldText; btn.style.pointerEvents = 'auto'; }
+        }
+    };
+
+    // ============ D. 桌面小组件 ============
+    window.getCustomWidgets = function() { try { return JSON.parse(localStorage.getItem('panda_custom_widgets') || '[]') || []; } catch (e) { return []; } };
+    window.saveCustomWidgets = function(list) { localStorage.setItem('panda_custom_widgets', JSON.stringify(list)); window.renderCustomWidgets(); window.renderWidgetManagerUI(); };
+
+    window.renderWidgetManagerUI = function() {
+        const box = document.getElementById('cwWidgetList'); if (!box) return;
+        const list = window.getCustomWidgets();
+        const typeName = { clock: '时钟', countdown: '倒计时', note: '便签', image: '图片', progress: '进度', code: '代码' };
+        box.innerHTML = list.length ? list.map((w, i) => '<div class="cw-item"><div class="cw-item-badge">' + (typeName[w.type] || w.type) + '</div><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">' + esc(w.title || '未命名') + '</div><div class="cw-item-btns"><button class="cw-mini-btn" onclick="window.widgetMove(\'' + w.id + '\',-1)">↑</button><button class="cw-mini-btn" onclick="window.widgetMove(\'' + w.id + '\',1)">↓</button><button class="cw-mini-btn" onclick="window.openWidgetEditor(\'' + w.id + '\')">✎</button><button class="cw-mini-btn" onclick="window.widgetDelete(\'' + w.id + '\')">×</button></div></div>').join('') : '<div style="font-size:12px;color:#999;padding:6px 0;">还没有小组件，点下面按钮添加，添加后会自动出现在桌面。</div>';
+    };
+
+    window.widgetAdd = function(type) {
+        const id = 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        const w = { id: id, type: type, title: '', bg: '#ffffff', color: '#111111', radius: 22 };
+        if (type === 'clock') { w.h24 = true; w.sec = false; }
+        else if (type === 'countdown') { w.label = '重要日子'; w.target = new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 16); }
+        else if (type === 'note') { w.text = '在这里写点什么...'; }
+        else if (type === 'image') { w.img = ''; }
+        else if (type === 'progress') { w.label = '目标进度'; w.percent = 50; }
+        else if (type === 'code') { w.html = '<div style="text-align:center;padding:10px;">自定义组件</div>'; w.css = ''; w.js = ''; }
+        const list = window.getCustomWidgets(); list.push(w); window.saveCustomWidgets(list);
+        window.openWidgetEditor(id);
+    };
+
+    window.widgetDelete = async function(id) {
+        const ok = window.pandaConfirm ? await window.pandaConfirm('确定删除这个小组件吗？', '删除确认') : confirm('确定删除吗？');
+        if (!ok) return;
+        window.saveCustomWidgets(window.getCustomWidgets().filter(x => x.id !== id));
+    };
+
+    window.widgetMove = function(id, dir) {
+        const list = window.getCustomWidgets();
+        const i = list.findIndex(x => x.id === id);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= list.length) return;
+        const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+        window.saveCustomWidgets(list);
+    };
+
+    window._cwEditingId = null;
+    window._cwImgData = null;
+    window.openWidgetEditor = function(id) {
+        const list = window.getCustomWidgets();
+        const w = list.find(x => x.id === id); if (!w) return;
+        window._cwEditingId = id;
+        window._cwImgData = w.img || null;
+        let extra = '';
+        if (w.type === 'clock') {
+            extra = '<div class="cw-row2">'
+                + '<div class="cw-field"><label>时间制式</label><select id="cwF_h24"><option value="1"' + (w.h24 !== false ? ' selected' : '') + '>24 小时制</option><option value="0"' + (w.h24 === false ? ' selected' : '') + '>12 小时制</option></select></div>'
+                + '<div class="cw-field"><label>显示秒</label><select id="cwF_sec"><option value="1"' + (w.sec ? ' selected' : '') + '>显示</option><option value="0"' + (w.sec ? '' : ' selected') + '>隐藏</option></select></div>'
+                + '</div>';
+        } else if (w.type === 'countdown') {
+            extra = '<div class="cw-field"><label>标签</label><input type="text" id="cwF_label" value="' + escAttr(w.label || '') + '"></div>'
+                + '<div class="cw-field"><label>目标时间</label><input type="datetime-local" id="cwF_target" value="' + escAttr(w.target || '') + '"></div>';
+        } else if (w.type === 'note') {
+            extra = '<div class="cw-field"><label>内容</label><textarea id="cwF_text" rows="5">' + esc(w.text || '') + '</textarea></div>';
+        } else if (w.type === 'image') {
+            extra = '<div class="cw-field"><label>图片</label><div style="display:flex;gap:8px;align-items:center;"><button type="button" class="cw-add-btn" onclick="document.getElementById(\'cwImgIn\').click()">上传图片</button><input type="url" id="cwF_img" placeholder="或粘贴图片链接" value="' + escAttr(w.img || '') + '"></div></div>'
+                + '<input type="file" id="cwImgIn" accept="image/*" style="display:none" onchange="window.cwPickImg(this)">';
+        } else if (w.type === 'progress') {
+            extra = '<div class="cw-field"><label>标签</label><input type="text" id="cwF_label" value="' + escAttr(w.label || '') + '"></div>'
+                + '<div class="cw-field"><label>进度 <span id="cwF_percentV">' + (w.percent || 0) + '</span>%</label><input type="range" min="0" max="100" value="' + (w.percent || 0) + '" id="cwF_percent" oninput="document.getElementById(\'cwF_percentV\').textContent=this.value"></div>';
+        } else if (w.type === 'code') {
+            extra = '<div class="cw-field"><label>HTML</label><textarea id="cwF_html" rows="4">' + esc(w.html || '') + '</textarea></div>'
+                + '<div class="cw-field"><label>CSS（可写全局选择器，会注入页面）</label><textarea id="cwF_css" rows="4">' + esc(w.css || '') + '</textarea></div>'
+                + '<div class="cw-field"><label>JS（可选，参数 el 为该组件根元素）</label><textarea id="cwF_js" rows="4">' + esc(w.js || '') + '</textarea></div>';
+        }
+        const html = '<div class="cw-editor-overlay active" id="cwEditorOverlay" onclick="if(event.target===this)window.closeWidgetEditor()">'
+            + '<div class="cw-editor-sheet">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div style="font-size:18px;font-weight:900;">编辑小组件</div><div style="font-size:26px;cursor:pointer;line-height:1;" onclick="window.closeWidgetEditor()">×</div></div>'
+            + '<div class="cw-field"><label>标题</label><input type="text" id="cwF_title" value="' + escAttr(w.title || '') + '" placeholder="小组件名称"></div>'
+            + '<div class="cw-row2"><div class="cw-field"><label>背景色</label><input type="color" id="cwF_bg" value="' + (w.bg || '#ffffff') + '"></div><div class="cw-field"><label>文字色</label><input type="color" id="cwF_color" value="' + (w.color || '#111111') + '"></div></div>'
+            + '<div class="cw-field"><label>圆角 <span id="cwF_radiusV">' + (w.radius || 22) + '</span></label><input type="range" min="0" max="40" value="' + (w.radius || 22) + '" id="cwF_radius" oninput="document.getElementById(\'cwF_radiusV\').textContent=this.value"></div>'
+            + extra
+            + '<button class="cw-save-btn" onclick="window.saveWidgetEditor()">保存</button>'
+            + '<button class="cw-del-btn" onclick="window.closeWidgetEditor();window.widgetDelete(\'' + escAttr(w.id) + '\')">删除这个组件</button>'
+            + '</div></div>';
+        const oldOverlay = document.getElementById('cwEditorOverlay'); if (oldOverlay) oldOverlay.remove();
+        document.body.insertAdjacentHTML('beforeend', html);
+    };
+
+    window.closeWidgetEditor = function() { const o = document.getElementById('cwEditorOverlay'); if (o) o.remove(); };
+
+    window.cwPickImg = function(input) {
+        const f = input.files && input.files[0]; if (!f) return;
+        const done = function(b) { window._cwImgData = b; const el = document.getElementById('cwF_img'); if (el) { el.value = ''; el.placeholder = '已选择图片（也可粘贴链接覆盖）'; } };
+        if (window.compressImage) window.compressImage(f, done);
+        else { const r = new FileReader(); r.onload = e => done(e.target.result); r.readAsDataURL(f); }
+    };
+
+    window.saveWidgetEditor = function() {
+        const id = window._cwEditingId;
+        const list = window.getCustomWidgets();
+        const w = list.find(x => x.id === id); if (!w) return;
+        w.title = document.getElementById('cwF_title').value;
+        w.bg = document.getElementById('cwF_bg').value;
+        w.color = document.getElementById('cwF_color').value;
+        w.radius = parseInt(document.getElementById('cwF_radius').value, 10) || 22;
+        if (w.type === 'clock') { w.h24 = document.getElementById('cwF_h24').value === '1'; w.sec = document.getElementById('cwF_sec').value === '1'; }
+        else if (w.type === 'countdown') { w.label = document.getElementById('cwF_label').value; w.target = document.getElementById('cwF_target').value; }
+        else if (w.type === 'note') { w.text = document.getElementById('cwF_text').value; }
+        else if (w.type === 'image') { w.img = window._cwImgData || document.getElementById('cwF_img').value || ''; }
+        else if (w.type === 'progress') { w.label = document.getElementById('cwF_label').value; w.percent = parseInt(document.getElementById('cwF_percent').value, 10) || 0; }
+        else if (w.type === 'code') { w.html = document.getElementById('cwF_html').value; w.css = document.getElementById('cwF_css').value; w.js = document.getElementById('cwF_js').value; }
+        window.saveCustomWidgets(list);
+        window.closeWidgetEditor();
+    };
+
+    window.buildWidgetCard = function(w) {
+        const style = 'background:' + (w.bg || '#ffffff') + ';color:' + (w.color || '#111111') + ';border-radius:' + (w.radius || 22) + 'px;';
+        const title = w.title ? '<div class="cw-title">' + esc(w.title) + '</div>' : '';
+        let inner = '';
+        if (w.type === 'clock') inner = '<div class="cw-clock" data-h24="' + (w.h24 !== false ? 1 : 0) + '" data-sec="' + (w.sec ? 1 : 0) + '">--:--</div>';
+        else if (w.type === 'countdown') inner = '<div class="cw-countdown" data-target="' + escAttr(w.target || '') + '">--</div><div class="cw-sep">' + esc(w.label || '') + '</div>';
+        else if (w.type === 'note') inner = '<div class="cw-note">' + esc(w.text || '') + '</div>';
+        else if (w.type === 'image') inner = '<div class="cw-img" style="background-image:url(' + escAttr(w.img || '') + ')"></div>';
+        else if (w.type === 'progress') inner = '<div class="cw-progress-num">' + (parseInt(w.percent || 0, 10)) + '%</div><div class="cw-progress-bar"><div class="cw-progress-fill" style="width:' + (parseInt(w.percent || 0, 10)) + '%;background:' + escAttr(w.color || '#111') + '"></div></div><div style="font-size:11px;opacity:0.7;margin-top:6px;">' + esc(w.label || '') + '</div>';
+        else if (w.type === 'code') inner = '<div class="cw-code"><div class="cw-code-body" id="cw-root-' + w.id + '">' + (w.html || '') + '</div></div>';
+        const full = (w.type === 'image' || w.type === 'code') ? ' full' : '';
+        return '<div class="cw-card' + full + '" id="cw-card-' + w.id + '" style="' + style + '">' + title + inner + '</div>';
+    };
+
+    window.renderCustomWidgets = function() {
+        const anchor = document.getElementById('desktopWidgetContainer');
+        let grid = document.getElementById('customWidgetsGrid');
+        if (!anchor) { if (grid) grid.remove(); return; }
+        if (!grid) { grid = document.createElement('div'); grid.id = 'customWidgetsGrid'; anchor.insertAdjacentElement('afterend', grid); }
+        const list = window.getCustomWidgets();
+        grid.innerHTML = list.map(w => window.buildWidgetCard(w)).join('');
+        list.forEach(w => {
+            if (w.type !== 'code') return;
+            const root = document.getElementById('cw-root-' + w.id); if (!root) return;
+            if (w.css && w.css.trim()) { const st = document.createElement('style'); st.textContent = w.css; root.appendChild(st); }
+            if (w.js && w.js.trim()) { try { new Function('el', w.js)(root); } catch (e) { console.error('小组件JS错误', e); } }
+        });
+        window._cwTick();
+    };
+
+    window._cwTick = function() {
+        document.querySelectorAll('.cw-clock').forEach(el => {
+            const d = new Date();
+            let h = d.getHours();
+            if (el.dataset.h24 === '0') h = h % 12 || 12;
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            el.textContent = (el.dataset.sec === '1') ? h + ':' + mm + ':' + ss : h + ':' + mm;
+        });
+        document.querySelectorAll('.cw-countdown').forEach(el => {
+            const t = new Date(el.dataset.target).getTime();
+            if (!t) { el.textContent = '--'; return; }
+            let diff = t - Date.now();
+            if (diff <= 0) { el.textContent = '已到达'; return; }
+            const d = Math.floor(diff / 86400000); diff -= d * 86400000;
+            const h = Math.floor(diff / 3600000); diff -= h * 3600000;
+            const m = Math.floor(diff / 60000); diff -= m * 60000;
+            const s = Math.floor(diff / 1000);
+            el.textContent = (d > 0 ? d + '天 ' : '') + h + '时 ' + m + '分 ' + s + '秒';
+        });
+    };
+    setInterval(window._cwTick, 1000);
+
+    // ============ E. 挂载桌面渲染 ============
+    const _oldRDW = window.renderDesktopWidgets;
+    window.renderDesktopWidgets = async function() {
+        try { await _oldRDW(); } catch (e) {}
+        try { window.renderCustomWidgets(); } catch (e) {}
+    };
+
+    setTimeout(() => { try { window.applyGlobalTheme(); } catch (e) {} try { window.renderCustomWidgets(); } catch (e) {} }, 1200);
+    try { window.initBubbleDecoObserver(); } catch (e) {}
+    setTimeout(() => { try { window.applyBubbleDecos(); } catch (e) {} }, 1500);
+})();
+</script>
 <!-- ================== 🩹 Panda OS V11 细节收官与性能抗体补丁 ================== -->
 <script id="panda-v11-final-patch">
 (function() {
@@ -17456,7 +18841,7 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
                 // 拼接玩家意愿生成的 prompt
                 let finalImagePrompt = `${baseFace}, ${result.imgPrompt}`;
                 let baseNeg = s.imgNeg || imgApi.negPrompt || "(worst quality, low quality:1.4), nsfw, bad anatomy, deformed";
-                try { imgUrl = await window.coreFetchImage(imgApi.url, imgApi.key, imgApi.model, imgApi.size, finalImagePrompt, baseNeg, null); } catch(e) { console.warn(e); }
+                try { imgUrl = await window.coreFetchImage(imgApi.url, imgApi.key, imgApi.model, imgApi.size, finalImagePrompt, baseNeg, null, s.refImg || imgApi.imgRef); } catch(e) { console.warn(e); }
             }
 
             if(!s.ootd) s.ootd = [];
@@ -17954,7 +19339,7 @@ id="petUpdateBtn">🔄 更新扩充灵魂语库</button>
         try {
             let basePos = imgSet.posPrompt || "masterpiece, best quality, highres";
             let baseNeg = imgSet.negPrompt || "nsfw, lowres, bad anatomy";
-            const imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, `${basePos}, ${promptEng}`, baseNeg, null);
+            const imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, `${basePos}, ${promptEng}`, baseNeg, null, imgSet.imgRef);
             if (imgUrl) callback(imgUrl);
         } catch(e) {
             console.warn("后台生图失败:", e);
@@ -18119,7 +19504,7 @@ ${npcListStr}
                         try {
                             let _bp = _imgSet.posPrompt || "masterpiece, best quality, highres";
                             let _bn = _imgSet.negPrompt || "nsfw, lowres, bad anatomy";
-                            let _url = await window.coreFetchImage(_imgSet.url, _imgSet.key, _imgSet.model, _imgSet.size, _bp + ", " + item.imagePrompt, _bn, null);
+                            let _url = await window.coreFetchImage(_imgSet.url, _imgSet.key, _imgSet.model, _imgSet.size, _bp + ", " + item.imagePrompt, _bn, null, _imgSet.imgRef);
                             if (_url) { const _m = moments.find(x => x.id === newId); if (_m) _m.imgs.push(_url); }
                         } catch(_ie) { console.warn("朋友圈配图失败:", _ie); }
                     }
@@ -18351,6 +19736,16 @@ ${npcListStr}
                         <div style="font-size:12px;color:#D32F2F;margin-bottom:5px;">专属防崩提示词 (负面)</div>
                         <textarea id="charImgNeg" class="ios-textarea" style="min-height:40px;background:#F9F9F9;border-radius:6px;padding:10px;color:#D32F2F;font-size:13px;" placeholder="留空则使用设置里的全局防崩...">${s.imgNeg||''}</textarea>
                     </div>
+                    <div style="padding:10px 15px;border-top:1px solid #f0f0f0;">
+                        <div style="font-size:12px;color:#2E7D32;margin-bottom:5px;">专属参考图 (图生图原型，画她/他的时候会照着这张图)</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="file" id="charRefImgInput" accept="image/*" style="display:none" onchange="window.handleCharRefImg(this)">
+                            <input type="hidden" id="charRefImgData" value="${s.refImg||''}">
+                            <img id="charRefImgPrev" src="${s.refImg||''}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;background:#eee;${s.refImg?'':'display:none;'}" onclick="document.getElementById('charRefImgInput').click()">
+                            <button class="set-btn" style="width:auto;padding:0 12px;background:#E8F5E9;color:#2E7D32;font-size:12px;margin:0;" onclick="document.getElementById('charRefImgInput').click()">上传参考图</button>
+                            <button class="set-btn" style="width:auto;padding:0 12px;background:#FFEBEE;color:#D32F2F;font-size:12px;margin:0;" onclick="document.getElementById('charRefImgData').value='';document.getElementById('charRefImgPrev').src='';document.getElementById('charRefImgPrev').style.display='none';">清除</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="ios-card">
@@ -18405,6 +19800,7 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             if(voiceCust) s.voiceId = voiceCust.value.trim();
             const imgPos = document.getElementById('charImgPos'); if(imgPos) s.imgPos = imgPos.value.trim();
             const imgNeg = document.getElementById('charImgNeg'); if(imgNeg) s.imgNeg = imgNeg.value.trim();
+            const refImg = document.getElementById('charRefImgData'); if(refImg) s.refImg = refImg.value.trim();
             
             // 🔥 修复：确保世界书的勾选状态被正确保存
             const checks = document.querySelectorAll('.wb-check'); 
@@ -19621,7 +21017,7 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             let extraClass = ''; let bubbleStyle = ''; let clickAttr = `onclick="if(event.target.closest('label,button,a,input,.card-btn')){event.stopPropagation();return;}openMsgOptions(${actualIdx})"`;
 
 
-            if (msg.type === 'img') { content = `<img src="${msg.content}" style="max-width:160px;border-radius:8px;display:block;">`; bubbleStyle = 'background:transparent !important; border:none !important; padding:0 !important; box-shadow:none !important;'; } 
+            if (msg.type === 'img') { content = `<img src="${msg.content}" style="max-width:110px;border-radius:8px;display:block;">`; bubbleStyle = 'background:transparent !important; border:none !important; padding:0 !important; box-shadow:none !important;'; } 
             else if (msg.type === 'mind') { extraClass = 'mind-bubble'; } 
             else if (msg.type === 'html_game') { 
                 extraClass = 'html-game-bubble'; 
@@ -19828,7 +21224,8 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
                         <button onclick="document.getElementById('pandaStickerInput').click()" style="border:none; background:#E8F5E9; color:#2E7D32; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:bold;">+ 上传</button>
                     </div>
                 </div>
-                <div id="stickerGrid" style="flex:1; overflow-y:auto; padding:15px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-content:start;"></div>
+                <div id="stickerGroupTabs" style="flex-shrink:0; padding:10px 12px; display:flex; gap:6px; overflow-x:auto; background:#fff; border-bottom:1px solid #F0F0F0;"></div>
+                <div id="stickerGrid" style="flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; align-content:start;"></div>
             </div>
         </div>`;
 
@@ -19878,9 +21275,13 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             document.getElementById('appView').innerHTML = `
                 <div class="chat-room-container" style="${bgStyle}">
                     <div class="wx-header" style="background:rgba(247,247,247,0.95)">
-                        <div class="wx-btn" onclick="renderWeChatMain()">‹</div>
-                        <span style="font-weight:bold;">${typeof escapeHtml !== 'undefined' ? escapeHtml(s.type === 'group' ? (s.name + ' (' + ((s.members||[]).length + 1) + ')') : s.name) : s.name}</span>
-                        <div style="width:30px;font-size:20px;text-align:right;cursor:pointer;" onclick="openEditChar()">···</div>
+                        <div onclick="renderWeChatMain()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:flex-start;cursor:pointer;flex-shrink:0;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"/></svg>
+                        </div>
+                        <span style="font-weight:bold;flex:1;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 6px;">${typeof escapeHtml !== 'undefined' ? escapeHtml(s.type === 'group' ? (s.name + ' (' + ((s.members||[]).length + 1) + ')') : s.name) : s.name}</span>
+                        <div onclick="openEditChar()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:flex-end;cursor:pointer;flex-shrink:0;">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px;"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+                        </div>
                     </div>
                     
                     <div class="chat-history" id="chatBox" style="opacity: 0; transition: opacity 0.2s;">${historyHtml}</div>
@@ -20523,17 +21924,17 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
         if (!text) return "";
         let result = text;
         // 把 [译: xxx] 中的内容提取出来替换原句
-        let transMatch = result.match(/$$\s*译[:：]\s*([\s\S]*?)\s*$$/i);
+        let transMatch = result.match(/\[\s*译[:：]\s*([\s\S]*?)\s*\]/i);
         if (transMatch) {
             let cnTrans = transMatch[1].trim();
-            result = result.replace(/$$\s*VOICE[:：][\s\S]*?$$/gi, ''); // 去除外语原本
+            result = result.replace(/\[\s*VOICE[:：][\s\S]*?\]/gi, ''); // 去除外语原本
             result = result.replace(transMatch[0], cnTrans); // 补上中文
         }
         
         // 如果依然有乱加的标签，暴力清洗
-        return result.replace(/$$\s*VOICE.*?$$/gi, '')
-                     .replace(/$$\s*IMAGE.*?$$/gi, '')
-                     .replace(/$$\s*VOICE.*?$/gi, '')
+        return result.replace(/\[\s*VOICE.*?\]/gi, '')
+                     .replace(/\[\s*IMAGE.*?\]/gi, '')
+                     .replace(/\[\s*VOICE.*?\]/gi, '')
                      .replace(/^"|"$/g, '')
                      .trim();
     }
@@ -20860,7 +22261,7 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             if (s) {
                 let text = document.getElementById('barDText').innerText || "";
                 let secret = document.getElementById('barDSecret').innerText || "";
-                text = text.replace(/\[ 结算 $$.*?\n/g, '').trim(); 
+                text = text.replace(/\[ 结算 \].*?\n/g, '').trim(); 
                 
                 // 💡 模糊化记忆，绝对不让AI记住原话导致复读！
                 let memoryStr = secret ? `离开时借着酒意，向你展露了一丝平时隐藏的心绪。` : `默默喝下了你调的酒。`;
@@ -22479,7 +23880,7 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             let finalImagePrompt = `${basePos}, ${imgPrompt}`;
             let baseNeg = imgApi.negPrompt || "nsfw, lowres, bad anatomy, deformed, ugly";
 
-            let newImgUrl = await window.coreFetchImage(imgApi.url, imgApi.key, imgApi.model, imgApi.size, finalImagePrompt, baseNeg, null);
+            let newImgUrl = await window.coreFetchImage(imgApi.url, imgApi.key, imgApi.model, imgApi.size, finalImagePrompt, baseNeg, null, imgApi.imgRef);
             window.tmCurrentImg = newImgUrl; 
             
             imgEl.onload = () => imgEl.classList.remove('tm-img-scanning');
@@ -23355,7 +24756,7 @@ if(typeof currentMode !== 'undefined') currentMode = 'chat';
                 try {
                     let basePos = "cinematic shot, movie scene, masterpiece, highly detailed, 16:9";
                     let finalPrompt = `${basePos}, ${result.imgPrompt}`;
-                    let imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, finalPrompt, imgSet.negPrompt, null);
+                    let imgUrl = await window.coreFetchImage(imgSet.url, imgSet.key, imgSet.model, imgSet.size, finalPrompt, imgSet.negPrompt, null, imgSet.imgRef);
                     document.getElementById('cinemaScreenBg').src = imgUrl;
                 } catch(e) { console.warn("电影画面生图失败"); }
             }
