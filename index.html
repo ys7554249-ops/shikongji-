@@ -280,9 +280,29 @@ button, input, textarea, select, label, a,
         }
         .func-icon-bg:active { background: #f0f0f0; }
 
-        .app-full-screen { position: fixed; top: 0; bottom: 0; left: 0; width: 100%; height: 100%; background: #F2F2F7; z-index: 1500; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s; overflow: hidden; box-shadow: 0 50vh 0 50vh #F2F2F7; }
+        .app-full-screen { 
+            position: fixed; 
+            top: 0; 
+            bottom: 0; 
+            left: 0; 
+            right: 0;
+            width: 100%; 
+            height: 100%; 
+            height: 100dvh; 
+            background: #EDEDED; 
+            z-index: 1500; 
+            display: flex; 
+            flex-direction: column; 
+            transform: translateY(100%); 
+            transition: transform 0.3s; 
+            overflow: hidden; 
+            box-shadow: 0 50vh 0 50vh #EDEDED; 
+        }
 
-        .app-full-screen.open { transform: translateY(0); }
+        .app-full-screen.open { 
+            transform: translateY(0); 
+            height: 100dvh;
+        }
         .wx-tab-bar { height: auto; min-height: 56px; background: rgba(247,247,247,0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-around; padding: 5px 0 calc(10px + env(safe-area-inset-bottom)); flex-shrink: 0; }
         .wx-tab-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; color: #000; opacity: 0.5; }
         .wx-tab-item.active { opacity: 1; color: #07C160; }
@@ -332,7 +352,27 @@ button, input, textarea, select, label, a,
         .me-cell-group { background: #fff; border-radius: 12px; margin: 0 16px 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .me-cell-group .me-cell { border-bottom: 0.5px solid rgba(0,0,0,0.08); }
         .me-cell-group .me-cell:last-child { border-bottom: none; }
-        .chat-room-container { display: flex; flex-direction: column; height: 100%; background: #EDEDED; position: relative; }
+        .chat-room-container { 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%;
+            height: 100% !important; 
+            min-height: 100%;
+            background: #EDEDED !important; 
+            position: relative; 
+            flex: 1;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .chat-history { 
+            flex: 1 !important; 
+            overflow-y: auto !important; 
+            -webkit-overflow-scrolling: touch;
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
         .chat-room-header { position: sticky; top: 0; z-index: 100; background: rgba(237,237,237,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: calc(max(env(safe-area-inset-top), 20px) + 10px) 15px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
         .chat-room-header-title { font-size: 17px; font-weight: 600; color: #1D1D1F; text-align: center; flex: 1; letter-spacing: -0.4px; }
         .chat-room-header-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: background 0.15s; }
@@ -2660,12 +2700,20 @@ else if (weChatTab === 'discover') {
     try { 
         currentSessionId = String(id); chatState = 1; currentMode = 'chat'; 
         window.lastActiveSessionId = String(id); // 记录最后在跟谁聊
+        
+        // 强制把底层 html 与 body 底色同步为聊天界面底色，防止失焦缩放露出桌面底色
+        document.body.style.background = '#EDEDED';
+        document.documentElement.style.background = '#EDEDED';
+
         // 核心：进房间瞬间清零红点
         const s = (window.sessions || sessions).find(x => String(x.id) === String(id));
         if (s && s.unread) { s.unread = 0; if (typeof saveSessions === 'function') saveSessions(); }
         
         renderChatRoom(); 
-        setTimeout(() => { const b=document.getElementById('chatBox'); if(b)b.scrollTop=b.scrollHeight; }, 100); 
+        setTimeout(() => { 
+            const b = document.getElementById('chatBox') || document.querySelector('.chat-history'); 
+            if(b) b.scrollTop = b.scrollHeight; 
+        }, 100); 
     } catch(e) { 
         alert("进入聊天失败: " + e.message); console.error(e); 
     } 
@@ -3456,7 +3504,7 @@ window.rollDiceGame = function() {
 
 
         // 修复版：发送消息后，AI 不会自动回话，必须点黄色按钮
-              function sendText() {
+        function sendText() {
             const inp = document.getElementById('msgIn');
             if (!inp) return;
             const val = (inp.value || '').trim();
@@ -3465,9 +3513,26 @@ window.rollDiceGame = function() {
             // 1. 消息上屏
             pushMsg({side:'me', type:'text', content:val});
             inp.value = '';
-            inp.style.height = '36px'; // 👈 增加这一行，发送完瞬间缩回默认高度
-            inp.focus(); // 👈 加上这一行，强制留住光标，死死咬住键盘不让它掉下去！
+            inp.style.height = '36px';
+            inp.focus();
         }
+
+        // 核心修复：仅针对聊天输入框失焦平滑复位，不暴力清空或影响视口重绘
+        document.addEventListener('focusout', function(e) {
+            if (e.target && (e.target.id === 'msgIn' || e.target.id === 'novelIn')) {
+                setTimeout(function() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    const chatRoom = document.querySelector('.chat-room-container');
+                    const b = document.getElementById('chatBox') || document.querySelector('.chat-history') || document.getElementById('novelBox');
+                    if (chatRoom) {
+                        chatRoom.style.height = '100%';
+                    }
+                    if (b) {
+                        b.scrollTop = b.scrollHeight;
+                    }
+                }, 80);
+            }
+        });
 
 
       async function sendVoiceSim() { const t = window.pandaPrompt ? await window.pandaPrompt("发送语音:") : prompt("发送语音:"); if(t) { let s = Math.max(1, Math.ceil(t.length/3.5)); pushMsg({side:'me',type:'voice',text:s.toString(), content:t}); const p=document.getElementById('funcPanel'); if(p) p.classList.remove('show'); } }
@@ -16823,7 +16888,16 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
                 border: 1px solid rgba(255, 255, 255, 0.1) !important;
             }
 
-            .chat-room-container { background-image: var(--ts-chat-bg) !important; background-size: cover !important; background-position: center !important; background-color: transparent !important; }
+            .chat-room-container { background-image: var(--ts-chat-bg) !important; background-size: cover !important; background-position: center !important; background-color: ${t.chatGlobalBg ? 'transparent' : (t.iconColor ? t.iconColor : '#EDEDED')} !important; }
+            ${t.iconColor ? `
+            body .chat-room-container .wx-header { background: ${t.iconColor} !important; }
+            body .input-bar { background-color: ${t.iconColor} !important; }
+            body .msg-page-bg { background-color: ${t.iconColor} !important; }
+            body .msg-premium-header { background: ${t.iconColor} !important; }
+            body .wx-tab-bar { background-color: ${t.iconColor} !important; }
+            body .wx-content { background-color: ${t.iconColor} !important; }
+            body .me-header { background: ${t.iconColor} !important; }
+            ` : ''}
             body .ts-me-bubble { color: var(--ts-me-text) !important; background: var(--ts-me-bg) !important; border-image: var(--ts-me-border-img) !important; border-width: var(--ts-me-border-width) !important; border-style: solid !important; box-shadow: none !important; }
             body .ts-other-bubble { color: var(--ts-other-text) !important; background: var(--ts-other-bg) !important; border-image: var(--ts-other-border-img) !important; border-width: var(--ts-other-border-width) !important; border-style: solid !important; box-shadow: none !important; }
             ${iconCSS}
@@ -16856,9 +16930,10 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
                     <div class="ts-card" style="background:#FAFAFA;border:1px solid #EDEDED;">
                         <div class="ts-card-title" style="color:#999;font-size:11px;font-weight:500;letter-spacing:2px;">QUICK STYLE</div>
                         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
-                            <button class="ts-preset-btn" style="background:#fff;color:#666;border:1px solid #E8E8E8;" onclick="window.applyPresetTheme('default')">Natural</button>
+                            <button class="ts-preset-btn" style="background:#D7E3DD;color:#4A5E51;border:1px solid #C2D3CA;" onclick="window.applyPresetTheme('default')"
+>Natural</button>
                             <button class="ts-preset-btn" style="background:#1C1C1E;color:#fff;border:none;" onclick="window.applyPresetTheme('dark')">Midnight</button>
-                            <button class="ts-preset-btn" style="background:#FDF2F4;color:#D4919A;border:1px solid #F5D5D9;" onclick="window.applyPresetTheme('pink')">Rosé</button>
+                            <button class="ts-preset-btn" style="background:#F6ECF0;color:#C98DA1;border:1px solid #E7D5DC;" onclick="window.applyPresetTheme('pink')">Rosé</button>
                             <button class="ts-preset-btn" style="background:linear-gradient(135deg,#E8D5F2,#D5E5F2);color:#8B7AA0;border:none;" onclick="window.applyPresetTheme('cream')">Dreamy</button>
                             <button class="ts-preset-btn" style="background:#F8F6F1;color:#A69B8D;border:1px solid #EBE6DD;" onclick="window.applyPresetTheme('paper')">Vintage</button>
                         </div>
@@ -17223,22 +17298,22 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
     window.applyPresetTheme = function(name) {
         const presets = {
             'default': {
-                bubbleMeBg: '#95EC69', bubbleMeText: '#000000',
-                bubbleOtherBg: '#FFFFFF', bubbleOtherText: '#000000',
-                iconColor: '', iconStyle: 'default', globalFont: '-apple-system, sans-serif',
+                bubbleMeBg: '#A9D8B8', bubbleMeText: '#000000',
+                bubbleOtherBg: '#F2F5F3', bubbleOtherText: '#000000',
+                iconColor: '#D7E3DD', iconStyle: 'default', globalFont: '-apple-system, sans-serif',
                 customCSS: '', customBubbleCSS: '', desktopBg: '', chatGlobalBg: ''
             },
             'dark': {
-                bubbleMeBg: '#1E88E5', bubbleMeText: '#FFFFFF',
-                bubbleOtherBg: '#2C2C2E', bubbleOtherText: '#E5E5E5',
-                iconColor: '#AAAAAA', iconStyle: 'glass', globalFont: '-apple-system, sans-serif',
-                customCSS: 'body{background:#000!important}', customBubbleCSS: ''
+                bubbleMeBg: '#3D6B8E', bubbleMeText: '#FFFFFF',
+                bubbleOtherBg: '#2C2C2E', bubbleOtherText: '#D5D5D7',
+                iconColor: '#8E8E93', iconStyle: 'glass', globalFont: '-apple-system, sans-serif',
+                customCSS: 'body{background:#0D0D0F!important}', customBubbleCSS: ''
             },
             'pink': {
-                bubbleMeBg: '#FF85A2', bubbleMeText: '#FFFFFF',
-                bubbleOtherBg: '#FFF0F5', bubbleOtherText: '#8B4565',
-                iconColor: '#FF69B4', iconStyle: 'circle', globalFont: '-apple-system, sans-serif',
-                customCSS: '', customBubbleCSS: 'body .ts-me-bubble{box-shadow:0 4px 15px rgba(255,133,162,0.4)!important}body .ts-other-bubble{box-shadow:0 2px 10px rgba(255,182,193,0.3)!important}'
+                bubbleMeBg: '#D89AAC', bubbleMeText: '#FFFFFF',
+                bubbleOtherBg: '#F6ECF0', bubbleOtherText: '#6E5A62',
+                iconColor: '#C98DA1', iconStyle: 'circle', globalFont: '-apple-system, sans-serif',
+                customCSS: '', customBubbleCSS: 'body .ts-me-bubble{box-shadow:0 4px 15px rgba(216,154,172,0.35)!important}body .ts-other-bubble{box-shadow:0 2px 10px rgba(201,141,161,0.25)!important}'
             },
             'cyber': {
                 bubbleMeBg: '#7C3AED', bubbleMeText: '#FFFFFF',
@@ -17778,9 +17853,9 @@ body.dark-mode .ts-deco-ctrl select { background: #2c2c2e; border-color: #3a3a3c
                         <div class="ts-card" style="background:#FAFAFA;border:1px solid #EDEDED;">
                             <div class="ts-card-title" style="color:#999;font-size:11px;font-weight:500;letter-spacing:2px;">QUICK STYLE</div>
                             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
-                                <button class="ts-preset-btn" style="background:#fff;color:#666;border:1px solid #E8E8E8;" onclick="window.applyPresetTheme('default')">Natural</button>
+                                <button class="ts-preset-btn" style="background:#D7E3DD;color:#4A5E51;border:1px solid #C2D3CA;" onclick="window.applyPresetTheme('default')">Natural</button>
                                 <button class="ts-preset-btn" style="background:#1C1C1E;color:#fff;border:none;" onclick="window.applyPresetTheme('dark')">Midnight</button>
-                                <button class="ts-preset-btn" style="background:#FDF2F4;color:#D4919A;border:1px solid #F5D5D9;" onclick="window.applyPresetTheme('pink')">Rosé</button>
+                                <button class="ts-preset-btn" style="background:#F6ECF0;color:#C98DA1;border:1px solid #E7D5DC;" onclick="window.applyPresetTheme('pink')">Rosé</button>
                                 <button class="ts-preset-btn" style="background:linear-gradient(135deg,#E8D5F2,#D5E5F2);color:#8B7AA0;border:none;" onclick="window.applyPresetTheme('cream')">Dreamy</button>
                                 <button class="ts-preset-btn" style="background:#F8F6F1;color:#A69B8D;border:1px solid #EBE6DD;" onclick="window.applyPresetTheme('paper')">Vintage</button>
                             </div>
