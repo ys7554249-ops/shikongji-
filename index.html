@@ -620,7 +620,7 @@ button, input, textarea, select, label, a,
         .enc-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; display: none; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
         /* 设置 & 更多页面 */
-        .settings-container { background: var(--set-bg); padding: 20px; min-height: 100%; overflow-y: auto; }
+        .settings-container { background: var(--set-bg); padding: 20px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         .set-card { background: var(--set-card); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
         .set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .set-title { font-weight: bold; font-size: 16px; color: #333; display: flex; align-items: center; gap: 8px; }
@@ -683,7 +683,8 @@ button, input, textarea, select, label, a,
         /* 发送按钮 */
         .btn-send { background: #333; color: #fff; margin-left: 5px; }
 
-                .home-bar-area { position: fixed; bottom: 0; left: 25%; width: 50%; height: 25px; z-index: 9999; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 8px; }
+                .home-bar-area { position: fixed; bottom: 0; left: 25%; width: 50%; height: 25px; z-index: 9999; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 8px; pointer-events: none; }
+        .home-bar-hit { pointer-events: auto; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding: 10px 45px 0; }
 
         .home-bar { width: 130px; height: 5px; background: #CCD6D0; border-radius: 3px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2100; display: flex; align-items: flex-end; visibility: hidden; opacity: 0; transition: 0.2s; }
@@ -834,6 +835,10 @@ button, input, textarea, select, label, a,
 #charSheetContent, #appView > div {
     padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
 }
+/* 安全区只保留一层：appView 自身不再叠加，避免刘海机底部出现双倍留白 */
+#appView {
+    padding-bottom: 0 !important;
+}
 
 
 
@@ -860,117 +865,182 @@ button, input, textarea, select, label, a,
 </head>
 
 <body>
-    <!-- ================== 💎 旗舰级空间计算开机动画 (流体毛玻璃版) ================== -->
+    <!-- ================== 时空机开机动画 ================== -->
     <style>
         #pandaBoot {
-            position: fixed; inset: 0; background: #FAFAFC; z-index: 99999999;
+            position: fixed; inset: 0;
+            background: radial-gradient(120% 78% at 50% 34%, #F4FCF8 0%, #E8F6EF 38%, #DFF1E8 72%, #D8EDE4 100%);
+            z-index: 99999999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            /* 整体退场渐隐 */
-            transition: opacity 0.8s ease 0.2s;
+            transition: opacity 0.8s ease 0.15s;
+            overflow: hidden;
         }
-        
+        #pandaBoot::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(51, 68, 60, 0.055) 1px, transparent 1px);
+            background-size: 18px 18px;
+            -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 0%, rgba(0, 0, 0, 0.35) 52%, transparent 76%);
+            mask-image: radial-gradient(circle at 50% 42%, #000 0%, rgba(0, 0, 0, 0.35) 52%, transparent 76%);
+        }
+
+        .boot-brand {
+            position: relative; z-index: 2;
+            display: flex; align-items: center; gap: 9px;
+            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            font-size: 13px; font-weight: 600; letter-spacing: 6px;
+            color: var(--text-dark, #33443C);
+            opacity: 0.72;
+            margin-bottom: 34px;
+            animation: slideUpFade 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .boot-brand-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: #D4AF37;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.55);
+        }
+
         .boot-orb-wrap {
-            position: relative; width: 140px; height: 140px;
+            position: relative; z-index: 2;
+            width: 160px; height: 160px;
             display: flex; align-items: center; justify-content: center;
             margin-bottom: 40px;
         }
-        
-        /* 像液体一样呼吸变形的极光球 */
+
+        .boot-halo {
+            position: absolute; width: 320px; height: 320px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(155, 214, 201, 0.55) 0%, rgba(155, 214, 201, 0.22) 42%, rgba(224, 242, 233, 0) 70%);
+            filter: blur(26px);
+            animation: haloBreath 7s ease-in-out infinite;
+        }
+
         .boot-orb {
-            position: absolute; width: 110%; height: 110%;
-            background: linear-gradient(135deg, #FF9A9E, #FECFEF, #A8EDEA, #E0C3FC);
-            background-size: 300% 300%;
-            animation: orbMorph 8s ease-in-out infinite, gradientShift 4s ease infinite;
+            position: absolute; width: 150px; height: 150px;
+            background:
+                radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 44%),
+                linear-gradient(135deg, #E4FAF1 0%, #9BD6C9 34%, #62AB9A 66%, #C9EFE1 100%);
+            background-size: 100% 100%, 260% 260%;
             filter: blur(12px);
-            box-shadow: 0 10px 40px rgba(255, 154, 158, 0.4);
+            opacity: 0.94;
+            animation: orbMorph 8s ease-in-out infinite, gradientShift 9s ease infinite;
             transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        
-        /* 晶莹剔透的毛玻璃透镜 */
+
         .boot-glass {
-            position: absolute; width: 100px; height: 100px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            position: absolute; width: 104px; height: 104px;
+            background: linear-gradient(150deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.14));
+            backdrop-filter: blur(22px) saturate(1.15); -webkit-backdrop-filter: blur(22px) saturate(1.15);
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 4px 30px rgba(0,0,0,0.05), inset 0 2px 5px rgba(255,255,255,0.8);
+            border: 1px solid rgba(255, 255, 255, 0.82);
+            box-shadow: 0 10px 30px rgba(51, 68, 60, 0.16), inset 0 2px 5px rgba(255, 255, 255, 0.75), inset 0 -2px 4px rgba(51, 68, 60, 0.08);
             display: flex; align-items: center; justify-content: center;
             z-index: 2;
         }
-        
-        /* 中间的闪耀星芒 */
+
         .boot-glass::after {
-            content: ''; width: 32px; height: 32px;
-            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="1.5"><path d="M12 2L15 9l7 3-7 3-3 7-3-7-7-3 7-3z"/></svg>') no-repeat center;
+            content: ''; width: 40px; height: 40px;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%23D4AF37" stroke-width="1.2" stroke-linejoin="round"><path d="M12 2L15 9l7 3-7 3-3 7-3-7-7-3 7-3z"/></svg>') no-repeat center;
             background-size: contain;
-            animation: pulseStar 2.5s ease-in-out infinite;
-        }
-        
-        /* 极简高级文字 */
-        .boot-msg {
-            font-family: -apple-system, "SF Pro Display", sans-serif;
-            font-size: 13px; font-weight: 800; letter-spacing: 3px;
-            color: #111; text-transform: uppercase;
-            opacity: 0; transform: translateY(15px);
-            animation: slideUpFade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s;
+            animation: pulseStar 2.6s ease-in-out infinite;
         }
 
-        /* 动画定义 */
+        .boot-spark { position: absolute; border-radius: 50%; background: #D4AF37; z-index: 3;
+            animation: sparkTwinkle 3.2s ease-in-out infinite; }
+        .boot-spark-1 { width: 5px; height: 5px; top: 12px; right: 28px; box-shadow: 0 0 10px rgba(212, 175, 55, 0.55); }
+        .boot-spark-1::before, .boot-spark-1::after {
+            content: ''; position: absolute; left: 50%; top: 50%; background: linear-gradient(to right, rgba(212, 175, 55, 0), rgba(212, 175, 55, 0.85), rgba(212, 175, 55, 0));
+            transform: translate(-50%, -50%);
+        }
+        .boot-spark-1::before { width: 22px; height: 1.5px; }
+        .boot-spark-1::after { width: 1.5px; height: 22px; background: linear-gradient(to bottom, rgba(212, 175, 55, 0), rgba(212, 175, 55, 0.85), rgba(212, 175, 55, 0)); }
+        .boot-spark-2 { width: 3px; height: 3px; bottom: 22px; left: 26px; background: #7FC9B7; box-shadow: 0 0 8px rgba(127, 201, 183, 0.7); animation-delay: 1.4s; }
+
+        .boot-msg {
+            position: relative; z-index: 2;
+            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            font-size: 16px; font-weight: 600; letter-spacing: 3px;
+            color: var(--text-dark, #33443C);
+            opacity: 0; transform: translateY(14px);
+            animation: slideUpFade 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s;
+            padding-bottom: 18px;
+        }
+        .boot-msg::after {
+            content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+            width: 34px; height: 1px; background: linear-gradient(90deg, rgba(212, 175, 55, 0), rgba(212, 175, 55, 0.9), rgba(212, 175, 55, 0));
+        }
+
         @keyframes orbMorph {
-            0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-            34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
-            67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
+            0%, 100% { border-radius: 42% 58% 68% 32% / 42% 50% 60% 50%; }
+            34% { border-radius: 68% 32% 52% 48% / 32% 32% 68% 68%; }
+            67% { border-radius: 96% 58% 58% 96% / 96% 96% 58% 58%; }
         }
         @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes haloBreath { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+        @keyframes sparkTwinkle { 0%, 100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
         @keyframes slideUpFade { to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseStar { 0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; } 50% { transform: scale(1.1) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)); } }
+        @keyframes pulseStar {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.72; }
+            50% { transform: scale(1.08) rotate(12deg); opacity: 1; filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.45)); }
+        }
 
-        /* 🌙 完美夜间模式 */
-        body.dark-mode #pandaBoot { background: #000; }
-        body.dark-mode .boot-glass { background: rgba(0, 0, 0, 0.2); border-color: rgba(255,255,255,0.1); box-shadow: inset 0 2px 5px rgba(255,255,255,0.1); }
-        body.dark-mode .boot-glass::after { stroke: #fff; filter: invert(1); }
-        body.dark-mode .boot-msg { color: #fff; text-shadow: 0 2px 10px rgba(255,255,255,0.2); }
+        body.dark-mode #pandaBoot { background: radial-gradient(120% 78% at 50% 34%, #16211D 0%, #0D1512 40%, #070C0A 100%); }
+        body.dark-mode #pandaBoot::before { background-image: radial-gradient(rgba(155, 214, 201, 0.09) 1px, transparent 1px); }
+        body.dark-mode .boot-halo { background: radial-gradient(circle, rgba(155, 214, 201, 0.34) 0%, rgba(155, 214, 201, 0.12) 44%, rgba(7, 12, 10, 0) 70%); }
+        body.dark-mode .boot-orb { background:
+                radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 44%),
+                linear-gradient(135deg, #BDEBDC 0%, #6FB8A6 38%, #2F6B5C 70%, #9FD9C6 100%); }
+        body.dark-mode .boot-glass { background: linear-gradient(150deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)); border-color: rgba(255, 255, 255, 0.34); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3); }
 
-        /* 🚀 潜入系统时的 3D 放大消散特效 */
         #pandaBoot.hide { opacity: 0; pointer-events: none; }
-        #pandaBoot.hide .boot-orb { transform: scale(4); opacity: 0; filter: blur(30px); }
-        #pandaBoot.hide .boot-glass { opacity: 0; transform: scale(1.5); transition: 0.6s ease; }
-        #pandaBoot.hide .boot-msg { opacity: 0; transform: translateY(-15px); transition: 0.4s ease; }
+        #pandaBoot.hide .boot-orb { transform: scale(3.6); opacity: 0; filter: blur(34px); }
+        #pandaBoot.hide .boot-halo { transform: scale(1.8); opacity: 0; transition: 1s ease; }
+        #pandaBoot.hide .boot-glass { opacity: 0; transform: scale(1.45); transition: 0.6s ease; }
+        #pandaBoot.hide .boot-spark { opacity: 0; transition: 0.3s ease; }
+        #pandaBoot.hide .boot-msg, #pandaBoot.hide .boot-brand { opacity: 0; transform: translateY(-12px); transition: 0.4s ease; }
+
+        @media (prefers-reduced-motion: reduce) {
+            #pandaBoot * { animation: none !important; transition: none !important; }
+        }
     </style>
     
     <div id="pandaBoot">
+        <div class="boot-brand"><span class="boot-brand-dot"></span>时空机</div>
         <div class="boot-orb-wrap">
+            <div class="boot-halo"></div>
             <div class="boot-orb"></div>
             <div class="boot-glass"></div>
+            <div class="boot-spark boot-spark-1"></div>
+            <div class="boot-spark boot-spark-2"></div>
         </div>
         <div class="boot-msg" id="bootMsg">INITIALIZING...</div>
     </div>
     
     <script>
-        // 🔮 赛博科幻感欢迎词库 (每次随机)
-        const techGreetings = [
-            "正在建立神经连接...",
-            "世界正在重构...",
-            "欢迎登录，专属宇宙。",
-            "万界枢纽已激活。",
-            "正在唤醒灵魂参数...",
-            "REALITY IS A SIMULATION",
-            "SYSTEM ONLINE",
-            "时光航线已校准。",
-            "跨越维度的相遇。"
+        // 开机文案：每次随机
+        const bootGreetings = [
+            "正在校准时空坐标",
+            "正在展开星图",
+            "正在唤醒记忆中枢",
+            "正在接通你的日常",
+            "时光航线已校准"
         ];
-        
-        document.getElementById('bootMsg').innerText = techGreetings[Math.floor(Math.random() * techGreetings.length)];
-        
-                window.addEventListener('load', function() {
-            // 开机动画隐藏逻辑
+        document.getElementById('bootMsg').innerText = bootGreetings[Math.floor(Math.random() * bootGreetings.length)];
+
+        // 加载完成后停留 2 秒，再缩放淡出，最长 4 秒兜底
+        let bootStarted = false;
+        const startBootExit = () => {
+            if (bootStarted) return;
+            bootStarted = true;
             setTimeout(() => {
                 const boot = document.getElementById('pandaBoot');
-                if(boot) {
-                    boot.classList.add('hide'); 
-                    setTimeout(() => boot.remove(), 1000); 
+                if (boot) {
+                    boot.classList.add('hide');
+                    setTimeout(() => boot.remove(), 1000);
                 }
-            }, 2000); 
+            }, 2000);
+        };
+        setTimeout(startBootExit, 4000);
+                window.addEventListener('load', function() {
+            startBootExit();
 
                         // 👇 终极修复：iOS 哑巴解锁（一次性解锁全系统所有音频引擎）
             let audioUnlocked = false;
@@ -1113,7 +1183,7 @@ button, input, textarea, select, label, a,
     </div>
 </div>
     </div>
-    <div class="home-bar-area" onclick="handleGlobalBack()"><div class="home-bar"></div></div>
+    <div class="home-bar-area"><div class="home-bar-hit" onclick="handleGlobalBack()"><div class="home-bar"></div></div></div>
     <div id="appView" class="app-full-screen"></div>
 
     <div class="pop-menu" id="plusMenu">
@@ -1530,7 +1600,7 @@ window.PandaStore = {
 
 document.head.insertAdjacentHTML('beforeend', `<style>
     /* 1. 极致对称的 50/50 布局，高度统一，增加呼吸感 */
-    .bento-grid { display: flex; gap: 16px; height: 140px; margin-bottom: 16px; flex-shrink: 0; }
+    .bento-grid { display: flex; gap: 16px; height: 140px; margin-bottom: 0; flex-shrink: 0; }
     
     /* 左侧：纯粹的相片卡 */
     .bento-photo { flex: 1; background: #f5f5f5; border-radius: 28px; position: relative; overflow: hidden; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.04); transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -4965,6 +5035,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         #bs-root .tag-chip { padding:9px 16px; background:var(--bs-bg-card); color:var(--bs-text-main); border-radius:20px; font-size:12.5px; cursor:pointer; margin:4px; display:inline-block; font-weight:600; box-shadow:var(--bs-shadow-sm); border:1px solid var(--bs-border); transition:0.2s; }
         #bs-root .tag-chip:active { background:var(--bs-primary); color:#fff; border-color:var(--bs-primary); transform:scale(0.94); }
         #bs-root .tag-chip.sel { background:var(--bs-primary); color:#fff; border-color:var(--bs-primary); }
+        #bs-root .bs-taggroup { padding:6px 13px; border-radius:14px; background:var(--bs-bg-input); color:var(--bs-text-sub); font-size:11.5px; font-weight:700; cursor:pointer; flex-shrink:0; border:1px solid transparent; }
+        #bs-root .bs-taggroup.sel { background:var(--bs-primary-light); color:var(--bs-primary); border-color:var(--bs-primary); }
 
         /* ---------- 卡片 & 按钮 ---------- */
         #bs-root .bs-card { background:var(--bs-bg-card); border-radius:var(--bs-rd); padding:18px; margin:14px 18px; box-shadow:var(--bs-shadow-sm); border:1px solid var(--bs-border); }
@@ -5274,6 +5346,11 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         p += `　　凤无极正闭目养神，闻言那双狭长的眼底浮起一层薄冰。他抬眼看她，握着茶盏的指节几不可察地紧了紧，声音压得极低："胡闹。"廊外风穿过铜铃，叮当乱响，像替他把这两个字又重复了一遍。\n\n`;
         p += `记住：每一段必须包含叙述（场景/动作/神情/心理/环境中的至少两项），对话嵌在叙述里用中文双引号""括起来，不许"角色名：话"这种剧本写法，不许一句对白单独成段。\n\n`;
 
+        // ============ 题材标签 ============
+        if (Array.isArray(b.tags) && b.tags.length) {
+            p += `═══ 题材标签 ═══\n${b.tags.join('、')}（行文、爽点与节奏必须符合这些标签的读者预期，禁止串味）\n\n`;
+        }
+
         // ============ 设定素材 ============
         p += `═══ 一、世界圣经（背景素材，用来写小说，不是角色扮演脚本）═══\n`;
         p += (m.bible || b.note || '（暂无，请依据已有章节自行保持一致）') + '\n\n';
@@ -5301,9 +5378,20 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
             p += '\n';
         }
 
-        if (m.recent.length) {
-            p += `═══ 五、最近剧情 ═══\n`;
-            m.recent.forEach(r => { p += `第${r.ch}章：${r.text}\n`; });
+        // 五、最近剧情：以卷宗覆盖到第几章为准，从 chapters 直接取摘要。
+        // 早期版本只发 m.recent（固定 3 条），第 4~9 章会在首卷归档前整段丢失，
+        // 导入的书 digest 为空时也会整本失忆，这里统一兜底。
+        const covered = Math.max(0, m.arcs.length * ARC_SIZE);
+        const sinceArc = chapters.slice(covered)
+            .map((c, i) => ({
+                ch: covered + i + 1,
+                text: String(c.digest || '').trim() || String(c.content || '').replace(/\s+/g, ' ').trim().slice(0, 220)
+            }))
+            .filter(x => x.text);
+        const history = sinceArc.slice(-12);
+        if (history.length) {
+            p += `═══ 五、最近剧情（第${history[0].ch}-${history[history.length-1].ch}章）═══\n`;
+            history.forEach(r => { p += `第${r.ch}章：${r.text.slice(0, 220)}\n`; });
             p += '\n';
         }
 
@@ -5346,12 +5434,12 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
 
 
     // ---------- 合并 AI 返回的记忆增量 ----------
-    window.bs_mergeMem = function(b, raw, chNo) {
+    window.bs_mergeMem = function(b, raw, chNo, fallbackDigest) {
         window.bs_ensureMem(b);
         const m = b.mem;
 
-        // 1) 近期摘要滚动
-        const digest = pickTag(raw, 'digest');
+        // 1) 近期摘要滚动（AI 漏掉 <digest> 时用正文开头兜底，避免记忆整章断档）
+        const digest = pickTag(raw, 'digest') || String(fallbackDigest || '').trim();
         if (digest) {
             m.recent.push({ ch: chNo, text: digest.slice(0, 300) });
             while (m.recent.length > RECENT_KEEP) m.recent.shift();
@@ -5393,7 +5481,10 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                 if (hit) { hit.done = true; hit.doneCh = chNo; }
             });
         }
-        if (m.threads.length > 60) m.threads = m.threads.filter(t => !t.done).concat(m.threads.filter(t => t.done).slice(-20));
+        if (m.threads.length > 60) {
+            const done = m.threads.filter(t => t.done).slice(-20);
+            m.threads = m.threads.filter(t => !t.done).slice(-(60 - done.length)).concat(done);
+        }
 
         // 5) 兼容老字段，让旧界面不至于空白
         b.summary = m.recent.map(r => `第${r.ch}章：${r.text}`).join('\n');
@@ -5499,6 +5590,13 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     r.rel = f[3] || r.rel; r.state = f[4] || r.state;
                 });
             }
+            // 顺手刷新「近期细节」，让记忆面板与提示词口径一致
+            b.mem.recent = (b.chapters || []).slice(-RECENT_KEEP).map((c, i, arr) => {
+                const no = (b.chapters || []).length - arr.length + i + 1;
+                return { ch: no, text: String(c.digest || '').trim() || String(c.content || '').replace(/\s+/g, ' ').trim().slice(0, 200) };
+            });
+            b.summary = b.mem.recent.map(r => `第${r.ch}章：${r.text}`).join('\n');
+
             // 顺便把缺失的卷宗补齐
             let guard = 0;
             while (Math.floor((b.chapters||[]).length / ARC_SIZE) > b.mem.arcs.length && guard++ < 12) {
@@ -5689,7 +5787,20 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
         if (t === 'Shelf') window.bs_renderShelf();
         if (t === 'Mine') window.bs_renderMine();
     };
-        // ---------- 推荐书库（按分类分组）----------
+        // ---------- 标签库（分类页多选，番茄式题材标签）----------
+    const TAG_BOOK = {
+        hot:    ["快穿","综穿","双男主","双女主","无CP","万人迷","修罗场","团宠","马甲","真假千金","追妻火葬场","白月光","替身","病娇","白切黑","沙雕","轻松","爽文","HE","开放式结局"],
+        male:   TAGS.male_hot,
+        female: TAGS.female_love,
+        anime:  TAGS.dim_2,
+        brain:  TAGS.brain,
+        xp:     TAGS.xp
+    };
+    const TAG_GROUP_NAMES = { hot:'热门', male:'男频', female:'女频', anime:'同人', brain:'脑洞', xp:'XP' };
+    window.bs_tagGroup = 'hot';
+    window.bs_pickedTags = [];
+
+    // ---------- 推荐书库（按分类分组）----------
     const RECS_DB = [
         { c:'玄幻', l:[
             {n:'噬神纪元', s:'吞噬神明血肉，踏碎九重天阙。', k:'热血,升级,爽文'},
@@ -5775,6 +5886,66 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
             {n:'深潜三千米', s:'海底那个声音，说的是中文。', k:'深海,惊悚,科幻'},
             {n:'情绪配给制', s:'今天的快乐额度已用尽。', k:'反乌托邦,压抑,设定流'},
             {n:'我们造了个太阳', s:'点亮它的那天，也照见了真相。', k:'硬科幻,工程,史诗'}
+        ]},
+        { c:'快穿', l:[
+            {n:'穿成反派后我躺平了', s:'每个世界都在等我逆天改命，我只想睡觉。', k:'快穿,反派,沙雕'},
+            {n:'任务完成请签收', s:'系统催我攻略，我先把男配送进医院。', k:'快穿,系统,爽文'},
+            {n:'九个世界九个我', s:'每穿一次，就多一个想杀我的人。', k:'快穿,马甲,悬疑'},
+            {n:'她在每个世界都很穷', s:'开局一块钱，结局一座城。', k:'快穿,逆袭,爽文'},
+            {n:'拯救那个美强惨', s:'任务说救他，可他不肯活。', k:'快穿,救赎,虐甜'},
+            {n:'宿主她又跑路了', s:'系统抓狂，男主追了九个世界。', k:'快穿,逃跑,轻松'},
+            {n:'恶毒女配不干了', s:'剧情要她死，她把剧本撕了。', k:'快穿,女配,打脸'},
+            {n:'副本里的第十三个人', s:'每个世界都多出一个不该存在的人。', k:'快穿,诡异,反转'}
+        ]},
+        { c:'综穿', l:[
+            {n:'我在诸天开客栈', s:'来吃饭的客人，个个背着血海深仇。', k:'综穿,诸天,群像'},
+            {n:'万界打工人', s:'哪个世界缺人，我就去哪顶班。', k:'综穿,诸天,搞笑'},
+            {n:'剧本外的角色', s:'原著里没有我，可我一直在场。', k:'综穿,同人,脑洞'},
+            {n:'收尸人', s:'每个世界结束，我负责捡走他们留下的东西。', k:'综穿,诸天,孤独'},
+            {n:'综漫之开局退婚', s:'退婚现场，来了三个世界的长辈。', k:'综穿,综漫,爽文'},
+            {n:'在影视世界当群演', s:'台词只有一句，却把主线改了。', k:'综穿,影视,脑洞'},
+            {n:'诸天第一快递', s:'包裹送到就能拿钱，代价是别拆开。', k:'综穿,诸天,悬疑'},
+            {n:'穿书者互助会', s:'群里有八个人，六个在求救。', k:'综穿,穿书,群像'}
+        ]},
+        { c:'双男主', l:[
+            {n:'雪落时他说喜欢我', s:'校门口那盏灯下，他等了我三个冬天。', k:'双男主,校园,暗恋'},
+            {n:'给宿敌写情书', s:'写了三百封，一封都没敢署名。', k:'双男主,宿敌,轻松'},
+            {n:'旧巷裁缝铺', s:'他量体裁衣，也量我的心。', k:'双男主,年代,治愈'},
+            {n:'联姻对象是前队长', s:'退役三年，他又坐到了我身边。', k:'双男主,电竞,破镜重圆'},
+            {n:'一屋两人三餐', s:'合租第一天，他把拖鞋摆成了双。', k:'双男主,日常,甜宠'},
+            {n:'深海来信', s:'极地科考站，只有我们两个人。', k:'双男主,极地,暗涌'},
+            {n:'替身演员', s:'戏里替他挨打，戏外他替我挡雨。', k:'双男主,娱乐圈,双向'},
+            {n:'故人归', s:'十年后重逢，他先认出我的脚步声。', k:'双男主,重逢,HE'}
+        ]},
+        { c:'百合', l:[
+            {n:'她的白大褂有薄荷味', s:'值班室的灯亮了一夜，我们谁都没走。', k:'百合,医生,成熟'},
+            {n:'开到荼蘼', s:'小镇花店，等一个不会来的人。', k:'百合,小镇,治愈'},
+            {n:'首席和替补', s:'交响乐团里，她抢走了我的独奏。', k:'百合,音乐,强强'},
+            {n:'我隔壁住着女鬼', s:'半夜敲墙的不是鬼，是她饿了。', k:'百合,灵异,搞笑'},
+            {n:'同桌的橡皮', s:'借用三年，还不清的人情。', k:'百合,校园,青春'},
+            {n:'旧照片里的她', s:'翻出母亲年轻时的合影，另一个女人笑得很亮。', k:'百合,年代,寻根'},
+            {n:'雨天不打伞', s:'她总说淋雨舒服，后来我也学会了。', k:'百合,都市,慢热'},
+            {n:'双人舞', s:'领舞只能有一个，可我们谁都不肯让。', k:'百合,舞蹈,竞争'}
+        ]},
+        { c:'年代', l:[
+            {n:'七零供销社', s:'凭票的年代，她管着全公社的糖。', k:'年代,七零,种田'},
+            {n:'回城之后', s:'返城名额只有两个，队长把其中一个给了我。', k:'年代,知青,现实'},
+            {n:'筒子楼十二户', s:'一层楼十二家，一锅菜香全楼都闻得到。', k:'年代,群像,温情'},
+            {n:'铁厂大院', s:'厂里的高炉烧了四十年，也烧掉了两代人。', k:'年代,工业,家族'},
+            {n:'八零裁缝铺', s:'第一批个体户，缝出了整条街的体面。', k:'年代,创业,女性'},
+            {n:'收音机里的歌', s:'那年最流行的曲子，是父亲偷偷修的电台放的。', k:'年代,家庭,成长'},
+            {n:'粮站往事', s:'管粮的人最饿，这话我信了一辈子。', k:'年代,乡土,人性'},
+            {n:'最后一张全家福', s:'照相馆要关门了，母亲还欠我们一张。', k:'年代,亲情,催泪'}
+        ]},
+        { c:'校园', l:[
+            {n:'后排靠窗', s:'那个位置永远有人，也永远空着。', k:'校园,青春,暗恋'},
+            {n:'班长日记', s:'记了三年班级琐事，最后几页只写他。', k:'校园,日常,甜宠'},
+            {n:'竞赛班', s:'名额只有五个，友谊只有四份。', k:'校园,竞赛,群像'},
+            {n:'转学生', s:'来的第一天，就把校规背下来了。', k:'校园,反差,轻松'},
+            {n:'社团招新', s:'为了凑人数，我加入了全校最冷门的社团。', k:'校园,社团,搞笑'},
+            {n:'毕业照站位', s:'摄影师喊三二一，她往我身边挪了半步。', k:'校园,毕业,遗憾'},
+            {n:'晚自习停电', s:'黑暗中有人递来一颗糖，没说是谁。', k:'校园,悬疑,青春'},
+            {n:'最后一排的乐队', s:'课桌是鼓，扫帚是吉他，走廊是舞台。', k:'校园,音乐,热血'}
         ]}
     ];
 
@@ -5816,6 +5987,17 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     <div class="banner-stat-i"><b>${totalC}</b>章节</div>
                     <div class="banner-stat-i"><b>${bsFmtNum(totalW)}</b>字</div>
                 </div>
+            </div>
+
+            <div class="section-header" style="margin-bottom:8px;">
+                <div class="section-title">热门分类</div>
+                <div class="refresh-btn" onclick="window.bs_switchTab('Cat')">全部分类</div>
+            </div>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding:0 0 4px;margin-bottom:6px;">
+                ${['快穿','综穿','双男主','百合','年代','校园'].map(n => {
+                    const i = RECS_DB.findIndex(g => g.c === n);
+                    return i < 0 ? '' : `<span class="tag-chip" style="flex-shrink:0;margin:0;" onclick="window.bs_catCur=${i};window.bs_switchTab('Cat')">${n}</span>`;
+                }).join('')}
             </div>
 
             <div class="section-header">
@@ -5866,6 +6048,8 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     window.bs_catCur = 0;
     window.bs_renderCat = function() {
         const g = RECS_DB[window.bs_catCur] || RECS_DB[0];
+        const tg = TAG_BOOK[window.bs_tagGroup] || TAG_BOOK.hot;
+        const picked = window.bs_pickedTags;
         document.getElementById('bs-pageCat').innerHTML = `
             <div style="display:flex;height:100%;">
                 <div class="side-nav">
@@ -5877,16 +6061,56 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     <div style="margin:0 -4px 18px;">
                         ${g.l.map(x => `<span class="tag-chip" onclick="window.bs_startQuery('${bsAttr(x.k)}','${bsAttr(x.n)}')">${bsEsc(x.n)}</span>`).join('')}
                     </div>
-                    <div style="font-size:13px;font-weight:800;margin-bottom:11px;">或自定义一个</div>
+
+                    <div style="font-size:13px;font-weight:800;margin:22px 0 9px;">题材标签</div>
+                    <div style="display:flex;gap:6px;overflow-x:auto;margin:0 -4px 10px;padding-bottom:2px;">
+                        ${Object.keys(TAG_BOOK).map(k => `<span class="bs-taggroup ${k===window.bs_tagGroup?'sel':''}" onclick="window.bs_tagGroupTo('${k}')">${TAG_GROUP_NAMES[k]}</span>`).join('')}
+                    </div>
+                    <div style="margin:0 -4px 6px;">
+                        ${tg.map(t => `<span class="tag-chip ${picked.includes(t)?'sel':''}" onclick="window.bs_pickTag('${bsAttr(t)}')">${bsEsc(t)}</span>`).join('')}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin:6px 0 12px;min-height:20px;">
+                        <span style="font-size:11.5px;color:var(--bs-text-sub);">${picked.length ? '已选：' + picked.map(t => bsEsc(t)).join('、') : '可多选，最多 6 个标签'}</span>
+                        ${picked.length ? `<span style="font-size:11.5px;color:var(--bs-primary);font-weight:700;cursor:pointer;flex-shrink:0;" onclick="window.bs_clearTags()">清空</span>` : ''}
+                    </div>
+                    <button class="bs-btn bs-btn-primary" style="width:100%;${picked.length?'':'opacity:0.55;'}" ${picked.length?'':'disabled'} onclick="window.bs_createByTags()">
+                        <svg class="bs-icon-sm" viewBox="0 0 24 24" style="stroke:#fff;fill:none;stroke-width:2.2;"><path d="M12 3v18M3 12h18"/></svg>${picked.length ? '用所选标签开书' : '先选标签'}
+                    </button>
+
+                    <div style="font-size:13px;font-weight:800;margin:22px 0 11px;">或自定义一个</div>
                     <textarea class="bs-textarea" id="bs-catCustom" style="height:88px;" placeholder="例如：一个考古学生在敦煌壁画里穿越到唐代，成了画师徒弟"></textarea>
-                    <button class="bs-btn bs-btn-primary" style="width:100%;margin-top:12px;" onclick="window.bs_startQuery(document.getElementById('bs-catCustom').value)">
-                        <svg class="bs-icon-sm" viewBox="0 0 24 24" style="stroke:#fff;fill:none;stroke-width:2.2;"><path d="M12 3v18M3 12h18"/></svg>开始创作
+                    <button class="bs-btn bs-btn-ghost" style="width:100%;margin-top:12px;" onclick="window.bs_customCreate()">
+                        用这段描述开书
                     </button>
                 </div>
             </div>
         `;
     };
     window.bs_catTo = function(i) { window.bs_catCur = i; window.bs_renderCat(); };
+    window.bs_tagGroupTo = function(k) { window.bs_tagGroup = k; window.bs_renderCat(); };
+    window.bs_pickTag = function(t) {
+        const a = window.bs_pickedTags;
+        const i = a.indexOf(t);
+        if (i >= 0) a.splice(i, 1);
+        else if (a.length < 6) a.push(t);
+        else { window.bs_toast('最多选 6 个标签'); return; }
+        window.bs_renderCat();
+    };
+    window.bs_clearTags = function() { window.bs_pickedTags = []; window.bs_renderCat(); };
+    window.bs_createByTags = function() {
+        const tags = window.bs_pickedTags.slice();
+        if (!tags.length) { window.bs_toast('先选至少一个标签'); return; }
+        const custom = (document.getElementById('bs-catCustom') || {}).value || '';
+        const q = `题材标签：${tags.join('、')}。${String(custom).trim() ? '故事设想：' + String(custom).trim() : '请按这些标签各自的核心爽点与节奏，写一个能长期连载的长篇故事。'}`;
+        window.bs_startQuery(q, '', tags);
+    };
+    window.bs_customCreate = function() {
+        const el = document.getElementById('bs-catCustom');
+        const q = el ? String(el.value).trim() : '';
+        if (!q) { window.bs_toast('先写下你想看的故事'); return; }
+        const tags = window.bs_pickedTags.slice();
+        window.bs_startQuery(tags.length ? `题材标签：${tags.join('、')}。故事设想：${q}` : q, '', tags);
+    };
 
     // ---------- 书架 ----------
     window.bs_renderShelf = function() {
@@ -6024,14 +6248,15 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
     /* ============================================================
        生成新书
        ============================================================ */
-    window.bs_startQuery = async function(q, forceName) {
+    window.bs_startQuery = async function(q, forceName, tags) {
         q = String(q || '').trim();
         if (!q) { window.bs_toast('先写下你想看的故事'); return; }
+        const tagList = Array.isArray(tags) ? tags.map(x => String(x).trim()).filter(Boolean).slice(0, 6) : [];
 
         window.bs_loading(true, '正在构筑世界', '生成书名与世界圣经…');
         try {
             // 第一步：先生成世界圣经（这是防吃书的地基，只做一次）
-            const setupPrompt = `你是资深网文策划。用户想看这样一个故事：「${q}」${forceName ? `\n书名请使用或贴近：《${forceName}》` : ''}
+            const setupPrompt = `你是资深网文策划。用户想看这样一个故事：「${q}」${forceName ? `\n书名请使用或贴近：《${forceName}》` : ''}${tagList.length && !q.includes('题材标签') ? `\n题材标签：${tagList.join('、')}。世界观、人设与爽点必须贴合这些标签的读者预期。` : ''}
 
 请为这本长篇小说做开篇设定，严格按格式输出：
 <name>书名，4-12字，有网文吸引力，不要书名号</name>
@@ -6060,6 +6285,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                 id: 'bk_' + Date.now(),
                 name: name,
                 q: q,
+                tags: tagList,
                 note: '',
                 ct: Date.now(),
                 lastRead: Date.now(),
@@ -6140,22 +6366,25 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
             }
 
             // 先把章节收进内存
+            const safeDigest = String(digest || '').trim().slice(0, 300)
+                || body.replace(/\s+/g, ' ').trim().slice(0, 200);
             b.chapters.push({
                 title: title,
                 content: body,
-                digest: String(digest || '').trim().slice(0, 300),
+                digest: safeDigest,
                 ct: Date.now()
             });
 
             // 🩹 记忆合并放在 push 之后、保存之前。合并本身不联网，不会失败
-            window.bs_mergeMem(b, raw, nextNo);
+            window.bs_mergeMem(b, raw, nextNo, safeDigest);
 
             // 先落盘，保证章节绝不丢
             b.lastRead = Date.now();
             await idb.save(b);
 
-            // 卷宗归纳是额外的联网操作，失败也不影响已保存的章节
-            if (nextNo % 10 === 0) {
+            // 卷宗归纳是额外的联网操作，失败也不影响已保存的章节。
+            // 只要卷宗落后于章节数就补，避免第 10 章失败后拖到第 20 章才重试
+            if (Math.floor(nextNo / ARC_SIZE) > b.mem.arcs.length) {
                 if (!silent) window.bs_loading(true, '正在归档第 ' + (Math.floor(nextNo/10)) + ' 卷', '压缩早期剧情，防止失忆');
                 const arced = await window.bs_maybeArc(b);
                 if (arced) await idb.save(b);
@@ -6918,6 +7147,7 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                         ${cn} 章 · ${bsFmtNum(wc)} 字<br>
                         记忆健康度 <span style="color:${score>=70?'#0BA360':score>=45?'var(--bs-gold)':'#FF3B30'};font-weight:800;">${score}</span>
                     </div>
+                    ${Array.isArray(b.tags) && b.tags.length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">${b.tags.map(t => `<span class="tag-chip" style="margin:0;padding:3px 9px;font-size:10.5px;cursor:default;">${bsEsc(t)}</span>`).join('')}</div>` : ''}
                     <div style="font-size:11px;color:var(--bs-text-sub);margin-top:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${bsEsc(b.q || '')}</div>
                 </div>
             </div>
@@ -7064,9 +7294,9 @@ body .ts-other-bubble:has(input[type="radio"] + .interface) {
                     const t = (nl > 0 ? s.slice(0, nl) : s).replace(/^\s*第\s*[0-9一二三四五六七八九十百千]+\s*[章节回]\s*/, '').trim();
                     const body = nl > 0 ? s.slice(nl + 1).trim() : '';
                     if (!body) return;
-                    chapters.push({ title: t.slice(0, 30) || ('第' + (chapters.length+1) + '章'), content: body, digest:'', ct: Date.now() });
+                    chapters.push({ title: t.slice(0, 30) || ('第' + (chapters.length+1) + '章'), content: body, digest: body.replace(/\s+/g, ' ').trim().slice(0, 200), ct: Date.now() });
                 });
-                if (!chapters.length) chapters.push({ title: '全文', content: txt.trim(), digest:'', ct: Date.now() });
+                if (!chapters.length) chapters.push({ title: '全文', content: txt.trim(), digest: txt.replace(/\s+/g, ' ').trim().slice(0, 200), ct: Date.now() });
 
                 const book = {
                     id: 'bk_' + Date.now(), name: name, q: '（TXT 导入）', note: '',
@@ -8670,20 +8900,30 @@ window.renderSettings = function() {
 
     // ================== 1. 渲染设备列表 (白底原版) ==================
     window.renderCheckPhoneApp = function() {
-        let currentPid = window.mySettings?.activePersonaId || null;
-        const contacts = window.sessions.filter(s => {
+        let currentPid = window.mySettings ? window.mySettings.activePersonaId : null;
+        if (currentPid === undefined) currentPid = null;
+        const contacts = (window.sessions || []).filter(s => {
             if (s.type !== 'single' || s.id === 'bot') return false;
             let sPid = s.userPersonaId !== undefined ? s.userPersonaId : null;
             return String(sPid) === String(currentPid);
         });
 
+        if (contacts.length > 0) { window.__spyRetry = 0; }
+        else if ((window.__spyRetry || 0) < 3) {
+            window.__spyRetry = (window.__spyRetry || 0) + 1;
+            setTimeout(() => {
+                if (document.querySelector('.spy-entry-page') && !document.querySelector('.spy-target-card')) window.renderCheckPhoneApp();
+            }, 1200);
+        }
+
         let listHtml = contacts.length > 0 ? contacts.map((c, i) => {
             let city = CITIES[Math.abs(c.name.charCodeAt(0) + i) % CITIES.length];
+            let av = c.avatar || ('https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(c.name || 'X'));
             return `
             <div class="spy-target-card" onclick="window.startSpyOS('${c.id}', '${city}')">
                 <div style="display:flex; align-items:center; flex:1; min-width:0;">
                     <div class="spy-tc-avt-wrap">
-                        <img src="${c.avatar}" class="spy-tc-avt">
+                        <img src="${av}" class="spy-tc-avt">
                         <div class="spy-tc-dot"></div>
                     </div>
                     <div class="spy-tc-info">
@@ -8847,7 +9087,9 @@ window.renderSettings = function() {
     };
 
     const safeExtract = (tag, str) => {
-        const regex = new RegExp(`\\[?${tag}\\]?[:：]?\\*?\\*?\\s*([\\s\\S]*?)(?=\\[?[a-zA-Z0-9_]+\\]?[:：]?\\*?\\*?\\s*|$)`, 'i');
+        const open = `\\[?${tag}\\]?[:：]?\\*?\\*?\\s*`;
+        const boundary = '(?=\\n\\s*\\[[a-zA-Z0-9_]+\\]|\\n\\s*[a-zA-Z0-9_]{2,}\\s*[:：]|[ \\t]*\\[[a-zA-Z0-9_]+\\]|[ \\t]*$|\\n\\s*$)';
+        const regex = new RegExp(open + '([\\s\\S]*?)' + boundary, 'i');
         const match = str.match(regex);
         return match ? match[1].trim() : "";
     };
@@ -9048,7 +9290,7 @@ window.renderSettings = function() {
         let html = `<div style="padding:15px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:15px; background:#f4f5f7;" id="spyChatScroll">` + historyToRender.map(msg => {
             const isMe = msg.role === 'me';
             let otherAva = idx === 1 ? (window.spyBoundAvatar || window.mySettings?.avatar || '') : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name)}&backgroundColor=07C160`;
-            const ava = isMe ? window.spyTarget.avatar : otherAva;
+            const ava = isMe ? (window.spyTarget.avatar || otherAva) : otherAva;
             return `<div style="display:flex; gap:12px; flex-direction:${isMe?'row-reverse':'row'}"><img src="${ava}" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;"><div style="background:${isMe?'#95EC69':'#fff'}; padding:12px 15px; border-radius:14px; font-size:16px; color:#111; line-height:1.5; max-width:75%; word-break:break-all; box-shadow:0 2px 10px rgba(0,0,0,0.02);">${msg.text}</div></div>`;
         }).join('') + `</div>
         <div style="width:100%; background:rgba(247,247,247,0.9); backdrop-filter:blur(10px); border-top:1px solid #EAEAEA; padding:12px 15px calc(12px + env(safe-area-bottom)); display:flex; gap:10px; flex-shrink:0; box-sizing:border-box; z-index:10;">
@@ -9341,12 +9583,13 @@ window.renderSettings = function() {
             </div>`;
         }
         else if (type === 'map') {
+            const distTxt = String(data.dist || '').replace(/^(距你|距离玩家|距离你)\s*/, '');
             body.innerHTML = `
                 <div class="radar-box"><div class="radar-dot"></div></div>
                 <div style="background:rgba(255,255,255,0.05); border-radius:24px; padding:25px; color:#fff; text-align:center; margin:0 20px; border:1px solid rgba(52,199,89,0.3); backdrop-filter:blur(10px); box-shadow:0 10px 30px rgba(0,0,0,0.5);">
                     <div style="color:#34C759; font-size:13px; font-weight:900; margin-bottom:12px; letter-spacing:2px;">TARGET LOCATED</div>
                     <div style="font-size:22px; font-weight:900; margin-bottom:10px; text-shadow:0 2px 10px rgba(0,0,0,0.8);">📍 ${data.loc}</div>
-                    <div style="font-size:15px; color:#aaa; margin-bottom:20px; font-weight:bold;">距你 ${data.dist}</div>
+                    <div style="font-size:15px; color:#aaa; margin-bottom:20px; font-weight:bold;">距你 ${distTxt || '位置未知'}</div>
                     <div style="background:rgba(0,0,0,0.6); padding:15px; border-radius:16px; font-size:15px; color:#34C759; border:1px solid rgba(52,199,89,0.2);">正在做：${data.doing}</div>
                 </div>`;
         }
@@ -9361,10 +9604,11 @@ window.renderSettings = function() {
                 </div>`).join('') + `</div>`;
         }
         else if (type === 'music') {
+            const musicAva = window.spyTarget.avatar || ('https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(window.spyTarget.name || 'X'));
             body.innerHTML = `
                 <div style="min-height:100%; display:flex; flex-direction:column; align-items:center; padding:40px 20px;">
                     <div style="width:240px; height:240px; border-radius:50%; background:#000; border:10px solid #111; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 40px rgba(0,0,0,0.8); animation:spin 15s linear infinite;">
-                        <img src="${window.spyTarget.avatar}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; opacity:0.8;">
+                        <img src="${musicAva}" style="width:150px; height:150px; border-radius:50%; object-fit:cover; opacity:0.8;">
                     </div>
                     <div style="margin-top:50px; text-align:center; width:100%;">
                         <div style="font-size:26px; font-weight:bold; margin-bottom:10px; color:#fff;">${data.song}</div>
@@ -9681,8 +9925,22 @@ window.renderSettings = function() {
         document.getElementById('spyLoader').style.display = 'flex'; document.getElementById('spyLoaderTxt').innerText = "破解相册加密协议...";
         try {
             const rawRes = await window.callSpyAI(`伪造6张相册照片。严格返回JSON：[{"desc": "中文","prompt": "纯英文绘画词"}]`);
-            const jsonData = JSON.parse(safeExtract('json', rawRes) || rawRes.substring(rawRes.indexOf('['), rawRes.lastIndexOf(']')+1));
-            window.spyTempData.gallery = jsonData.map(j => ({ desc: j.desc, isText: true })); 
+            let rawJson = safeExtract('json', rawRes);
+            if (!rawJson) {
+                const _a = rawRes.indexOf('['), _z = rawRes.lastIndexOf(']');
+                rawJson = (_a >= 0 && _z > _a) ? rawRes.slice(_a, _z + 1) : '';
+            }
+            let jsonData = [];
+            try { jsonData = JSON.parse(rawJson); } catch(e) { jsonData = []; }
+            if (!Array.isArray(jsonData)) {
+                jsonData = Array.isArray(jsonData && jsonData.photos) ? jsonData.photos : (Array.isArray(jsonData && jsonData.items) ? jsonData.items : []);
+            }
+            if (!jsonData.length) {
+                const caps = (rawRes.match(/\[CAPTION\]\s*([^\n]+)/gi) || []).map(x => x.replace(/\[CAPTION\]\s*/i, '').trim()).filter(Boolean);
+                if (caps.length) jsonData = caps.map(d => ({ desc: d }));
+            }
+            if (!jsonData.length) throw new Error('相册数据结构异常');
+            window.spyTempData.gallery = jsonData.map(j => ({ desc: (j && (j.desc || j.title || j.prompt)) || '加密相片', isText: true })); 
             window.renderFakeGallery();
         } catch(e) { document.getElementById('spyGalleryBody').innerHTML = `<div style="padding:20px;color:red;">读取失败</div>`; }
         document.getElementById('spyLoader').style.display = 'none';
@@ -12037,6 +12295,19 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     .dv-spread-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 18px; }
     .dv-slot { width: 88px; display: flex; flex-direction: column; align-items: center; gap: 7px; }
     .dv-slot-label { font-size: 9.5px; color: var(--dv-gold); font-weight: 800; letter-spacing: 1px; text-align: center; min-height: 13px; }
+    .dv-slot-mean { font-size: 8px; color: #7E7869; text-align: center; line-height: 1.45; margin-top: 2px; padding: 0 1px; }
+    .dv-spread-grid.dv-board { display: block; position: relative; margin: 8px 0 18px; }
+    .dv-board .dv-slot { position: absolute; width: 78px; transform: translate(-50%, -50%); }
+    .dv-board .dv-mini { width: 78px; height: 132px; }
+    .dv-board .dv-slot-label { height: 14px; line-height: 14px; overflow: hidden; }
+    .dv-board .dv-slot-mean { position: absolute; top: 100%; left: 0; right: 0; margin-top: 3px; }
+    .dv-board-sm .dv-slot { width: 58px; }
+    .dv-board-sm .dv-mini { width: 58px; height: 98px; }
+    .dv-board-sm .dv-slot-label { font-size: 8.5px; letter-spacing: 0; height: 12px; line-height: 12px; }
+    .dv-board-sm .dv-slot-mean { font-size: 7px; }
+    .dv-board-sm .dv-mini-name { font-size: 8px; }
+    .dv-board-sm .dv-mini-num { font-size: 8.5px; }
+    .dv-board-sm .dv-mini-ico svg { width: 19px; height: 19px; }
     .dv-mini { width: 84px; height: 144px; perspective: 800px; }
     .dv-mini-obj { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.2,.9,.3,1.25); }
     .dv-mini-obj.flipped { transform: rotateY(180deg); }
@@ -12190,12 +12461,57 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     const DECK = MAJOR.concat(MINOR);   // 78 张
 
     // ---------- 牌阵定义 ----------
+    // slots=牌位，means=牌位含义（一并交给 AI，解读才不会泛泛而谈）
+    // layout=[x%, y%] 在牌阵画布上的坐标，h=画布高度
     const SPREADS = {
-        one:    { name:'单张指引', desc:'一句定音', slots:['今日指引'] },
-        three:  { name:'时间之流', desc:'过去·现在·未来', slots:['过去','现在','未来'] },
-        love:   { name:'恋人之镜', desc:'关系六芒', slots:['你的心','TA的心','你们之间','阻碍','助力','走向'] },
-        career: { name:'事业罗盘', desc:'处境与破局', slots:['当前处境','核心课题','隐藏资源','行动建议','可期结果'] },
-        choice: { name:'二择之径', desc:'两条路的尽头', slots:['你的现状','A 路径过程','A 路径结果','B 路径过程','B 路径结果'] }
+        one: {
+            name:'单张指引', desc:'一句定音', h:190,
+            slots:['今日指引'],
+            means:['此刻最需要听见的一句话'],
+            layout:[[50,48]]
+        },
+        three: {
+            name:'时间之流', desc:'过去·现在·未来', h:250,
+            slots:['过去','现在','未来'],
+            means:['事情的起因与已发生的影响','当下面临的真实局面','按目前走向会抵达哪里'],
+            layout:[[18,62],[50,62],[82,62]]
+        },
+        love: {
+            name:'恋人之镜', desc:'关系六芒', h:380,
+            slots:['你的心','TA 的心','你们之间','阻碍','助力','走向'],
+            means:['你对这段关系的真实期待','对方此刻的态度与顾虑','你们之间的连结与张力','阻碍关系推进的关键','可以借力的条件或第三方','关系接下来的自然走向'],
+            layout:[[18,26],[50,26],[82,26],[18,74],[50,74],[82,74]]
+        },
+        career: {
+            name:'事业罗盘', desc:'处境与破局', h:520,
+            slots:['当前处境','核心课题','隐藏资源','行动建议','可期结果'],
+            means:['你现在的真实位置','必须先解决的那件事','你尚未用上的优势','当下最该采取的动作','按此行动的可期回报'],
+            layout:[[50,15],[18,45],[82,45],[30,75],[70,75]]
+        },
+        choice: {
+            name:'二择之径', desc:'两条路的尽头', h:540,
+            slots:['你的现状','A 路径过程','A 路径结果','B 路径过程','B 路径结果'],
+            means:['你站在这两个选项前的真实状态','选择 A 之后会经历什么','选择 A 最终得到什么','选择 B 之后会经历什么','选择 B 最终得到什么'],
+            layout:[[50,16],[18,48],[18,80],[82,48],[82,80]]
+        },
+        celtic: {
+            name:'凯尔特十字', desc:'十张·全景深读', h:620,
+            slots:['现况','挑战','根源','过去','目标','近未来','自我','环境','希望与恐惧','结果'],
+            means:['事情当前的核心状态','横在面前的阻力或对立面','深层原因与潜意识动机','已经发生、仍在起作用的事','你真正想要抵达的方向','接下来几周会浮现的动向','你在这件事里的姿态','外界与身边人的影响','你最期待与最害怕的部分','综合所有牌位后的最终走向'],
+            layout:[[38,32],[62,32],[50,52],[14,32],[50,12],[86,32],[14,76],[38,76],[62,76],[86,76]]
+        },
+        horseshoe: {
+            name:'马蹄七牌', desc:'来龙去脉全景', h:420,
+            slots:['过去','现在','隐藏因素','建议','外部影响','近期','结果'],
+            means:['事情的来处','此刻的立足点','你没看见的变量','最该采取的姿态','他人与环境的推力','未来数周的进展','最终可能的结果'],
+            layout:[[12,26],[37,26],[62,26],[86,26],[24,70],[49,70],[74,70]]
+        },
+        month: {
+            name:'月运罗盘', desc:'本月能量分布', h:360,
+            slots:['本月主旋律','机会','挑战','行动建议'],
+            means:['这个月整体的能量基调','最值得抓住的窗口','最需要提防的坑','本月最有效的一个动作'],
+            layout:[[30,30],[70,30],[30,76],[70,76]]
+        }
     };
 
     // ---------- 牌面 SVG ----------
@@ -12211,6 +12527,8 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     // ---------- 工具 ----------
     const esc = s => (typeof escapeHtml === 'function' ? escapeHtml(String(s == null ? '' : s))
         : String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+    // 内联 onclick 的字符串参数：先按 JS 转义，再做 HTML 转义
+    const dvAttr = s => esc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 
     const todayKey = () => {
         const d = new Date();
@@ -12418,6 +12736,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                                 </div>
                             </div>
 
+                            <div id="dvSpreadDesc" style="text-align:center;font-size:10.5px;color:#7E7869;letter-spacing:0.5px;margin:-4px 0 10px;line-height:1.6;">
+                                <span style="color:#D4AF37;font-weight:800;">时间之流</span> · 过去·现在·未来 · 共 3 张
+                            </div>
                             <div class="dv-deck-wrap" id="dvDeck"></div>
                             <div id="dvPickHint" style="text-align:center;font-size:11px;color:#7E7869;letter-spacing:1px;margin-bottom:6px;"></div>
                             <div class="dv-spread-grid" id="dvSpreadGrid"></div>
@@ -12568,6 +12889,9 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         const act = document.getElementById('askActions');
         if (box) box.style.display = 'none';
         if (act) act.style.display = 'none';
+        const desc = document.getElementById('dvSpreadDesc');
+        const sp = SPREADS[k];
+        if (desc) desc.innerHTML = `<span style="color:#D4AF37;font-weight:800;">${esc(sp.name)}</span> · ${esc(sp.desc)} · 共 ${sp.slots.length} 张`;
     };
 
     // 洗牌 → 生成扇形牌堆，让玩家自己点选
@@ -12580,6 +12904,8 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
 
         window.dv_pool = drawCards(Math.max(13, sp.slots.length + 6));
         window.dv_picked = [];
+        window.dv_lastDraw = null;      // 洗牌后旧牌阵作废，否则不选牌直接提交会复用上一局
+        window.dv_lastText = '';
         if (grid) grid.innerHTML = '';
         const box = document.getElementById('askResult');
         const act = document.getElementById('askActions');
@@ -12625,18 +12951,26 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
     function renderSpreadSlots(sp, cards, keepFlip) {
         const grid = document.getElementById('dvSpreadGrid');
         if (!grid) return;
+        const small = sp.slots.length >= 7;
+        grid.className = 'dv-spread-grid dv-board' + (small ? ' dv-board-sm' : '');
+        grid.style.height = (sp.h || 300) + 'px';
         grid.innerHTML = sp.slots.map((label, i) => {
             const c = cards[i];
+            const pos = (sp.layout && sp.layout[i]) || [50, 20 + i * 14];
+            const style = `left:${pos[0]}%;top:${pos[1]}%;`;
+            const mean = esc((sp.means && sp.means[i]) || '');
+            const head = `<div class="dv-slot-label">${esc(label)}</div>`;
             if (!c) {
-                return `<div class="dv-slot"><div class="dv-slot-label">${esc(label)}</div>
+                return `<div class="dv-slot" style="${style}">${head}
                     <div class="dv-mini"><div class="dv-mini-obj"><div class="dv-mini-face dv-mini-back">
                     <svg viewBox="0 0 24 24"><path d="M12 2L15 9l7 3-7 3-3 7-3-7-7-3 7-3z"/></svg>
-                    </div></div></div></div>`;
+                    </div></div></div>
+                    ${mean ? `<div class="dv-slot-mean">${mean}</div>` : ''}</div>`;
             }
-            return `<div class="dv-slot">
-                <div class="dv-slot-label">${esc(label)}</div>
-                <div class="dv-mini" onclick="window.dv_cardDetail('${c.id}',${c.upright})">
-                    <div class="dv-mini-obj ${keepFlip && i < cards.length - 1 ? 'flipped' : ''}">
+            const flipped = keepFlip && i < cards.length - 1;
+            return `<div class="dv-slot" style="${style}">${head}
+                <div class="dv-mini" onclick="window.dv_cardDetail('${c.id}',${c.upright},'${dvAttr(label)}','${dvAttr(sp.means && sp.means[i] || '')}')">
+                    <div class="dv-mini-obj ${flipped ? 'flipped' : ''}">
                         <div class="dv-mini-face dv-mini-back"><svg viewBox="0 0 24 24"><path d="M12 2L15 9l7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></div>
                         <div class="dv-mini-face dv-mini-front">
                             <div class="dv-mini-inner ${c.upright ? '' : 'reversed'}">
@@ -12650,7 +12984,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
                         </div>
                     </div>
                 </div>
-            </div>`;
+                ${mean ? `<div class="dv-slot-mean">${mean}</div>` : ''}</div>`;
         }).join('');
     }
 
@@ -12661,13 +12995,23 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         if (!q) { if (typeof showToast === 'function') showToast('请先写下你的疑问'); input.focus(); return; }
 
         const sp = SPREADS[window.dv_spreadKey] || SPREADS.three;
-        // 没手动选牌就自动发牌，并同步翻开
+        // 牌不全：保留已选的牌，缺的从牌堆补，而不是把用户的选牌整副丢掉
         if (!window.dv_lastDraw || window.dv_lastDraw.length !== sp.slots.length) {
-            window.dv_lastDraw = drawCards(sp.slots.length);
+            let cards = (window.dv_picked || []).slice();
+            if (cards.length) {
+                const used = new Set(cards.map(c => c.id));
+                const rest = (window.dv_pool || []).filter(c => !used.has(c.id));
+                while (cards.length < sp.slots.length) cards.push(rest.shift() || drawCards(1)[0]);
+                const hint = document.getElementById('dvPickHint');
+                if (hint) hint.innerText = '余下的牌由星辰为你补齐';
+            } else {
+                cards = drawCards(sp.slots.length);
+                const hint = document.getElementById('dvPickHint');
+                if (hint) hint.innerText = '星辰自行为你落牌';
+            }
+            window.dv_lastDraw = cards;
             const deck = document.getElementById('dvDeck');
             if (deck) deck.innerHTML = '';
-            const hint = document.getElementById('dvPickHint');
-            if (hint) hint.innerText = '星辰自行为你落牌';
             renderSpreadSlots(sp, window.dv_lastDraw, false);
             setTimeout(() => {
                 document.querySelectorAll('#dvSpreadGrid .dv-mini-obj').forEach((o, i) => setTimeout(() => o.classList.add('flipped'), i * 170));
@@ -12684,7 +13028,7 @@ body.dark-mode .f-pm-input { background: #2c2c2e; border-color: #444; color: #ee
         act.style.display = 'none';
 
         const lines = window.dv_lastDraw.map((c, i) =>
-            `${i+1}. 【${sp.slots[i]}】${c.cn}（${c.en}）· ${c.upright ? '正位' : '逆位'} — 关键词：${cardMeaning(c)}`
+            `${i+1}. 【${sp.slots[i]}｜牌位含义：${(sp.means && sp.means[i]) || '该位置的整体语境'}】${c.cn}（${c.en}）· ${c.upright ? '正位' : '逆位'} — 关键词：${cardMeaning(c)}`
         ).join('\n');
 
         const prompt = `你是一位造诣极深的塔罗占卜师，兼通西洋占星。语气神秘、笃定、共情，但不故弄玄虚。
@@ -12695,7 +13039,7 @@ ${lines}${profileCtx()}
 
 解读要求：
 1. 先用一段【牌阵总览】概括整个牌面的能量走向（约 60 字）。
-2. 逐个牌位解读，格式为「###牌位名 · 牌名（正/逆位）」后接 2-3 句紧扣问题的分析，务必结合该牌位的语境，不要泛泛而谈牌义。
+2. 逐个牌位解读，格式为「###牌位名 · 牌名（正/逆位）」后接 2-3 句紧扣问题的分析，必须先回应该牌位含义、再结合牌义，不要泛泛而谈。
 3. 结尾给出【星语建议】：3 条可执行的具体建议，以及一句收束人心的话。
 4. 若牌面偏消极，要如实指出风险，同时给出转化的方向，不许粉饰。
 5. 全文 400-550 字，除 ### 标题外不要用其他 markdown 符号。`;
@@ -12816,10 +13160,14 @@ ${lines}${profileCtx()}
         window.dv_openSheet('CODEX · 78', html);
     };
 
-    window.dv_cardDetail = function(id, upright) {
+    window.dv_cardDetail = function(id, upright, posLabel, posMean) {
         const c = DECK.find(x => x.id === id);
         if (!c) return;
         window.dv_openSheet(String(c.en).toUpperCase(), `
+            ${posLabel ? `<div style="text-align:center;margin-bottom:14px;">
+                <div style="font-size:13px;font-weight:900;color:#D4AF37;letter-spacing:1px;">牌位 · ${esc(posLabel)}</div>
+                ${posMean ? `<div style="font-size:10.5px;color:#8C8674;margin-top:5px;line-height:1.65;">这个牌位问的是：${esc(posMean)}</div>` : ''}
+            </div>` : ''}
             <div style="display:flex;justify-content:center;margin-bottom:20px;">
                 <div class="card-scene" style="cursor:default;margin:0;">
                     <div class="card-object flipped">
@@ -12909,6 +13257,7 @@ ${lines}${profileCtx()}
             <div class="dv-spread-grid">${r.cards.map((c, i) => `
                 <div class="dv-slot">
                     <div class="dv-slot-label">${esc(sp && sp.slots[i] ? sp.slots[i] : '牌 ' + (i+1))}</div>
+                    ${sp && sp.means && sp.means[i] ? `<div class="dv-slot-mean" style="margin-bottom:4px;">${esc(sp.means[i])}</div>` : ''}
                     <div class="dv-mini" onclick="window.dv_cardDetail('${c.id}',${!!c.upright})">
                         <div class="dv-mini-obj flipped">
                             <div class="dv-mini-face dv-mini-back"></div>
@@ -14659,10 +15008,10 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
         if(slides.length > 1) {
             const page2 = slides[1];
             page2.innerHTML = `
-                <div style="padding: max(env(safe-area-inset-top), 20px) 20px 20px; display: flex; flex-direction: column; gap: 20px; height: 100%; box-sizing: border-box; overflow-y:auto; padding-bottom:50px; font-family:-apple-system, sans-serif;">
+                <div style="padding: 0 20px 20px; display: flex; flex-direction: column; gap: 20px; height: 100%; box-sizing: border-box; overflow-y:auto; padding-bottom:50px; font-family:-apple-system, sans-serif;">
                     
                     <!-- 极简文字时钟区 -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; padding:10px 5px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; padding:0 5px 4px;">
                         <div>
                             <!-- 加入 tabular-nums 防止时间跳动，强迫症福音 -->
                             <div id="p2-time-display" style="font-size:52px; font-weight:300; color:#33443C; line-height:0.9; letter-spacing:-2px; font-variant-numeric: tabular-nums;">00:00</div>
@@ -14677,7 +15026,7 @@ else if (m.type === 'redpacket' || m.type === 'group_rp') {
                     </div>
 
                     <!-- 🍱 Ins风便当盒拼图排版：拍立得 + 手账便签 -->
-                    <div style="display: grid; grid-template-columns: 52% 1fr; gap: 15px; padding: 10px 5px;">
+                    <div style="display: grid; grid-template-columns: 52% 1fr; gap: 15px; padding: 0 5px;">
                         
                         <!-- 左侧：超大拍立得 -->
                         <div class="p2-polaroid" onclick="window.triggerP2Upload(1)" style="height: 260px;">
@@ -17385,6 +17734,7 @@ style="width: 100%; text-align: center; border: none; outline: none; font-size: 
 <!-- ================== 🧩 V12 主题高自由扩展：小组件 + 字体库 + 可视化微调 + 全局JS ================== -->
 <style id="panda-v12-ext-css">
 #customWidgetsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 2px; margin-bottom: 16px; }
+#customWidgetsGrid:empty { display: none !important; }
 .cw-card { min-height: 104px; border-radius: 24px; padding: 14px 14px 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); position: relative; overflow: hidden; display: flex; flex-direction: column; }
 .cw-card.full { grid-column: span 2; }
 .cw-title { font-size: 11px; opacity: 0.65; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -17681,7 +18031,8 @@ body.dark-mode .ts-deco-ctrl select { background: #2c2c2e; border-color: #3a3a3c
         vis.innerHTML = '.search-pill, .app-group-card, .dock-container, .app-card, .widget-container, .ts-card, .func-panel, .modal-sheet, .f-sheet, .bento-photo, .bento-dday, .cw-card { border-radius: var(--ts-radius) !important; }\n' +
             '.search-pill, .app-group-card, .dock-container, .app-card, .widget-container { background: rgba(255,255,255,' + opacity + ') !important; backdrop-filter: blur(var(--ts-blur)) !important; -webkit-backdrop-filter: blur(var(--ts-blur)) !important; }\n' +
             'body.dark-mode .search-pill, body.dark-mode .app-group-card, body.dark-mode .dock-container, body.dark-mode .app-card, body.dark-mode .widget-container { background: rgba(30,30,30,' + darkOpacity + ') !important; }\n' +
-            '.app-grid, #customWidgetsGrid, .grid-2-col, .music-row, .func-panel-grid { gap: calc(14px * var(--ts-density)) !important; }';
+            'body .app-grid, body #customWidgetsGrid, body .grid-2-col, body .music-row, body .func-panel-grid, body .bento-grid { gap: calc(14px * var(--ts-density)) !important; }\n' +
+            'body .swiper-slide { gap: calc(12px * var(--ts-density)) !important; }';
         const oldJs = document.getElementById('panda-custom-js'); if (oldJs) oldJs.remove();
         if ((t.customJS || '').trim()) {
             const s = document.createElement('script');
@@ -21711,11 +22062,38 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
         localStorage.setItem('panda_last_active_time', Date.now().toString());
     }, 10000);
 
-    const api = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
-    if (!api.key) return;
+    const getApi = () => {
+        try {
+            const a = JSON.parse(localStorage.getItem('panda_api_settings') || '{}');
+            return (a && a.key) ? a : null;
+        } catch (e) { return null; }
+    };
+
+    // 把模型输出的整段话拆成多条短消息，模拟真人连发
+    const toBubbles = (text) => {
+        let t = String(text || '').replace(/\r/g, '').trim();
+        if (!t) return [];
+        let parts = t.split(/\n+/).map(x => x.trim()).filter(Boolean);
+        const fromNewline = parts.length > 1;
+        if (!fromNewline) {
+            parts = parts[0].split(/(?<=[。！？!?…~])\s*/).map(x => x.trim()).filter(Boolean);
+        }
+        const merged = [];
+        for (const line of parts) {
+            if (!fromNewline && merged.length && (line.length < 6 || /^[，,。.；;：:]$/.test(line))) {
+                merged[merged.length - 1] += line;
+            } else {
+                merged.push(line);
+            }
+        }
+        return merged.slice(0, 6);
+    };
 
     // --- 核心反向查岗发疯函数 ---
     async function triggerJealousHack(snooper, target, illicitText, isOffline = false) {
+        const api = getApi();
+        if (!api) return;
+        if (typeof window.pushMsg !== 'function') return;
         // 1. 屏幕红字警告 (离线消失 vs 在线冷落 两种文案)
         let warning = isOffline 
             ? `🚨【系统底层警告】：由于你长时间处于离线状态，[${snooper.name}] 极度不安，刚刚越权黑入了你的设备！并调取了你与 [${target.name}] 的历史记录！`
@@ -21762,28 +22140,34 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
             if (!aiReply) aiReply = "（气到眼红，一言不发盯着你）";
 
             // 🩸 1. 给大模型生成的原话加上病娇专属的“血红发光/黑化”视觉样式
-            let yandereReply = `<span style="color: #b30000; font-weight: bold; text-shadow: 0px 0px 4px rgba(255,0,0,0.4); letter-spacing: 1px;">${aiReply}</span>`;
+            const wrapYandere = (line) => `<span style="color: #b30000; font-weight: bold; text-shadow: 0px 0px 4px rgba(255,0,0,0.4); letter-spacing: 1px;">${line}</span>`;
+            const bubbles = toBubbles(aiReply);
+            if (!bubbles.length) bubbles.push('（气到眼红，一言不发盯着你）');
 
             setTimeout(() => {
-                // 推送黑化消息
-                window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: yandereReply});
+                // 逐条推送黑化消息，模拟真人连发
+                bubbles.forEach((line, i) => {
+                    setTimeout(() => {
+                        window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: wrapYandere(line)});
+                    }, i * 650);
+                });
 
                 // 🔪 2. 霸道切屏！强行把你从别人的聊天框拽回 TA 的面前！
-                const currentSid = typeof currentSessionId !== 'undefined' ? currentSessionId : (window.currentSessionId || null);
-                if (currentSid !== snooper.id) {
-                    // 尝试触发系统的切屏函数
-                    if (typeof switchSession === 'function') {
-                        switchSession(snooper.id);
-                    } else {
-                        // 如果没有切屏函数，就暴力寻找侧边栏头像并模拟点击
-                        const tabs = document.querySelectorAll(`[data-id="${snooper.id}"], .session-item, li, div`);
-                        tabs.forEach(tab => {
-                            if (tab.getAttribute('data-id') === snooper.id || (tab.innerText && tab.innerText.includes(snooper.name))) {
-                                tab.click();
-                            }
-                        });
+                setTimeout(() => {
+                    const currentSid = typeof currentSessionId !== 'undefined' ? currentSessionId : (window.currentSessionId || null);
+                    if (currentSid !== snooper.id) {
+                        if (typeof switchSession === 'function') {
+                            switchSession(snooper.id);
+                        } else {
+                            const tabs = document.querySelectorAll(`[data-id="${snooper.id}"], .session-item, li, div`);
+                            tabs.forEach(tab => {
+                                if (tab.getAttribute('data-id') === snooper.id || (tab.innerText && tab.innerText.includes(snooper.name))) {
+                                    tab.click();
+                                }
+                            });
+                        }
                     }
-                }
+                }, bubbles.length * 650 + 200);
             }, 1500); // 闪烁和震动刚结束，直接把你的屏幕拽过去！
         } catch(e) { console.warn("后台查岗引擎触发失败：", e); }
     }
@@ -21824,6 +22208,8 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
                 请结合你的人物设定（${snooper.prompt || '普通人'}），像真人发微信一样，连发几条急促的短消息质问TA去哪了。
                 🚨 警告：如果要发语音，在最后加上 \`[VOICE: 语音的话]\`。语音台词必须跟打出的文字【完全不同】！绝对禁止只发语音不打文字！不要带前缀或动作！`;
 
+                const api = getApi();
+                if (!api) return;
                 try {
                     let endpoint = api.url.trim().replace(/\/+$/, '');
                     if (!endpoint.includes('/chat/completions')) endpoint += endpoint.endsWith('/v1') ? '/chat/completions' : '/v1/chat/completions';
@@ -21853,8 +22239,12 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
                     setTimeout(() => window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: callCardHtml}), 400);
                     setTimeout(() => window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: callCardHtml}), 800);
                     
-                    // 最后再发出他气急败坏的质问
-                    setTimeout(() => window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: aiReply}), 1500);
+                    // 最后再发出他气急败坏的质问（拆成多条短消息）
+                    const callBubbles = toBubbles(aiReply);
+                    if (!callBubbles.length) callBubbles.push('（愤怒地挂断了语音）');
+                    callBubbles.forEach((line, i) => {
+                        setTimeout(() => window.pushMsg({targetSessionId: snooper.id, side: 'other', type: 'text', content: line}), 1500 + i * 650);
+                    });
                 } catch(e) {}
             }, 3000); 
         }
@@ -26837,7 +27227,7 @@ body {
     .swiper-slide {
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important; /* 关键：上下撑开，均匀分布！ */
+        justify-content: flex-start !important; /* 只让应用宫格吸收多余空间，避免小卡片与点歌条被拉开 */
         height: 100% !important;
         overflow-y: auto !important; 
         padding-bottom: 5px !important;
@@ -26853,7 +27243,7 @@ body {
         display: flex !important;
         align-items: center !important; 
         justify-content: center !important;
-        margin: 0 !important;
+        margin: auto 0 0 0 !important;
     }
 
     /* 5. 修复 Dock 栏底部悬空问题 */
@@ -27141,8 +27531,6 @@ window.renderSettings = function() {
         -webkit-touch-callout: none !important;
     }
 </style>
-
-
 
 </body>
 </html>
