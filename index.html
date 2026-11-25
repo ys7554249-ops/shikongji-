@@ -1348,6 +1348,7 @@ button, input, textarea, select, label, a,
         <div class="msg-menu-sheet">
             <button class="msg-menu-btn" onclick="menuAction('edit')"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> 编辑</button>
             <button class="msg-menu-btn" onclick="menuAction('revoke')"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> 撤回</button>
+            <button class="msg-menu-btn" onclick="menuAction('delete')" style="color:#FF3B30;"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 删除</button>
             <button class="msg-menu-btn" onclick="window.toggleBatchDeleteMode(); document.getElementById('msgMenu').classList.remove('active')" style="color:#007AFF;"><svg class="hw-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/></svg> 多选删除</button>
             <button class="msg-menu-btn msg-menu-cancel" onclick="document.getElementById('msgMenu').classList.remove('active')">取消</button>
         </div>
@@ -2802,10 +2803,28 @@ else if (weChatTab === 'discover') {
             const s = sessions.find(x => String(x.id) === String(currentSessionId));
             if (!s || selectedMsgIndex === -1) return;
 
+            // 0. 单条直接删除（微信 / 线下剧场通用）
+            if (type === 'delete') {
+                const _doDelete = () => {
+                    s.history.splice(selectedMsgIndex, 1);
+                    saveSessions();
+                    if (document.getElementById('novelBox')) {
+                        if (typeof renderNovelContent === 'function') renderNovelContent();
+                    } else if (typeof renderChatRoom === 'function') {
+                        renderChatRoom();
+                    }
+                    document.getElementById('msgMenu').classList.remove('active');
+                };
+                if (window.pandaConfirm) window.pandaConfirm('删除这条消息？', '删除消息').then(ok => { if (ok) _doDelete(); });
+                else if (confirm('删除这条消息？')) _doDelete();
+                return;
+            }
+
             // 1. 执行撤回
             if (type === 'revoke') {
 
-  s.history[selectedMsgIndex] = { sys: '你撤回了一条消息' };
+  const _revoked = s.history[selectedMsgIndex] || {};
+  s.history[selectedMsgIndex] = { sys: '你撤回了一条消息', mode: _revoked.mode, side: _revoked.side };
                 // 触发撤回抓包联动！
                 setTimeout(() => {
                     let revokePrompt = `[系统最高红线突发事件：玩家刚刚发出一条消息，但又立刻“撤回”了！你眼睁睁看着屏幕上的字变成了“你撤回了一条消息”。
@@ -3031,7 +3050,7 @@ function renderNovelContent() {
         let idx = item.originalIdx;
         
         if (msg.type === 'mind' || msg.sys) {
-            return `<div style="text-align:center; margin:20px 0;"><span style="font-size:12px; color:#888; background:rgba(0,0,0,0.05); padding:4px 12px; border-radius:12px;">${msg.content || msg.sys}</span></div>`;
+            return `<div class="msg-row sys-row" data-index="${idx}" style="margin:20px 0; display:flex; justify-content:center;"><span style="font-size:12px; color:#888; background:rgba(0,0,0,0.05); padding:4px 12px; border-radius:12px; max-width:100%; word-break:break-word;">${msg.content || msg.sys}</span></div>`;
         }
 
         const isMe = msg.side === 'me'; 
@@ -3055,7 +3074,7 @@ function renderNovelContent() {
         }
 
         return `
-        <div class="msg-row ${isMe ? 'me' : ''}" style="margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px; flex-direction: ${isMe ? 'row-reverse' : 'row'};">
+        <div class="msg-row ${isMe ? 'me' : ''}" data-index="${idx}" style="margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px; flex-direction: ${isMe ? 'row-reverse' : 'row'};">
             <img class="msg-ava" src="${ava}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
             <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; max-width: 80%;">
                     <div style="font-size:12px; color:#888; margin-bottom:4px; padding:0 4px;">${senderName}</div>
@@ -21797,6 +21816,9 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
     body.is-select-mode .msg-row * { pointer-events: none !important; }
     body.is-select-mode .msg-row { pointer-events: auto !important; }
     body.is-select-mode #msgIn { pointer-events: none !important; }
+    body.is-select-mode #novelIn { pointer-events: none !important; }
+    body.is-select-mode .novel-input-bar { display: none !important; }
+    body.is-select-mode #novelBox { padding-bottom: 90px !important; }
     .msg-checkbox { display: none; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; accent-color: #FF5252; pointer-events: none; z-index: 100; }
     body.is-select-mode .msg-checkbox { display: block; }
     .batch-action-bar { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #f7f7f7; padding: 15px 25px calc(15px + env(safe-area-inset-bottom)); border-top: 1px solid #ebebeb; justify-content: space-between; align-items: center; z-index: 9999; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
@@ -21805,17 +21827,14 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
 <script>
 (function() {
     // 自动挂载引擎：再也不用去几万行代码里找 HTML 了！
+    // ⚠️ 微信聊天渲染在 #chatBox，线下剧场渲染在 #novelBox —— 两个容器都必须接管
     const _origRender = window.renderChatRoom;
     window.renderChatRoom = function() {
         if(_origRender) _origRender.apply(this, arguments);
 
-   
-        
-        // 自动把“底部操作栏”塞进屏幕下方 (这个必须保留)
-        if (!document.getElementById('batchActionBar')) {
-            document.body.insertAdjacentHTML('beforeend', `<div id="batchActionBar" class="batch-action-bar"><span style="color:#576b95; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.cancelBatchDelete()">取消</span><div style="font-size:13px; color:#999;">请勾选要删除的消息</div><span style="color:#FF5252; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.confirmBatchDelete()">删除 (<span id="batchCount">0</span>)</span></div>`);
-        }
-        // 🔥 修复：重渲染会用 innerHTML 重建所有 .msg-row，导致 checkbox 和事件丢失。
+        window.ensureBatchBar();
+
+        // 🔥 重渲染会用 innerHTML 重建所有 .msg-row，导致 checkbox 和事件丢失。
         // 如果当前正处于多选模式，就补回 checkbox 并恢复勾选状态，而不是直接踢出多选。
         if (document.body.classList.contains('is-select-mode')) {
             if (typeof window.initBatchDelegation === 'function') window.initBatchDelegation();
@@ -21824,49 +21843,73 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
         }
     };
 
+    // 线下剧场同样会整体重建 innerHTML，必须同样补挂，否则多选一刷新就全没了
+    const _origRenderNovel = window.renderNovelContent;
+    window.renderNovelContent = function() {
+        if(_origRenderNovel) _origRenderNovel.apply(this, arguments);
+        if (document.body.classList.contains('is-select-mode')) {
+            if (typeof window.initBatchDelegation === 'function') window.initBatchDelegation();
+            if (typeof window.ensureMsgCheckboxes === 'function') window.ensureMsgCheckboxes(true);
+            if (typeof window.updateBatchCount === 'function') window.updateBatchCount();
+        }
+    };
+
+    // 底部操作栏（线上/线下共用，插一次即可；线下模式不会走 renderChatRoom，所以必须单独兜底）
+    window.ensureBatchBar = function() {
+        if (document.getElementById('batchActionBar')) return;
+        document.body.insertAdjacentHTML('beforeend', `<div id="batchActionBar" class="batch-action-bar"><span style="color:#576b95; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.cancelBatchDelete()">取消</span><div style="font-size:13px; color:#999;">请勾选要删除的消息</div><span style="color:#FF5252; font-size:16px; font-weight:bold; cursor:pointer;" onclick="window.confirmBatchDelete()">删除 (<span id="batchCount">0</span>)</span></div>`);
+    };
+
     // 核心删除逻辑
     window.batchSelectedMsgs = [];
-    // 给所有消息行补上 checkbox（可反复调用，只补缺的）
+    // 给所有可见消息行补上 checkbox（线上 + 线下都扫，可反复调用，只补缺的）
     window.ensureMsgCheckboxes = function(keepChecked) {
-        document.querySelectorAll('#chatBox .msg-row').forEach(row => {
-            let actualIdx = parseInt(row.getAttribute('data-index'));
-            if(isNaN(actualIdx)) {
-                const bubble = row.querySelector('.msg-bubble'); if(!bubble) return;
-                const match = (bubble.getAttribute('onclick')||'').match(/\((\d+)\)/);
-                if(!match) return;
-                actualIdx = parseInt(match[1]);
-            }
-            let cb = row.querySelector('.msg-checkbox');
-            if(!cb){
-                cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.className = 'msg-checkbox';
-                row.insertBefore(cb, row.firstChild);
-            }
-            cb.dataset.index = actualIdx;
-            // 重渲染后按已选集合恢复勾选状态，避免选到一半被清空
-            if (keepChecked) {
-                cb.checked = (window.batchSelectedMsgs || []).includes(actualIdx);
-            } else {
-                cb.checked = false;
-            }
+        ['chatBox', 'novelBox'].forEach(function(cid) {
+            const root = document.getElementById(cid);
+            if (!root) return;
+            root.querySelectorAll('.msg-row').forEach(row => {
+                let actualIdx = parseInt(row.getAttribute('data-index'));
+                if(isNaN(actualIdx)) {
+                    const bubble = row.querySelector('.msg-bubble'); if(!bubble) return;
+                    const match = (bubble.getAttribute('onclick')||'').match(/\((\d+)\)/);
+                    if(!match) return;
+                    actualIdx = parseInt(match[1]);
+                    row.setAttribute('data-index', actualIdx);
+                }
+                let cb = row.querySelector('.msg-checkbox');
+                if(!cb){
+                    cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'msg-checkbox';
+                    row.insertBefore(cb, row.firstChild);
+                }
+                cb.dataset.index = actualIdx;
+                // 重渲染后按已选集合恢复勾选状态，避免选到一半被清空
+                if (keepChecked) {
+                    cb.checked = (window.batchSelectedMsgs || []).includes(actualIdx);
+                } else {
+                    cb.checked = false;
+                }
+            });
         });
     };
 
-    // 事件委托：只在 chatBox 上挂一次，innerHTML 怎么重建都不会丢
+    // 事件委托：每个容器各挂一次，innerHTML 怎么重建都不会丢
     window.initBatchDelegation = function() {
-        const box = document.getElementById('chatBox');
-        if (!box || box.dataset.batchBound === '1') return;
-        box.dataset.batchBound = '1';
-        box.addEventListener('click', function(e) {
-            if (!document.body.classList.contains('is-select-mode')) return;
-            const row = e.target.closest('.msg-row');
-            if (!row) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const cb = row.querySelector('.msg-checkbox');
-            if (cb) { cb.checked = !cb.checked; window.updateBatchCount(); }
-        }, true); // 捕获阶段拦下，防止点击穿透到输入框唤出键盘
+        ['chatBox', 'novelBox'].forEach(function(cid) {
+            const box = document.getElementById(cid);
+            if (!box || box.dataset.batchBound === '1') return;
+            box.dataset.batchBound = '1';
+            box.addEventListener('click', function(e) {
+                if (!document.body.classList.contains('is-select-mode')) return;
+                const row = e.target.closest('.msg-row');
+                if (!row) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const cb = row.querySelector('.msg-checkbox');
+                if (cb) { cb.checked = !cb.checked; window.updateBatchCount(); }
+            }, true); // 捕获阶段拦下，防止点击穿透到输入框唤出键盘
+        });
     };
 
     window.toggleBatchDeleteMode = function() {
@@ -21874,8 +21917,10 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
         document.body.classList.add('is-select-mode');
         // 进入多选前先收起键盘，避免残留焦点
         const _in = document.getElementById('msgIn'); if(_in) _in.blur();
+        const _nin = document.getElementById('novelIn'); if(_nin) _nin.blur();
 
         window.batchSelectedMsgs = [];
+        window.ensureBatchBar();
         window.initBatchDelegation();
         window.ensureMsgCheckboxes(false);
         window.updateBatchCount();
@@ -21883,23 +21928,20 @@ ${ps.map((p,i)=>`<option value="${i}" ${s.userPersonaId==i?'selected':''}>${p.na
 
     window.updateBatchCount = function() {
         // 只统计当前 DOM 里可见行的勾选；不在 DOM 中的（被分页折叠的更早记录）保留原有选择
-        const visible = Array.from(document.querySelectorAll('#chatBox .msg-checkbox'));
-        const visibleIdx = visible.map(x => parseInt(x.dataset.index));
-        const checkedIdx = visible.filter(x => x.checked).map(x => parseInt(x.dataset.index));
+        const visible = Array.from(document.querySelectorAll('#chatBox .msg-checkbox, #novelBox .msg-checkbox'));
+        const visibleIdx = visible.map(x => parseInt(x.dataset.index)).filter(n => !isNaN(n));
+        const checkedIdx = visible.filter(x => x.checked).map(x => parseInt(x.dataset.index)).filter(n => !isNaN(n));
         const kept = (window.batchSelectedMsgs || []).filter(i => !visibleIdx.includes(i));
         window.batchSelectedMsgs = kept.concat(checkedIdx);
         const countEl = document.getElementById('batchCount');
-        if(countEl) countEl.innerText = window.batchSelectedMsgs.length;
+        if(countEl) countEl.innerText = String(window.batchSelectedMsgs.length);
     };
 
     window.cancelBatchDelete = function() {
         document.body.classList.remove('is-select-mode');
         window.batchSelectedMsgs = [];
-        document.querySelectorAll('#chatBox .msg-checkbox').forEach(cb => cb.remove());
+        document.querySelectorAll('#chatBox .msg-checkbox, #novelBox .msg-checkbox').forEach(cb => cb.remove());
     };
-
-        
-
 })();
 </script>
 <!-- ================== 多选删除模块 结束 ================== -->
@@ -27457,11 +27499,11 @@ body {
         if(s&&s.history){window.batchSelectedMsgs.sort((a,b)=>b-a).forEach(idx=>s.history.splice(idx,1));saveSessions();}
         window.cancelBatchDelete(); 
         
-        // 🔥 核心修复：判断当前是线上还是线下，决定刷新哪个界面
-        if (typeof currentMode !== 'undefined' && currentMode === 'novel') {
+        // 🔥 核心修复：按真实挂载的界面刷新 —— 线下剧场的 appView 里只有 #novelBox，微信里没有
+        if (document.getElementById('novelBox')) {
             if (typeof renderNovelContent === 'function') renderNovelContent();
-        } else {
-            if (typeof renderChatRoom === 'function') renderChatRoom();
+        } else if (typeof renderChatRoom === 'function') {
+            renderChatRoom();
         }
     };
 
